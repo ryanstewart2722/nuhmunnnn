@@ -237,7 +237,7 @@ body {
   }
   #mobile-layout::-webkit-scrollbar { display: none; }
 
-  .m-card { width: 100%; display: block; background: transparent; }
+  .m-card { width: 100%; display: block; background: transparent; text-decoration: none; color: inherit; }
 
   .m-card-img {
     width: 100%;
@@ -270,8 +270,8 @@ body {
 <div id="bl"></div>
 <div id="br"></div>
 <nav id="nav">
-  <a href="#">Work</a>
-  <span id="nav-center">Naman Nanda</span>
+  <a href="index.html">Work</a>
+  <a id="nav-center" href="index.html">Naman Nanda</a>
   <a href="#">About</a>
 </nav>
 <div id="clip">
@@ -602,8 +602,9 @@ function buildMobileLayout() {
   const container = document.getElementById('mobile-layout');
   container.innerHTML = '';
   projects.forEach(p => {
-    const card = document.createElement('div');
-    card.className = 'm-card';
+    const link = document.createElement('a');
+    link.className = 'm-card';
+    link.href = 'project.html';
 
     const imgDiv = document.createElement('div');
     imgDiv.className = 'm-card-img';
@@ -619,10 +620,10 @@ function buildMobileLayout() {
       '<span class="m-year">'   + p.year   + '</span>' +
       '<span class="m-client">' + p.client + '</span>';
 
-    card.appendChild(imgDiv);
-    card.appendChild(rule);
-    card.appendChild(meta);
-    container.appendChild(card);
+    link.appendChild(imgDiv);
+    link.appendChild(rule);
+    link.appendChild(meta);
+    container.appendChild(link);
   });
 }
 
