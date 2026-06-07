@@ -560,6 +560,36 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Enter'){const l=document.getElementById('cl'+(focusRow*COLS+focusCol));if(l)window.location.href=l.href;}
 });
 
+// ── Trackpad swipe navigation ─────────────────────────────
+// Accumulate wheel delta; fire once per swipe then cool down
+// to match the 0.55s CSS canvas transition.
+let swipeLocked = false;
+let swipeAccX = 0, swipeAccY = 0;
+const SWIPE_THRESHOLD = 40;
+
+clip.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (swipeLocked) return;
+
+  swipeAccX += e.deltaX;
+  swipeAccY += e.deltaY;
+
+  const aX = Math.abs(swipeAccX), aY = Math.abs(swipeAccY);
+  if (aX < SWIPE_THRESHOLD && aY < SWIPE_THRESHOLD) return;
+
+  const dir = aX >= aY
+    ? (swipeAccX > 0 ? 'right' : 'left')
+    : (swipeAccY > 0 ? 'down'  : 'up');
+
+  navTo(dir);
+  swipeLocked = true;
+  swipeAccX = swipeAccY = 0;
+  setTimeout(() => {
+    swipeLocked = false;
+    swipeAccX = swipeAccY = 0;
+  }, 620); // matches 0.55s transition + small buffer
+}, { passive: false });
+
 // ════════════════════════════════════════════
 //  MINIMAP — 2-D panning dot grid
 //  Card 290 px · content 258 px

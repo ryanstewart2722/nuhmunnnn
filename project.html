@@ -110,6 +110,7 @@ body {
   transition:max-height 0.55s cubic-bezier(0.77,0,0.175,1);
 }
 #glass-card.open { cursor:default; }
+#glass-card.open #card-header { cursor:pointer; }
 
 /* Inner scroll wrapper — scrolls content when card is taller than available space */
 #card-scroll {
@@ -237,14 +238,59 @@ body {
   }
   #mobile-project::-webkit-scrollbar { display: none; }
 
-  /* ─ Mobile info card ─ */
-  #mp-card { padding: 0 10px 24px; }
+  /* ─ Sticky info widget ─ */
+  #mp-widget {
+    position: sticky;
+    top: 10px;
+    z-index: 50;
+    margin: 10px 10px 0;
+    background: rgba(0,0,0,0.05);
+    backdrop-filter: blur(10px) saturate(140%);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
+    border: 0.5px solid rgba(0,0,0,0.1);
+    overflow: hidden;
+    cursor: pointer;
+    max-height: 40px;
+    transition: max-height 0.55s cubic-bezier(0.77,0,0.175,1);
+  }
+  #mp-widget.open {
+    max-height: 55vh;
+    cursor: default;
+  }
+  #mp-widget.open #mp-widget-header { cursor: pointer; }
+
+  #mp-widget-header {
+    padding: 10px 10px 8px;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #mp-widget-scroll {
+    overflow-y: auto;
+    max-height: calc(55vh - 40px);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 0 10px 10px;
+  }
+  #mp-widget-scroll::-webkit-scrollbar { display: none; }
+
+  /* Override JS-absolute positions inside the cloned card body */
+  #mp-widget-scroll .mp-card-desc { width: auto !important; margin-top: 20px; }
+  #mp-widget-scroll .card-table { position: static; }
+  #mp-widget-scroll .card-table .col-b { position: static; margin-top: 4px; }
+  #mp-widget-scroll .card-also-img {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 200/239;
+    background-size: calc(100% + 4px) calc(100% + 4px) !important;
+  }
+  #mp-widget-scroll .card-also-meta { gap: 16px; flex-wrap: wrap; }
 
   .mp-header {
     display: flex;
-    gap: 14px;
-    align-items: baseline;
-    padding: 5px 0 0;
+    gap: 10px;
+    align-items: center;
+    padding: 2px 0 0;
     font-family: 'ABCDiatype', Arial, sans-serif;
     font-size: 10px;
     color: #1a1a1a;
@@ -253,19 +299,20 @@ body {
   .mp-h-year,
   .mp-h-client { flex: 0 0 auto; }
 
-  /* Override JS-absolute positions inside the cloned card body */
-  #mp-card #card-desc { width: auto !important; margin-top: 20px; }
-  #mp-card .card-table { position: static; }
-  #mp-card .card-table .col-b { position: static; margin-top: 4px; }
-  #mp-card .card-also-img {
-    width: 100% !important;
-    height: auto !important;
-    aspect-ratio: 200/239;
-    background-size: calc(100% + 4px) calc(100% + 4px) !important;
+  /* Toggle sits inline in flex row — override absolute from desktop .h-toggle */
+  #mp-toggle {
+    position: static !important;
+    background: none;
+    flex-shrink: 0;
   }
-  #mp-card .card-also-meta { gap: 16px; flex-wrap: wrap; }
 
-  /* ─ Mobile project images ─ */
+  /* ─ Images section — 10px padding gives gap to white box edges ─ */
+  #mp-images {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
   .mp-img {
     width: 100%;
     overflow: hidden;
@@ -279,7 +326,7 @@ body {
     font-family: 'ABCDiatype', Arial, sans-serif;
     font-size: 10px;
     color: #1a1a1a;
-    padding: 4px 10px 16px;
+    padding: 4px 0 0;
   }
 
   /* ─ Next project ─ */
@@ -288,14 +335,14 @@ body {
     font-family: 'ABCDiatype', Arial, sans-serif;
     font-size: 15px;
     color: #1a1a1a;
-    padding: 24px 10px 8px;
+    padding: 14px 10px 8px;
   }
   .mp-next-card {
-    width: 100%;
+    width: calc(100% - 20px);
+    margin: 0 10px 20px;
     aspect-ratio: 1418/306;
     overflow: hidden;
     position: relative;
-    margin-bottom: 32px;
   }
   .mp-next-bg {
     position: absolute; inset: 0;
@@ -754,7 +801,13 @@ card.addEventListener('click', () => {
   if (!isOpen) toggleCard();
 });
 
-// Toggle button always toggles (stopPropagation prevents double-fire)
+// Header row closes when open (stopPropagation prevents double-fire with card root)
+const cardHeader = document.getElementById('card-header');
+cardHeader.addEventListener('click', e => {
+  if (isOpen) { e.stopPropagation(); toggleCard(); }
+});
+
+// Toggle button always toggles
 toggle.addEventListener('click', e => {
   e.stopPropagation();
   toggleCard();
@@ -807,46 +860,77 @@ function buildMobileProject() {
     return wrap;
   }
 
-  // ── Info card ──────────────────────────────────────
-  const mpCard = document.createElement('div');
-  mpCard.id = 'mp-card';
+  // ── Sticky info widget ─────────────────────────────
+  const mpWidget = document.createElement('div');
+  mpWidget.id = 'mp-widget';
 
-  // Rule
-  const rule = document.createElement('div');
-  rule.className = 'card-rule';
-  mpCard.appendChild(rule);
+  // Header row — always visible, click when open → closes
+  const mpWidgetHeader = document.createElement('div');
+  mpWidgetHeader.id = 'mp-widget-header';
+  mpWidgetHeader.innerHTML =
+    '<div class="card-rule"></div>' +
+    '<div class="mp-header">' +
+      '<span class="mp-h-name">Metal &amp; Silicon Spatula</span>' +
+      '<span class="mp-h-year">2023</span>' +
+      '<span class="mp-h-client">Made In</span>' +
+      '<button class="h-toggle rot-x closed" id="mp-toggle">&#215;</button>' +
+    '</div>';
+  mpWidget.appendChild(mpWidgetHeader);
 
-  // Header (fresh — desktop version uses JS absolute positioning)
-  const hdr = document.createElement('div');
-  hdr.className = 'mp-header';
-  hdr.innerHTML = '<span class="mp-h-name">Metal &amp; Silicon Spatula</span>' +
-    '<span class="mp-h-year">2023</span>' +
-    '<span class="mp-h-client">Made In</span>';
-  mpCard.appendChild(hdr);
+  // Scrollable body — hidden until open
+  const mpWidgetScroll = document.createElement('div');
+  mpWidgetScroll.id = 'mp-widget-scroll';
 
   // Clone card body (desc + Credits + Awards + You Might Also Like)
-  // Strip all IDs (avoids duplicates) and inline widths/heights
+  // Add a stable class to card-desc before stripping IDs so CSS can target it
   const bodyClone = document.getElementById('card-body').cloneNode(true);
+  const descEl = bodyClone.querySelector('#card-desc');
+  if (descEl) descEl.classList.add('mp-card-desc');
   bodyClone.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
   bodyClone.removeAttribute('id');
   bodyClone.querySelectorAll('[style]').forEach(n => {
     n.style.removeProperty('width');
     n.style.removeProperty('height');
   });
-  mpCard.appendChild(bodyClone);
+  mpWidgetScroll.appendChild(bodyClone);
+  mpWidget.appendChild(mpWidgetScroll);
+  mp.appendChild(mpWidget);
 
-  mp.appendChild(mpCard);
+  // ── Toggle logic (mirrors desktop glass card) ──────
+  let mpOpen = false;
+  const mpToggleBtn = mpWidget.querySelector('#mp-toggle');
 
-  // ── Stacked project images ─────────────────────────
-  mp.appendChild(makeImg('./images/product-hero.jpg', '709/906', 'Lorem Ipsum Dolor Sit Amet'));
-  mp.appendChild(makeImg(null, '709/906', 'Campaign Imagery 2024'));
-  mp.appendChild(makeImg(null, '709/906', 'Campaign Imagery 2024'));
-  mp.appendChild(makeImg(null, '709/906', 'Campaign Imagery 2024'));
-  mp.appendChild(makeImg(null, '709/906', 'Campaign Imagery 2024'));
-  mp.appendChild(makeImg(null, '709/906', 'Campaign Imagery 2024'));
-  mp.appendChild(makeImg(null, '527/673', 'Campaign Imagery 2024'));
-  mp.appendChild(makeImg(null, '527/673', 'Campaign Imagery 2024'));
-  mp.appendChild(makeImg(null, '1418/906', 'Campaign Imagery 2024'));
+  function toggleMpWidget() {
+    mpOpen = !mpOpen;
+    mpWidget.classList.toggle('open', mpOpen);
+    if (mpToggleBtn) mpToggleBtn.classList.toggle('closed', !mpOpen);
+    if (!mpOpen) mpWidgetScroll.scrollTop = 0;
+  }
+
+  // Click anywhere on widget when closed → open
+  mpWidget.addEventListener('click', () => { if (!mpOpen) toggleMpWidget(); });
+  // Click header when open → close
+  mpWidgetHeader.addEventListener('click', e => {
+    if (mpOpen) { e.stopPropagation(); toggleMpWidget(); }
+  });
+  // Toggle button always toggles
+  if (mpToggleBtn) {
+    mpToggleBtn.addEventListener('click', e => { e.stopPropagation(); toggleMpWidget(); });
+  }
+
+  // ── Project images — 10px padded container ─────────
+  const mpImages = document.createElement('div');
+  mpImages.id = 'mp-images';
+  mpImages.appendChild(makeImg('./images/product-hero.jpg', '709/906', 'Lorem Ipsum Dolor Sit Amet'));
+  mpImages.appendChild(makeImg(null, '709/906', 'Campaign Imagery 2024'));
+  mpImages.appendChild(makeImg(null, '709/906', 'Campaign Imagery 2024'));
+  mpImages.appendChild(makeImg(null, '709/906', 'Campaign Imagery 2024'));
+  mpImages.appendChild(makeImg(null, '709/906', 'Campaign Imagery 2024'));
+  mpImages.appendChild(makeImg(null, '709/906', 'Campaign Imagery 2024'));
+  mpImages.appendChild(makeImg(null, '527/673', 'Campaign Imagery 2024'));
+  mpImages.appendChild(makeImg(null, '527/673', 'Campaign Imagery 2024'));
+  mpImages.appendChild(makeImg(null, '1418/906', 'Campaign Imagery 2024'));
+  mp.appendChild(mpImages);
 
   // ── Next project ───────────────────────────────────
   const nextLabel = document.createElement('span');
