@@ -198,15 +198,124 @@ body {
 .card-also-meta { display:flex; gap:74px; font-size:10px; margin-bottom:5px; }
 .card-also-link { font-size:10px; color:rgba(0,0,0,0.45); }
 
+/* Hidden by default — mobile media query turns it on */
+#mobile-project { display: none; }
+
 /* ── Mobile ── */
 @media (max-width:768px) {
-  html, body { overflow-y:auto; overflow-x:hidden; height:auto; }
-  body { padding:28px 15px; }
-  #nav, #footer, #bl, #br { position:fixed; }
-  #clip, #glass-card { display:none !important; }
-  #mobile-project { display:block; background:#fff; padding:0 10px; }
+  html {
+    height: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  html::-webkit-scrollbar { display: none; }
+  body {
+    position: relative;
+    top: auto; left: auto; right: auto; bottom: auto;
+    width: 100%; height: auto;
+    overflow: visible;
+    cursor: auto;
+    background: #D9D9D9;
+    padding: 28px 0;
+  }
+  #nav    { position: fixed; top: 0; left: 0; right: 0; z-index: 200; }
+  #footer { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; }
+  #bl, #br { display: none; }
+  #clip { display: none !important; }
+
+  #mobile-project {
+    display: block;
+    background: #fff;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    margin: 0 15px;
+  }
+  #mobile-project::-webkit-scrollbar { display: none; }
+
+  /* ─ Mobile info card ─ */
+  #mp-card { padding: 0 10px 24px; }
+
+  .mp-header {
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+    padding: 5px 0 0;
+    font-family: 'ABCDiatype', Arial, sans-serif;
+    font-size: 10px;
+    color: #1a1a1a;
+  }
+  .mp-h-name  { flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mp-h-year,
+  .mp-h-client { flex: 0 0 auto; }
+
+  /* Override JS-absolute positions inside the cloned card body */
+  #mp-card #card-desc { width: auto !important; margin-top: 20px; }
+  #mp-card .card-table { position: static; }
+  #mp-card .card-table .col-b { position: static; margin-top: 4px; }
+  #mp-card .card-also-img {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 200/239;
+    background-size: calc(100% + 4px) calc(100% + 4px) !important;
+  }
+  #mp-card .card-also-meta { gap: 16px; flex-wrap: wrap; }
+
+  /* ─ Mobile project images ─ */
+  .mp-img {
+    width: 100%;
+    overflow: hidden;
+    background-color: #e8e8e8;
+    background-size: calc(100% + 4px) calc(100% + 4px);
+    background-position: center;
+    background-repeat: no-repeat;
+    display: block;
+  }
+  .mp-img-cap {
+    font-family: 'ABCDiatype', Arial, sans-serif;
+    font-size: 10px;
+    color: #1a1a1a;
+    padding: 4px 10px 16px;
+  }
+
+  /* ─ Next project ─ */
+  .mp-next-label {
+    display: block;
+    font-family: 'ABCDiatype', Arial, sans-serif;
+    font-size: 15px;
+    color: #1a1a1a;
+    padding: 24px 10px 8px;
+  }
+  .mp-next-card {
+    width: 100%;
+    aspect-ratio: 1418/306;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 32px;
+  }
+  .mp-next-bg {
+    position: absolute; inset: 0;
+    background-color: #1a1a1a;
+    background-size: calc(100% + 4px) calc(100% + 4px);
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  .mp-next-title {
+    position: absolute; left: 10px; top: 10px; z-index: 2;
+    font-family: 'ABCDiatype', Arial, sans-serif;
+    font-size: 10px; color: #fff; white-space: nowrap;
+  }
+  .mp-next-meta {
+    position: absolute; right: 10px; top: 10px; z-index: 2;
+    font-family: 'ABCDiatype', Arial, sans-serif;
+    font-size: 10px; color: #fff;
+    display: flex; gap: 10px;
+  }
 }
-#mobile-project { display:none; }
 </style>
 </head>
 <body>
@@ -667,14 +776,107 @@ function randomiseSlots() {
 }
 
 // ════════════════════════════════════════════════════════
+//  MOBILE PROJECT BUILD
+// ════════════════════════════════════════════════════════
+function buildMobileProject() {
+  const mp = document.getElementById('mobile-project');
+  if (!mp) return;
+  mp.innerHTML = '';
+
+  // Helper — makes a full-width image block with caption
+  function makeImg(src, ratio, caption) {
+    const wrap = document.createElement('div');
+    const img  = document.createElement('div');
+    img.className = 'mp-img';
+    img.style.aspectRatio = ratio;
+    if (src) {
+      img.style.backgroundImage = `url('${src}')`;
+    } else {
+      const h = Math.floor(Math.random() * 360);
+      const s = Math.floor(20 + Math.random() * 30);
+      const l = Math.floor(72 + Math.random() * 16);
+      img.style.backgroundColor = `hsl(${h},${s}%,${l}%)`;
+    }
+    wrap.appendChild(img);
+    if (caption) {
+      const cap = document.createElement('p');
+      cap.className = 'mp-img-cap';
+      cap.textContent = caption;
+      wrap.appendChild(cap);
+    }
+    return wrap;
+  }
+
+  // ── Info card ──────────────────────────────────────
+  const mpCard = document.createElement('div');
+  mpCard.id = 'mp-card';
+
+  // Rule
+  const rule = document.createElement('div');
+  rule.className = 'card-rule';
+  mpCard.appendChild(rule);
+
+  // Header (fresh — desktop version uses JS absolute positioning)
+  const hdr = document.createElement('div');
+  hdr.className = 'mp-header';
+  hdr.innerHTML = '<span class="mp-h-name">Metal &amp; Silicon Spatula</span>' +
+    '<span class="mp-h-year">2023</span>' +
+    '<span class="mp-h-client">Made In</span>';
+  mpCard.appendChild(hdr);
+
+  // Clone card body (desc + Credits + Awards + You Might Also Like)
+  // Strip all IDs (avoids duplicates) and inline widths/heights
+  const bodyClone = document.getElementById('card-body').cloneNode(true);
+  bodyClone.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+  bodyClone.removeAttribute('id');
+  bodyClone.querySelectorAll('[style]').forEach(n => {
+    n.style.removeProperty('width');
+    n.style.removeProperty('height');
+  });
+  mpCard.appendChild(bodyClone);
+
+  mp.appendChild(mpCard);
+
+  // ── Stacked project images ─────────────────────────
+  mp.appendChild(makeImg('./images/product-hero.jpg', '709/906', 'Lorem Ipsum Dolor Sit Amet'));
+  mp.appendChild(makeImg(null, '709/906', 'Campaign Imagery 2024'));
+  mp.appendChild(makeImg(null, '709/906', 'Campaign Imagery 2024'));
+  mp.appendChild(makeImg(null, '709/906', 'Campaign Imagery 2024'));
+  mp.appendChild(makeImg(null, '709/906', 'Campaign Imagery 2024'));
+  mp.appendChild(makeImg(null, '709/906', 'Campaign Imagery 2024'));
+  mp.appendChild(makeImg(null, '527/673', 'Campaign Imagery 2024'));
+  mp.appendChild(makeImg(null, '527/673', 'Campaign Imagery 2024'));
+  mp.appendChild(makeImg(null, '1418/906', 'Campaign Imagery 2024'));
+
+  // ── Next project ───────────────────────────────────
+  const nextLabel = document.createElement('span');
+  nextLabel.className = 'mp-next-label';
+  nextLabel.textContent = 'Next Project';
+  mp.appendChild(nextLabel);
+
+  const nextCard = document.createElement('div');
+  nextCard.className = 'mp-next-card';
+  nextCard.innerHTML =
+    '<div class="mp-next-bg" style="background-image:url(\'./images/product-pax-wide.jpg\');"></div>' +
+    '<p class="mp-next-title">Pax Technologies Smoking Products</p>' +
+    '<div class="mp-next-meta"><span>2023</span><span>Pax Technologies</span></div>';
+  mp.appendChild(nextCard);
+}
+
+// ════════════════════════════════════════════════════════
 //  INIT
 // ════════════════════════════════════════════════════════
-window.addEventListener('resize', () => { layout(); });
+const isMobile = window.matchMedia('(max-width:768px)').matches;
 
-layout();           // set all positions
-randomiseSlots();   // colour the image placeholders
-tick();             // start RAF loop
-checkLazy();        // reveal anything already in view
+if (isMobile) {
+  buildMobileProject();
+} else {
+  window.addEventListener('resize', layout);
+  layout();           // set all positions
+  randomiseSlots();   // colour the image placeholders
+  tick();             // start RAF loop
+  checkLazy();        // reveal anything already in view
+}
 </script>
 
 </body>

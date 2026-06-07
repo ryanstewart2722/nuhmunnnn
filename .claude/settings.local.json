@@ -4,7 +4,8 @@
       "mcp__477d658f-104f-494a-ba02-e0afab421795__get_design_context",
       "Bash(open \"/Users/ryanstewart/Desktop/Claude Code Sites/naman-nanda/project.html\")",
       "mcp__Claude_in_Chrome__tabs_context_mcp",
-      "Bash(python3 -m http.server 8090)"
+      "Bash(python3 -m http.server 8090)",
+      "mcp__477d658f-104f-494a-ba02-e0afab421795__get_screenshot"
     ]
   }
 }
