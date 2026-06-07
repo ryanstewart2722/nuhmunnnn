@@ -141,16 +141,14 @@ body {
 /* ── Minimap ── */
 #minimap {
   position: absolute;
-  bottom: 10px;
-  left: 10px;
-  z-index: 200;
+  bottom: 38px;
+  left: 25px;
+  z-index: 300;
   cursor: auto;
-  width: 317px;
-  padding: 19px;
-  background: rgba(255,255,255,0.18);
-  backdrop-filter: blur(48px) saturate(220%) brightness(1.08);
-  -webkit-backdrop-filter: blur(48px) saturate(220%) brightness(1.08);
-  border: 0.5px solid rgba(255,255,255,0.4);
+  width: 290px;
+  padding: 16px;
+  background: rgba(0,0,0,0.05);
+  border: 0.5px solid rgba(0,0,0,0.1);
 }
 .mm-rule {
   height: 1px;
@@ -180,24 +178,36 @@ body {
   transition: opacity 0.15s ease;
 }
 .mm-close:hover { opacity: 0.45; }
-#mm-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 44.5px);
-  grid-template-rows: repeat(5, 15.2px);
-  column-gap: 14px;
-  row-gap: 8px;
+/* 2-D panning dot grid — perspective enables spherical drag tilt */
+#mm-window {
   margin-top: 9px;
+  height: 126px;
+  overflow: hidden;
+  position: relative;
+  cursor: grab;
+  perspective: 380px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#mm-window.dragging { cursor: grabbing; }
+#mm-inner {
+  position: absolute;
+  top: 0; left: 0;
+  width: 320px;  /* 5 × 8 + 4 × 70 = 320 px */
+  height: 200px; /* 5 × 8 + 4 × 40 = 200 px */
+  will-change: transform;
 }
 .mm-dot {
-  width: 44.5px;
-  height: 15.2px;
-  border-radius: 0;
-  background: rgba(0,0,0,0.1);
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 1.5px;
+  background: rgba(0,0,0,0.14);
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.12s ease;
 }
-.mm-dot:hover { background: rgba(0,0,0,0.25); }
-.mm-dot.active { background: rgba(0,0,0,0.25); }
+.mm-dot:hover  { background: rgba(0,0,0,0.28); }
+.mm-dot.active { background: rgba(0,0,0,0.58); }
 
 /* ── Mobile: simple single-column scroll ── */
 #mobile-layout { display: none; }
@@ -222,7 +232,7 @@ body {
   #br     { display: none; }
 
   #nav a, #nav-center { cursor: auto; }
-  #clip, #cursor-wrap, #cursor-dot { display: none !important; }
+  #clip, #cursor-wrap, #cursor-dot, #minimap { display: none !important; }
 
   #mobile-layout {
     display: block;
@@ -276,13 +286,15 @@ body {
 </nav>
 <div id="clip">
   <div id="canvas"></div>
-  <div id="minimap">
-    <div class="mm-rule"></div>
-    <div class="mm-header">
-      <span class="mm-title">Minimap</span>
-      <span class="mm-close" id="mm-close">+</span>
-    </div>
-    <div id="mm-grid"></div>
+</div>
+<div id="minimap">
+  <div class="mm-rule"></div>
+  <div class="mm-header">
+    <span class="mm-title">Minimap</span>
+    <span class="mm-close" id="mm-close">+</span>
+  </div>
+  <div id="mm-window">
+    <div id="mm-inner"></div>
   </div>
 </div>
 <div id="mobile-layout"></div>
@@ -478,7 +490,12 @@ function getZone(mx, my){
 document.addEventListener('mousemove', e => {
   const r = clip.getBoundingClientRect();
   const ins = e.clientX>=r.left && e.clientX<=r.right && e.clientY>=r.top && e.clientY<=r.bottom;
-  if (!ins) { cursorWrap.style.display='none'; cursorDot.style.display='none'; return; }
+  if (!ins) {
+    cursorWrap.style.display='none'; cursorDot.style.display='none';
+    // Restore cursor when hovering minimap (lives outside #clip)
+    if (e.target.closest && e.target.closest('#minimap')) document.body.style.cursor='auto';
+    return;
+  }
 
   // Minimap handles its own cursor — don't show directional cursor over it
   if (e.target.closest && e.target.closest('#minimap')) {
@@ -542,60 +559,153 @@ document.addEventListener('keydown',e=>{
 });
 
 // ════════════════════════════════════════════
-//  MINIMAP
+//  MINIMAP — 2-D panning dot grid
+//  Card 290 px · content 258 px
+//  Dot 10 px · col period 78 px · row period 48 px
+//  Window 258×92 px · inner 322×202 px
 // ════════════════════════════════════════════
-function buildMinimap() {
-  const grid = document.getElementById('mm-grid');
-  if (!grid) return;
-  grid.innerHTML = '';
+const MM_DOT   = 8;
+const MM_COL_P = 78;    // 8 + 70 gap
+const MM_ROW_P = 48;    // 8 + 40 gap
+const MM_WIN_W = 258;
+const MM_WIN_H = 126;
+const MM_INN_W = COLS * MM_DOT + (COLS-1) * (MM_COL_P - MM_DOT); // 320 px
+const MM_INN_H = ROWS * MM_DOT + (ROWS-1) * (MM_ROW_P - MM_DOT); // 200 px
 
+// Rendered position (what's actually on screen)
+let mmX = 0, mmY = 0;
+// Spherical tilt (degrees)
+let mmTiltX = 0, mmTiltY = 0;
+// Target position (where we're animating toward)
+let mmTX = 0, mmTY = 0;
+// RAF handle + drag state
+let mmRAF = null, mmMoved = false;
+
+// ── apply combined transform ─────────────────
+function mmApply() {
+  const inner = document.getElementById('mm-inner');
+  if (inner) inner.style.transform =
+    `translate(${mmX.toFixed(1)}px,${mmY.toFixed(1)}px) ` +
+    `rotateX(${mmTiltX.toFixed(2)}deg) rotateY(${mmTiltY.toFixed(2)}deg)`;
+}
+
+// ── lerp animation loop ──────────────────────
+function mmStep() {
+  const LP = 0.068, LT = 0.13;   // slow smooth pos, quicker tilt spring
+  mmX      += (mmTX - mmX)      * LP;
+  mmY      += (mmTY - mmY)      * LP;
+  mmTiltX  += (0 - mmTiltX)     * LT;
+  mmTiltY  += (0 - mmTiltY)     * LT;
+  mmApply();
+  const settled = Math.abs(mmTX - mmX) < 0.06 && Math.abs(mmTY - mmY) < 0.06
+               && Math.abs(mmTiltX) < 0.02    && Math.abs(mmTiltY) < 0.02;
+  if (settled) {
+    mmX = mmTX; mmY = mmTY; mmTiltX = 0; mmTiltY = 0;
+    mmApply(); mmRAF = null;
+  } else {
+    mmRAF = requestAnimationFrame(mmStep);
+  }
+}
+
+function mmGoto(tx, ty) {
+  mmTX = tx; mmTY = ty;
+  if (!mmRAF) mmRAF = requestAnimationFrame(mmStep);
+}
+
+// ── build (called once) ──────────────────────
+function buildMinimap() {
+  const win   = document.getElementById('mm-window');
+  const inner = document.getElementById('mm-inner');
+  if (!win || !inner) return;
+
+  inner.innerHTML = '';
   for (let row = 0; row < ROWS; row++) {
     for (let col = 0; col < COLS; col++) {
       const dot = document.createElement('div');
-      dot.className = 'mm-dot';
+      dot.className   = 'mm-dot';
       dot.dataset.row = row;
       dot.dataset.col = col;
-
-      const idx = row * COLS + col;
-      const p = projects[idx % projects.length];
-      dot.title = p.name; // tooltip on hover
-
-      grid.appendChild(dot);
+      dot.style.left  = col * MM_COL_P + 'px';
+      dot.style.top   = row * MM_ROW_P + 'px';
+      inner.appendChild(dot);
     }
   }
 
-  // Single delegated click listener on the grid
-  grid.addEventListener('click', e => {
+  // ── click dot → navigate ──
+  inner.addEventListener('click', e => {
+    if (mmMoved) return;
     const dot = e.target.closest('.mm-dot');
     if (!dot) return;
     e.stopPropagation();
-    focusRow = parseInt(dot.dataset.row);
-    focusCol = parseInt(dot.dataset.col);
-    applyPos(true);
-    updateLink();
-    updateMinimap();
+    focusRow = +dot.dataset.row; focusCol = +dot.dataset.col;
+    applyPos(true); updateLink(); updateMinimap();
   });
 
-  // Close / open toggle — "+" at 45° = ×, at 0° = +
+  // ── 2-D drag with spherical tilt ──
+  win.addEventListener('mousedown', e => {
+    if (e.target.closest('#mm-close')) return;
+    if (mmRAF) { cancelAnimationFrame(mmRAF); mmRAF = null; }
+    const sx0 = e.clientX, sy0 = e.clientY;
+    const x0  = mmX,       y0  = mmY;
+    let prevCX = e.clientX, prevCY = e.clientY;
+    mmMoved = false;
+    win.classList.add('dragging');
+
+    const onMove = ev => {
+      const dx = ev.clientX - sx0, dy = ev.clientY - sy0;
+      if (Math.abs(dx) + Math.abs(dy) > 2) mmMoved = true;
+      // Velocity for tilt
+      const vx = ev.clientX - prevCX, vy = ev.clientY - prevCY;
+      prevCX = ev.clientX; prevCY = ev.clientY;
+      // Position (free — blank space allowed)
+      mmX = mmTX = x0 + dx;
+      mmY = mmTY = y0 + dy;
+      // Spherical tilt — max ±8°, snappier response
+      const MT = 8;
+      mmTiltY = Math.max(-MT, Math.min(MT, mmTiltY * 0.65 + vx * 0.35));
+      mmTiltX = Math.max(-MT, Math.min(MT, mmTiltX * 0.65 + (-vy) * 0.35));
+      mmApply();
+    };
+
+    const onUp = () => {
+      win.classList.remove('dragging');
+      setTimeout(() => { mmMoved = false; }, 0);
+      // Spring tilt back to flat
+      if (!mmRAF && (Math.abs(mmTiltX) > 0.05 || Math.abs(mmTiltY) > 0.05))
+        mmRAF = requestAnimationFrame(mmStep);
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup',   onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+    e.preventDefault();
+  });
+
+  // ── close collapses window, keeps header ──
   const closeBtn = document.getElementById('mm-close');
   if (closeBtn) {
     closeBtn.addEventListener('click', e => {
       e.stopPropagation();
-      const hidden = grid.style.display === 'none';
-      grid.style.display = hidden ? 'grid' : 'none';
+      const hidden = win.style.display === 'none';
+      win.style.display = hidden ? 'block' : 'none';
       closeBtn.style.transform = hidden ? 'rotate(45deg)' : 'rotate(0deg)';
     });
   }
 
-  updateMinimap();
+  updateMinimap(false); // instant snap on first build
 }
 
-function updateMinimap() {
-  document.querySelectorAll('.mm-dot').forEach(dot => {
-    const r = parseInt(dot.dataset.row);
-    const c = parseInt(dot.dataset.col);
-    dot.classList.toggle('active', r === focusRow && c === focusCol);
-  });
+// ── update: smooth centre on active dot ──────
+function updateMinimap(animate = true) {
+  document.querySelectorAll('.mm-dot').forEach(d =>
+    d.classList.toggle('active', +d.dataset.row === focusRow && +d.dataset.col === focusCol));
+  const tx = -(focusCol * MM_COL_P + MM_DOT / 2 - MM_WIN_W / 2);
+  const ty = -(focusRow * MM_ROW_P + MM_DOT / 2 - MM_WIN_H / 2);
+  if (animate) {
+    mmGoto(tx, ty);
+  } else {
+    mmX = mmTX = tx; mmY = mmTY = ty; mmApply();
+  }
 }
 
 function buildMobileLayout() {
