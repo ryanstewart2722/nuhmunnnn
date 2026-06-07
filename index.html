@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Naman Nanda</title>
+<style>
+@font-face {
+  font-family: 'ABCDiatype';
+  src: url('./fonts/ABCDiatype-Regular.otf') format('opentype');
+  font-weight: normal; font-style: normal;
+}
+*, *::before, *::after {
+  margin: 0; padding: 0; box-sizing: border-box;
+  border: 0 none; outline: 0 none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+  No position:fixed anywhere — fixed elements force GPU compositing layers
+  which produce tile-seam artifacts on Retina displays in Safari.
+  Everything is position:absolute within a body that fills the viewport.
+*/
+html {
+  width: 100%; height: 100%;
+  background: #D9D9D9;
+  overflow: hidden;
+}
+body {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #D9D9D9;
+  overflow: hidden;
+  cursor: none;
+  font-family: 'ABCDiatype', Arial, sans-serif;
+}
+
+/* Frame elements — absolute, not fixed */
+#bl { position: absolute; top: 0; left: 0; bottom: 0; width: 15px; background: #D9D9D9; z-index: 100; }
+#br { position: absolute; top: 0; right: 0; bottom: 0; width: 15px; background: #D9D9D9; z-index: 100; }
+#nav {
+  position: absolute; top: 0; left: 0; right: 0; height: 28px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 15px; background: #D9D9D9; z-index: 100; cursor: auto;
+}
+#nav a { font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a; text-decoration: none; }
+#nav a:hover { opacity: 0.5; }
+#nav-center {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a;
+}
+#footer {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  background: #D9D9D9; z-index: 100; cursor: auto;
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a;
+}
+
+/* Scroll area — absolute, clips the canvas */
+#clip {
+  position: absolute;
+  top: 28px; bottom: 28px; left: 15px; right: 15px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+/* Canvas — absolute within clip, moved by left/top (no transform, no GPU layer) */
+#canvas {
+  position: absolute;
+  background: #ffffff;
+  transition: left 0.55s cubic-bezier(0.77,0,0.175,1),
+              top  0.55s cubic-bezier(0.77,0,0.175,1);
+}
+#canvas.instant { transition: none; }
+
+/*
+  Cards: transparent background. They are absolutely positioned blocks.
+  A transparent card has NO element boundary visible — the white canvas
+  background shows through uniformly. Zero compositing artifacts.
+*/
+.card {
+  position: absolute;
+  background: transparent;
+}
+
+/* Link overlay */
+.card-link {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 10; display: none; cursor: none;
+}
+.card-link.active { display: block; cursor: pointer; }
+
+/*
+  Image: CSS background-image.
+  background-size is expanded by 4px (2px per side) so that any
+  sub-pixel interpolation artifacts at the scaled image edges are
+  pushed outside the element bounds and clipped by overflow:hidden.
+  overflow:hidden here is safe — no absolutely-positioned or moving
+  children inside, so no GPU compositing layer is created.
+*/
+.card-img {
+  position: absolute;
+  top: 0; left: 0;
+  overflow: hidden;
+  background-size: calc(100% + 4px) calc(100% + 4px);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: #ffffff;
+}
+
+/* 1px black rule — positioned absolutely below image */
+.card-rule {
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  background: #000;
+}
+
+/* Meta text */
+.card-meta {
+  position: absolute;
+  left: 0; right: 0;
+  display: flex; align-items: baseline;
+  font-family: 'ABCDiatype', Arial, sans-serif;
+  font-size: 10px; color: #1a1a1a;
+  line-height: 1; white-space: nowrap;
+  padding-top: 5px;
+  background: transparent;
+}
+.card-meta .m-name   { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
+.card-meta .m-year   { flex: 0 0 auto; margin-right: 14px; }
+.card-meta .m-client { flex: 0 0 auto; }
+
+/* Cursors */
+#cursor-wrap {
+  position: absolute; pointer-events: none; z-index: 999;
+  transform: translate(-50%,-50%); display: none;
+  width: 28px; height: 28px;
+}
+#cursor-wrap svg { width: 28px; height: 28px; display: block; }
+/* ── Mobile: simple single-column scroll ── */
+#mobile-layout { display: none; }
+
+@media (max-width: 768px) {
+  html, body {
+    overflow-y: auto; overflow-x: hidden;
+    height: auto; cursor: auto;
+    background: #D9D9D9;
+  }
+  body {
+    /* Inset for the fixed frame: 28px top/bottom, 15px sides */
+    padding-top: 28px;
+    padding-bottom: 28px;
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  /* Frame elements stay fixed on mobile */
+  #nav    { position: fixed; top: 0; left: 0; right: 0; z-index: 200; }
+  #footer { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; }
+  #bl     { position: fixed; top: 0; left: 0; bottom: 0; z-index: 200; }
+  #br     { position: fixed; top: 0; right: 0; bottom: 0; z-index: 200; }
+
+  #nav a, #nav-center { cursor: auto; }
+
+  /* Hide desktop-only elements */
+  #clip, #cursor-wrap, #cursor-dot { display: none !important; }
+
+  /* Mobile content fills between frame edges */
+  #mobile-layout {
+    display: block;
+    background: #ffffff;
+    min-height: calc(100vh - 56px);
+    padding: 0 10px;
+  }
+
+  .m-card { width: 100%; display: block; background: #ffffff; }
+
+  .m-card-img {
+    width: 100%;
+    aspect-ratio: 1043 / 1399;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: block;
+  }
+
+  .m-card-rule { width: 100%; height: 1px; background: #000; display: block; }
+
+  .m-card-meta {
+    display: flex; align-items: baseline;
+    font-family: 'ABCDiatype', Arial, sans-serif;
+    font-size: 10px; color: #1a1a1a;
+    line-height: 1; white-space: nowrap;
+    padding: 5px 0 32px;
+  }
+  .m-card-meta .m-name   { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
+  .m-card-meta .m-year   { flex: 0 0 auto; margin-right: 14px; }
+  .m-card-meta .m-client { flex: 0 0 auto; }
+}
+
+</style>
+</head>
+<body>
+<div id="bl"></div>
+<div id="br"></div>
+<nav id="nav">
+  <a href="#">Work</a>
+  <span id="nav-center">Naman Nanda</span>
+  <a href="#">About</a>
+</nav>
+<div id="clip"><div id="canvas"></div></div>
+<div id="mobile-layout"></div>
+<div id="footer">© 2026 All Rights Reserved</div>
+<div id="cursor-wrap">
+  <svg id="cursor-svg" width="28" height="28" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <mask id="cmask" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="30" height="30">
+      <rect width="30" height="30" fill="#D9D9D9"/>
+    </mask>
+    <g mask="url(#cmask)">
+      <path d="M9.21625 15.9375L16.3366 23.0578L15 24.375L5.625 15L15 5.625L16.3366 6.94219L9.21625 14.0625H24.375V15.9375H9.21625Z" fill="#1C1B1F"/>
+    </g>
+  </svg>
+</div>
+<div id="cursor-dot"></div>
+
+<script>
+const COLS=5, ROWS=5, GAP=50, IMG_RATIO=1.341, META_H=20;
+const projects=[
+  {name:'Metal & Strainer',year:'2023',client:'Made In',img:'./images/product-1.png'},
+  {name:'Metal & Strainer II',year:'2023',client:'Made In',img:'./images/product-2.png'},
+  {name:'Metal & Silicon Spatula',year:'2023',client:'Pax Technologies',img:'./images/product-3.png'},
+  {name:'Metal Whisk',year:'2023',client:'Made In',img:'./images/product-4.png'},
+  {name:'Pax Accessories',year:'2023',client:'Pax Technologies',img:'./images/product-5.png'},
+  {name:'Flausy Showerhead',year:'2023',client:'Canopy',img:'./images/product-6.png'},
+  {name:'Metal & Silicon Tongs',year:'2023',client:'Made In',img:'./images/product-7.png'},
+  {name:'Portable Speaker',year:'2022',client:'Pax Technologies',img:'./images/product-8.png'},
+  {name:'Canopy Showerhead',year:'2022',client:'Canopy',img:'./images/product-1.png'},
+  {name:'Metal Ladle',year:'2022',client:'Made In',img:'./images/product-2.png'},
+  {name:'Saintly Speaker',year:'2022',client:'Saintly',img:'./images/product-3.png'},
+  {name:'Pax Accessories II',year:'2022',client:'Pax Technologies',img:'./images/product-4.png'},
+  {name:'Metal Spatula',year:'2021',client:'Made In',img:'./images/product-5.png'},
+  {name:'Kitchen Tongs',year:'2021',client:'Made In',img:'./images/product-6.png'},
+  {name:'Hand Blender',year:'2021',client:'Canopy',img:'./images/product-7.png'},
+  {name:'Metal & Strainer III',year:'2023',client:'Made In',img:'./images/product-8.png'},
+  {name:'Metal Whisk II',year:'2023',client:'Made In',img:'./images/product-1.png'},
+  {name:'Silicon Spatula',year:'2023',client:'Pax Technologies',img:'./images/product-2.png'},
+  {name:'Pax Portable',year:'2022',client:'Pax Technologies',img:'./images/product-3.png'},
+  {name:'Canopy Handheld',year:'2022',client:'Canopy',img:'./images/product-4.png'},
+  {name:'Metal Ladle II',year:'2022',client:'Made In',img:'./images/product-5.png'},
+  {name:'Silicon Tongs',year:'2021',client:'Made In',img:'./images/product-6.png'},
+  {name:'Saintly II',year:'2021',client:'Saintly',img:'./images/product-7.png'},
+  {name:'Pax Slim',year:'2021',client:'Pax Technologies',img:'./images/product-8.png'},
+  {name:'Canopy Filter',year:'2021',client:'Canopy',img:'./images/product-1.png'}
+];
+// 8 directions: rotation for the SVG arrow (which points LEFT at 0°)
+// dr = row delta (-1=up, 0=none, 1=down), dc = col delta
+const DIRS = {
+  'left':       { rot: 0,   dr: 0,  dc: -1 },
+  'up-left':    { rot: 45,  dr: -1, dc: -1 },
+  'up':         { rot: 90,  dr: -1, dc: 0  },
+  'up-right':   { rot: 135, dr: -1, dc: 1  },
+  'right':      { rot: 180, dr: 0,  dc: 1  },
+  'down-right': { rot: 225, dr: 1,  dc: 1  },
+  'down':       { rot: 270, dr: 1,  dc: 0  },
+  'down-left':  { rot: 315, dr: 1,  dc: -1 },
+};
+
+const clip       = document.getElementById('clip');
+const canvas     = document.getElementById('canvas');
+const cursorWrap = document.getElementById('cursor-wrap');
+const cursorDot  = document.getElementById('cursor-dot');
+const cursorSvg  = document.getElementById('cursor-svg');
+
+let VW,VH,cardW,imgH,cardH;
+let focusCol=1, focusRow=2, hoverDir=null;
+
+function measure(){
+  VW = clip.clientWidth;
+  VH = clip.clientHeight;
+  cardW = Math.floor((VW - 60*2 - GAP*4) / 3);
+  imgH  = Math.round(cardW * IMG_RATIO);
+  cardH = imgH + 1 + META_H;
+}
+
+function buildGrid(){
+  canvas.innerHTML = '';
+  canvas.style.width  = (COLS*cardW + (COLS-1)*GAP) + 'px';
+  canvas.style.height = (ROWS*cardH + (ROWS-1)*GAP) + 'px';
+
+  for(let i=0; i<COLS*ROWS; i++){
+    const p   = projects[i % projects.length];
+    const col = i % COLS;
+    const row = Math.floor(i / COLS);
+    const L   = col*(cardW+GAP);
+    const T   = row*(cardH+GAP);
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.cssText = 'left:'+L+'px;top:'+T+'px;width:'+cardW+'px;height:'+cardH+'px;';
+
+    // Link overlay
+    const link = document.createElement('a');
+    link.className = 'card-link'; link.href='project.html'; link.id='cl'+i;
+    card.appendChild(link);
+
+    // Image via CSS background-image — no img element, no element boundary
+    const imgDiv = document.createElement('div');
+    imgDiv.className = 'card-img';
+    imgDiv.style.cssText = 'width:'+cardW+'px;height:'+imgH+'px;background-image:url('+JSON.stringify(p.img)+');';
+    card.appendChild(imgDiv);
+
+    // 1px rule below image
+    const rule = document.createElement('div');
+    rule.className = 'card-rule';
+    rule.style.top = imgH+'px';
+    card.appendChild(rule);
+
+    // Meta text below rule
+    const meta = document.createElement('div');
+    meta.className = 'card-meta';
+    meta.style.top = (imgH+1)+'px';
+    meta.style.height = META_H+'px';
+    meta.innerHTML = '<span class="m-name">'+p.name+'</span><span class="m-year">'+p.year+'</span><span class="m-client">'+p.client+'</span>';
+    card.appendChild(meta);
+
+    canvas.appendChild(card);
+  }
+  updateLink();
+}
+
+function updateLink(){
+  document.querySelectorAll('.card-link').forEach(l=>l.classList.remove('active'));
+  const l=document.getElementById('cl'+(focusRow*COLS+focusCol));
+  if(l)l.classList.add('active');
+}
+
+function getPos(){
+  const xC = focusCol*(cardW+GAP) + cardW/2;
+  const tx  = Math.round(VW/2 - xC);
+  const ty  = Math.round(VH/2 - (focusRow*(cardH+GAP) + imgH/2));
+  return{tx,ty};
+}
+
+function applyPos(animated){
+  const{tx,ty}=getPos();
+  canvas.classList.toggle('instant', !animated);
+  if(!animated) canvas.offsetHeight; // flush
+  canvas.style.left = tx+'px';
+  canvas.style.top  = ty+'px';
+}
+
+function navTo(dir){
+  if (!dir) return;
+  const {dr, dc} = DIRS[dir];
+  // Each axis moves independently — handles partial diagonal (one axis blocked)
+  if (dr < 0 && focusRow > 0)      focusRow--;
+  if (dr > 0 && focusRow < ROWS-1) focusRow++;
+  if (dc < 0 && focusCol > 0)      focusCol--;
+  if (dc > 0 && focusCol < COLS-1) focusCol++;
+  applyPos(true); updateLink();
+}
+
+// Returns 1=fully open, 0.5=diagonal partially blocked, 0=fully blocked
+function navOpacity(dir){
+  const {dr, dc} = DIRS[dir];
+  const rowOk = (dr === 0) || (dr < 0 ? focusRow > 0 : focusRow < ROWS-1);
+  const colOk = (dc === 0) || (dc < 0 ? focusCol > 0 : focusCol < COLS-1);
+  if (rowOk && colOk) return 1;
+  if (dr !== 0 && dc !== 0 && (rowOk || colOk)) return 0.5; // diagonal, one axis free
+  return 0; // fully blocked
+}
+
+// True if cursor is physically near the viewport edge for this direction
+function nearScreenEdge(mx, my, dir){
+  const r = clip.getBoundingClientRect();
+  const {dr, dc} = DIRS[dir];
+  const T = 0.12;
+  if (dr < 0 && (my - r.top)    < r.height * T) return true;
+  if (dr > 0 && (r.bottom - my) < r.height * T) return true;
+  if (dc < 0 && (mx - r.left)   < r.width  * T) return true;
+  if (dc > 0 && (r.right - mx)  < r.width  * T) return true;
+  return false;
+}
+
+function getZone(mx, my){
+  const r  = clip.getBoundingClientRect();
+  const dx = mx - (r.left + r.width  / 2);
+  const dy = my - (r.top  + r.height / 2);
+  if (Math.sqrt(dx*dx + dy*dy) < Math.min(r.width, r.height) * 0.18) return null;
+  const a = Math.atan2(dy, dx) * 180 / Math.PI;
+  // right/left = 30° zones, up/down = 80° zones, diagonals = 35° zones
+  if (a > -15  && a <= 15)   return 'right';
+  if (a > 15   && a <= 50)   return 'down-right';
+  if (a > 50   && a <= 130)  return 'down';
+  if (a > 130  && a <= 165)  return 'down-left';
+  if (a > 165  || a <= -165) return 'left';
+  if (a > -165 && a <= -130) return 'up-left';
+  if (a > -130 && a <= -50)  return 'up';
+  return 'up-right'; // -50 to -15
+}
+
+document.addEventListener('mousemove', e => {
+  const r = clip.getBoundingClientRect();
+  const ins = e.clientX>=r.left && e.clientX<=r.right && e.clientY>=r.top && e.clientY<=r.bottom;
+  if (!ins) { cursorWrap.style.display='none'; cursorDot.style.display='none'; return; }
+
+  const z   = getZone(e.clientX, e.clientY);
+  hoverDir  = z;
+
+  if (z === null) {
+    cursorWrap.style.display = 'none';
+    cursorDot.style.display = 'none';
+    document.body.style.cursor = 'pointer';
+    return;
+  }
+  document.body.style.cursor = 'none';
+
+  const op = navOpacity(z);
+
+  if (op === 0) {
+    // Fully blocked: only show greyed arrow if cursor is forced to that screen edge
+    if (nearScreenEdge(e.clientX, e.clientY, z)) {
+      cursorDot.style.display = 'none';
+      cursorWrap.style.left = e.clientX+'px'; cursorWrap.style.top = e.clientY+'px';
+      cursorSvg.style.transform = 'rotate('+DIRS[z].rot+'deg)';
+      cursorWrap.style.opacity = '0.15';
+      cursorWrap.style.display = 'block';
+    } else {
+      // Not at screen edge and can't go that way — show dot, no navigation
+      cursorWrap.style.display = 'none';
+      cursorDot.style.left = e.clientX+'px'; cursorDot.style.top = e.clientY+'px';
+      cursorDot.style.display = 'block';
+      hoverDir = null;
+    }
+    return;
+  }
+
+  // Navigable (fully or partially)
+  cursorDot.style.display = 'none';
+  cursorWrap.style.left = e.clientX+'px'; cursorWrap.style.top = e.clientY+'px';
+  cursorSvg.style.transform = 'rotate('+DIRS[z].rot+'deg)';
+  cursorWrap.style.opacity = op === 1 ? '1' : '0.5';
+  cursorWrap.style.display = 'block';
+});
+
+clip.addEventListener('click',()=>{
+  if(hoverDir===null){const l=document.getElementById('cl'+(focusRow*COLS+focusCol));if(l)window.location.href=l.href;}
+  else navTo(hoverDir);
+});
+
+document.addEventListener('mouseleave',()=>{cursorWrap.style.display='none';cursorDot.style.display='none';document.body.style.cursor='none';});
+document.addEventListener('keydown',e=>{
+  const m={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down'};
+  if(m[e.key]) navTo(m[e.key]);
+  if(e.key==='Enter'){const l=document.getElementById('cl'+(focusRow*COLS+focusCol));if(l)window.location.href=l.href;}
+});
+
+function buildMobileLayout() {
+  const container = document.getElementById('mobile-layout');
+  container.innerHTML = '';
+  projects.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'm-card';
+
+    const imgDiv = document.createElement('div');
+    imgDiv.className = 'm-card-img';
+    imgDiv.style.backgroundImage = 'url(' + JSON.stringify(p.img) + ')';
+
+    const rule = document.createElement('div');
+    rule.className = 'm-card-rule';
+
+    const meta = document.createElement('div');
+    meta.className = 'm-card-meta';
+    meta.innerHTML =
+      '<span class="m-name">'   + p.name   + '</span>' +
+      '<span class="m-year">'   + p.year   + '</span>' +
+      '<span class="m-client">' + p.client + '</span>';
+
+    card.appendChild(imgDiv);
+    card.appendChild(rule);
+    card.appendChild(meta);
+    container.appendChild(card);
+  });
+}
+
+function init(){
+  const isMobile = window.matchMedia('(max-width: 768px)').matches;
+  if (isMobile) { buildMobileLayout(); return; }
+  measure(); buildGrid(); applyPos(false);
+}
+window.addEventListener('resize',init);
+init();
+</script>
+</body>
+</html>
