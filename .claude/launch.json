@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "naman-nanda",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8090", "--directory", "/Users/ryanstewart/Desktop/Claude Code Sites/naman-nanda"],
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["/Users/ryanstewart/Desktop/Claude Code Sites/naman-nanda/server.js"],
       "port": 8090
     }
   ]

@@ -6,7 +6,11 @@
       "mcp__Claude_in_Chrome__tabs_context_mcp",
       "Bash(python3 -m http.server 8090)",
       "mcp__477d658f-104f-494a-ba02-e0afab421795__get_screenshot",
-      "mcp__477d658f-104f-494a-ba02-e0afab421795__use_figma"
+      "mcp__477d658f-104f-494a-ba02-e0afab421795__use_figma",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(awk 'NR>1{print $2}')",
+      "Bash(xargs kill)",
+      "Bash(ls /usr/local/lib/node_modules/ 2>/dev/null)"
     ]
   }
 }

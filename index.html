@@ -105,7 +105,7 @@ body {
   background-size: calc(100% + 4px) calc(100% + 4px);
   background-repeat: no-repeat;
   background-position: center;
-  background-color: #ffffff;
+  background-color: transparent;
 }
 
 /* 1px black rule — positioned absolutely below image */
@@ -211,6 +211,50 @@ body {
 .mm-dot:hover  { background: rgba(0,0,0,0.28); }
 .mm-dot.active { background: rgba(0,0,0,0.58); }
 
+/* ── View toggle (bottom-left of footer) ── */
+#view-toggle {
+  position: absolute;
+  left: 10px; top: 50%; transform: translateY(-50%);
+  display: flex; gap: 10px; align-items: center;
+}
+.vt-label {
+  font-family: 'ABCDiatype', Arial, sans-serif;
+  font-size: 10px; color: rgba(0,0,0,0.25);
+  cursor: pointer; user-select: none; -webkit-user-select: none;
+  transition: color 0.15s ease;
+}
+.vt-label.active { color: #000; }
+.vt-label:hover  { opacity: 0.7; }
+
+/* ── Project view overlay ── */
+#pv-overlay {
+  position: absolute; inset: 0;
+  background: rgba(255,255,255,0.30);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 400; overflow: hidden;
+  cursor: auto;
+}
+#pv-overlay.visible { display: flex; }
+#pv-strip {
+  display: flex; align-items: center;
+  flex-wrap: nowrap;
+}
+.pv-item {
+  flex-shrink: 0;
+  display: block;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  background-color: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+.pv-item:hover { opacity: 0.75; }
+
 /* ── Mobile: simple single-column scroll ── */
 #mobile-layout { display: none; }
 
@@ -288,6 +332,9 @@ body {
 </nav>
 <div id="clip">
   <div id="canvas"></div>
+  <div id="pv-overlay">
+    <div id="pv-strip"></div>
+  </div>
 </div>
 <div id="minimap">
   <div class="mm-rule"></div>
@@ -300,7 +347,13 @@ body {
   </div>
 </div>
 <div id="mobile-layout"></div>
-<div id="footer">© 2026 All Rights Reserved</div>
+<div id="footer">
+  <div id="view-toggle">
+    <span class="vt-label active" id="vt-product">Product</span>
+    <span class="vt-label"        id="vt-project">Project</span>
+  </div>
+  © 2026 All Rights Reserved
+</div>
 <div id="cursor-wrap">
   <svg id="cursor-svg" width="28" height="28" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
     <mask id="cmask" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="30" height="30">
@@ -316,31 +369,23 @@ body {
 <script>
 const COLS=5, ROWS=5, GAP=50, IMG_RATIO=1.341, META_H=20;
 const projects=[
-  {name:'Metal & Strainer',year:'2023',client:'Made In',img:'./images/product-1.png'},
-  {name:'Metal & Strainer II',year:'2023',client:'Made In',img:'./images/product-2.png'},
-  {name:'Metal & Silicon Spatula',year:'2023',client:'Pax Technologies',img:'./images/product-3.png'},
-  {name:'Metal Whisk',year:'2023',client:'Made In',img:'./images/product-4.png'},
-  {name:'Pax Accessories',year:'2023',client:'Pax Technologies',img:'./images/product-5.png'},
-  {name:'Flausy Showerhead',year:'2023',client:'Canopy',img:'./images/product-6.png'},
-  {name:'Metal & Silicon Tongs',year:'2023',client:'Made In',img:'./images/product-7.png'},
-  {name:'Portable Speaker',year:'2022',client:'Pax Technologies',img:'./images/product-8.png'},
-  {name:'Canopy Showerhead',year:'2022',client:'Canopy',img:'./images/product-1.png'},
-  {name:'Metal Ladle',year:'2022',client:'Made In',img:'./images/product-2.png'},
-  {name:'Saintly Speaker',year:'2022',client:'Saintly',img:'./images/product-3.png'},
-  {name:'Pax Accessories II',year:'2022',client:'Pax Technologies',img:'./images/product-4.png'},
-  {name:'Metal Spatula',year:'2021',client:'Made In',img:'./images/product-5.png'},
-  {name:'Kitchen Tongs',year:'2021',client:'Made In',img:'./images/product-6.png'},
-  {name:'Hand Blender',year:'2021',client:'Canopy',img:'./images/product-7.png'},
-  {name:'Metal & Strainer III',year:'2023',client:'Made In',img:'./images/product-8.png'},
-  {name:'Metal Whisk II',year:'2023',client:'Made In',img:'./images/product-1.png'},
-  {name:'Silicon Spatula',year:'2023',client:'Pax Technologies',img:'./images/product-2.png'},
-  {name:'Pax Portable',year:'2022',client:'Pax Technologies',img:'./images/product-3.png'},
-  {name:'Canopy Handheld',year:'2022',client:'Canopy',img:'./images/product-4.png'},
-  {name:'Metal Ladle II',year:'2022',client:'Made In',img:'./images/product-5.png'},
-  {name:'Silicon Tongs',year:'2021',client:'Made In',img:'./images/product-6.png'},
-  {name:'Saintly II',year:'2021',client:'Saintly',img:'./images/product-7.png'},
-  {name:'Pax Slim',year:'2021',client:'Pax Technologies',img:'./images/product-8.png'},
-  {name:'Canopy Filter',year:'2021',client:'Canopy',img:'./images/product-1.png'}
+  {name:'Metal & Strainer',        year:'2023',client:'Made In',          img:'./images/product-1.png'},
+  {name:'Metal & Strainer II',     year:'2023',client:'Made In',          img:'./images/product-2.png'},
+  {name:'Metal & Silicon Spatula', year:'2023',client:'Pax Technologies', img:'./images/product-3.png'},
+  {name:'Metal Whisk',             year:'2023',client:'Made In',          img:'./images/product-4.png'},
+  {name:'Pax Accessories',         year:'2023',client:'Pax Technologies', img:'./images/product-5.png'},
+  {name:'Flausy Showerhead',       year:'2023',client:'Canopy',           img:'./images/product-6.png'},
+  {name:'Metal & Silicon Tongs',   year:'2023',client:'Made In',          img:'./images/product-7.png'},
+  {name:'Portable Speaker',        year:'2022',client:'Pax Technologies', img:'./images/product-8.png'},
+];
+const pvProjects=[
+  {name:'Flaus Flosser',   img:'./images/01 - flaus.png'},
+  {name:'Grinder',         img:'./images/02 - grinder.png'},
+  {name:'Metal Spoon',     img:'./images/03 - spoon.png'},
+  {name:'Showerhead',      img:'./images/04 - canopy.png'},
+  {name:'Metal Whisk',     img:'./images/05 - wisk.png'},
+  {name:'Tushy',           img:'./images/06 - tushy.png'},
+  {name:'Pax Accessories', img:'./images/07 - pax.png'},
 ];
 // 8 directions: rotation for the SVG arrow (which points LEFT at 0°)
 // dr = row delta (-1=up, 0=none, 1=down), dc = col delta
@@ -489,7 +534,51 @@ function getZone(mx, my){
   return 'up-right'; // -50 to -15
 }
 
+// ── View mode ────────────────────────────────────────────
+let pvMode = false;
+
+function buildProjectView() {
+  const strip = document.getElementById('pv-strip');
+  if (!strip) return;
+  strip.innerHTML = '';
+  pvProjects.forEach(p => {
+    const a = document.createElement('a');
+    a.href = 'project.html';
+    a.className = 'pv-item';
+    a.style.backgroundImage = 'url(' + JSON.stringify(p.img) + ')';
+    strip.appendChild(a);
+  });
+  layoutPv();
+}
+
+function layoutPv() {
+  const strip = document.getElementById('pv-strip');
+  if (!strip) return;
+  // Scale from Figma: images 182px tall in 903px clip height, gap 19px in 1440px width
+  const pvH = Math.round(VH * 182 / 903);
+  const pvW = Math.round(pvH / IMG_RATIO);
+  const pvGap = Math.round(VW * 19 / 1440);
+  strip.style.gap = pvGap + 'px';
+  strip.querySelectorAll('.pv-item').forEach(el => {
+    el.style.width  = pvW  + 'px';
+    el.style.height = pvH  + 'px';
+  });
+}
+
+function setPvMode(on) {
+  pvMode = on;
+  const overlay = document.getElementById('pv-overlay');
+  if (overlay) overlay.classList.toggle('visible', on);
+  document.getElementById('vt-product').classList.toggle('active', !on);
+  document.getElementById('vt-project').classList.toggle('active',  on);
+  // Cursor: restore none on canvas, let overlay/items use their own CSS cursors
+  document.body.style.cursor = on ? '' : 'none';
+  cursorWrap.style.display = 'none';
+  cursorDot.style.display  = 'none';
+}
+
 document.addEventListener('mousemove', e => {
+  if (pvMode) return; // overlay has its own cursor behaviour
   const r = clip.getBoundingClientRect();
   const ins = e.clientX>=r.left && e.clientX<=r.right && e.clientY>=r.top && e.clientY<=r.bottom;
   if (!ins) {
@@ -548,6 +637,7 @@ document.addEventListener('mousemove', e => {
 });
 
 clip.addEventListener('click', e => {
+  if (pvMode) return;
   if (e.target.closest && e.target.closest('#minimap')) return; // handled by minimap
   if(hoverDir===null){const l=document.getElementById('cl'+(focusRow*COLS+focusCol));if(l)window.location.href=l.href;}
   else navTo(hoverDir);
@@ -569,7 +659,7 @@ const SWIPE_THRESHOLD = 40;
 
 clip.addEventListener('wheel', e => {
   e.preventDefault();
-  if (swipeLocked) return;
+  if (pvMode || swipeLocked) return;
 
   swipeAccX += e.deltaX;
   swipeAccY += e.deltaY;
@@ -774,11 +864,21 @@ function init(){
   const isMobile = window.matchMedia('(max-width: 768px)').matches;
   if (isMobile) { buildMobileLayout(); return; }
   measure(); buildGrid(); applyPos(false);
-  if (!minimapBuilt) { buildMinimap(); minimapBuilt = true; }
-  else updateMinimap(); // keep dot + label in sync after resize
+  if (!minimapBuilt) {
+    buildMinimap();
+    buildProjectView();
+    minimapBuilt = true;
+  } else {
+    updateMinimap();
+    layoutPv(); // reflow image sizes on resize
+  }
 }
 window.addEventListener('resize',init);
 init();
+
+// ── View toggle listeners — wired at parse time, independent of viewport ──
+document.getElementById('vt-product').addEventListener('click', () => setPvMode(false));
+document.getElementById('vt-project').addEventListener('click', () => setPvMode(true));
 </script>
 </body>
 </html>
