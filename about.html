@@ -53,8 +53,10 @@ body {
   overflow: hidden; background: #fff;
 }
 
-/* ── Drawing canvas ── */
-#draw-canvas { position: absolute; inset: 0; z-index: 1; cursor: crosshair; }
+/* ── Drawing canvas — z-index 1 so it's always behind the glass card ── */
+#draw-canvas { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+/* Crosshair everywhere in clip except over card/controls */
+#clip { cursor: none; }
 
 /* ── Capture / Clear — bottom-left ── */
 #draw-controls {
@@ -64,14 +66,15 @@ body {
 #draw-controls button {
   font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a;
   background: none; cursor: pointer; padding: 0;
+  transition: opacity 0.2s;
 }
 #draw-controls button:hover { opacity: 0.5; }
 
 /* ── Color bar — bottom center ── */
 #color-bar-wrap {
-  position: absolute; bottom: 8px;
+  position: absolute; bottom: 18px;
   left: 50%; transform: translateX(-50%);
-  width: 44%; z-index: 300; cursor: auto;
+  width: 32%; z-index: 300; cursor: auto;
   display: flex; flex-direction: column; align-items: center;
 }
 #color-bar-canvas {
@@ -94,26 +97,37 @@ body {
   background: rgba(0,0,0,0.10);
   backdrop-filter: blur(24px) saturate(140%);
   -webkit-backdrop-filter: blur(24px) saturate(140%);
-  border: 0.5px solid rgba(0,0,0,0.12);
+  border: 1px solid rgba(0,0,0,0.12);
   overflow: hidden;
   z-index: 200;
   cursor: auto;
+  transform: translateZ(0); /* force compositing layer — clips video element */
 }
 
-#card-scroll { overflow-y: auto; scrollbar-width: none; height: 100%; }
+#card-scroll { overflow-y: auto; scrollbar-width: none; max-height: inherit; }
 #card-scroll::-webkit-scrollbar { display: none; }
 #card-inner { padding: 20px; }
 
-/* ── Bio section — always open, no toggle ── */
-#sec-bio { margin-bottom: 14px; }
+/* ── Panel header — "About Me" collapses entire panel ── */
 #sec-bio-head {
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; user-select: none;
   padding-bottom: 5px;
-  border-bottom: 0.5px solid rgba(0,0,0,0.25);
-  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(0,0,0,0.25);
+  margin-bottom: 0;
 }
 #sec-bio-title { font-size: 10px; color: #1a1a1a; }
 
+/* card-body: everything below the header, collapses as one unit */
+#card-body {
+  overflow: hidden;
+  max-height: 2000px; opacity: 1;
+  transition: max-height 0.5s cubic-bezier(0.77,0,0.175,1), opacity 0.32s ease;
+}
+#card-body.collapsed { max-height: 0; opacity: 0; }
+
 /* Bio paragraphs — 32% indent matching project page */
+#sec-bio-body { padding-top: 8px; padding-bottom: 14px; }
 .a-bio-p {
   font-size: 10px; color: #1a1a1a;
   line-height: 1.55; margin-bottom: 1em;
@@ -129,7 +143,7 @@ body {
   display: flex; align-items: center; justify-content: space-between;
   cursor: pointer; user-select: none;
   padding-bottom: 5px;
-  border-bottom: 0.5px solid rgba(0,0,0,0.25);
+  border-bottom: 1px solid rgba(0,0,0,0.25);
   margin-bottom: 8px;
 }
 .a-sec-title { font-size: 10px; color: #1a1a1a; }
@@ -156,18 +170,19 @@ body {
 .a-col-a > div { overflow: hidden; text-overflow: ellipsis; }
 
 /* ── Contact ── */
-.a-email { font-size: 10px; color: #1a1a1a; }
+.a-email { font-size: 10px; color: #1a1a1a; text-decoration: none; transition: opacity 0.2s; }
+.a-email:hover { opacity: 0.45; }
 
 /* ── Camera ── */
-#cam-wrapper { width: 100%; }
+#cam-wrapper { width: 100%; margin-top: 5px; }
 #cam-placeholder {
-  width: 100%; aspect-ratio: 4/3;
+  width: 100%; aspect-ratio: 5/3;
   background: #888;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
 }
 #cam-placeholder span { font-size: 10px; color: #fff; pointer-events: none; }
-#cam-video { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: none; background: #000; }
+#cam-video { width: 100%; aspect-ratio: 5/3; object-fit: cover; display: none; background: #000; }
 </style>
 </head>
 <body>
@@ -190,7 +205,8 @@ body {
   <!-- Draw controls — bottom-left -->
   <div id="draw-controls">
     <button onclick="captureDrawing()">Capture</button>
-    <button onclick="clearCanvas()">Clear</button>
+    <button onclick="clearCanvas()">Reset</button>
+    <button onclick="undoCanvas()">Undo</button>
   </div>
 
   <!-- Color bar — bottom center -->
@@ -204,98 +220,105 @@ body {
     <div id="card-scroll">
     <div id="card-inner">
 
-      <!-- About Me — always open -->
-      <div id="sec-bio">
-        <div id="sec-bio-head">
-          <span id="sec-bio-title">About Me</span>
-        </div>
-        <p class="a-bio-p">Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Donec odio. Quisque volutpat mattis eros. Nullam malesuada erat ut turpis. Suspendisse urna nibh viverra non semper suscipit posuere a pede.</p>
-        <p class="a-bio-p">Donec nec justo eget felis facilisis fermentum. Aliquam porttitor mauris sit amet orci. Aenean dignissim pellentesque felis.</p>
-        <p class="a-bio-p">Morbi in sem quis dui placerat ornare. Pellentesque odio nisi euismod in pharetra a ultricies in diam. Sed arcu. Cras consequat.</p>
+      <!-- Panel header — collapses everything below -->
+      <div id="sec-bio-head" onclick="togglePanel()">
+        <span id="sec-bio-title">Naman Nanda</span>
+        <span id="sec-bio-x" class="rot-x">&#215;</span>
       </div>
 
-      <!-- Awards -->
-      <div class="a-section">
-        <div class="a-sec-head" onclick="toggleSec(this)">
-          <span class="a-sec-title">Awards</span>
-          <span class="rot-x">&#215;</span>
+      <!-- Card body — all content toggled by header click -->
+      <div id="card-body">
+
+        <!-- Bio paragraphs -->
+        <div id="sec-bio-body">
+          <p class="a-bio-p">Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Donec odio. Quisque volutpat mattis eros. Nullam malesuada erat ut turpis. Suspendisse urna nibh viverra non semper suscipit posuere a pede. Donec nec justo eget felis facilisis fermentum. Aliquam porttitor mauris sit amet orci. Aenean dignissim pellentesque felis.</p>
+          <p class="a-bio-p">Morbi in sem quis dui placerat ornare. Pellentesque odio nisi euismod in pharetra a ultricies in diam. Sed arcu. Cras consequat.rnare. Pellentesque odio nisi euismod in pharetra a ultricies in diam. Sed arcu.  Cras consequat.Morbi in sem qu. Phasellus ultrices nulla quis nibh quisque volutpat erat volutpat.</p>
         </div>
-        <div class="a-sec-body">
-          <div class="a-table">
-            <div class="a-col-a">
-              <div>Good Design Award</div><div>Time Best Inventions</div>
-              <div>GQ Design Award</div><div>Fast Companies' World Changing Ideas</div>
-            </div>
-            <div class="a-col-b">
-              <div>2025</div><div>2024</div><div>2023</div><div>2021</div>
+
+        <!-- Awards -->
+        <div class="a-section">
+          <div class="a-sec-head" onclick="toggleSec(this)">
+            <span class="a-sec-title">Awards</span>
+            <span class="rot-x">&#215;</span>
+          </div>
+          <div class="a-sec-body">
+            <div class="a-table">
+              <div class="a-col-a">
+                <div>Good Design Award</div><div>Time Best Inventions</div>
+                <div>GQ Design Award</div><div>Fast Companies' World Changing Ideas</div>
+              </div>
+              <div class="a-col-b">
+                <div>2025</div><div>2024</div><div>2023</div><div>2021</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Contact -->
-      <div class="a-section">
-        <div class="a-sec-head" onclick="toggleSec(this)">
-          <span class="a-sec-title">Contact</span>
-          <span class="rot-x">&#215;</span>
+        <!-- Contact -->
+        <div class="a-section">
+          <div class="a-sec-head" onclick="toggleSec(this)">
+            <span class="a-sec-title">Contact</span>
+            <span class="rot-x">&#215;</span>
+          </div>
+          <div class="a-sec-body">
+            <a class="a-email" href="mailto:namannanda@icloud.com">namannanda@icloud.com</a>
+          </div>
         </div>
-        <div class="a-sec-body">
-          <span class="a-email">namannanda@icloud.com</span>
-        </div>
-      </div>
 
-      <!-- Press -->
-      <div class="a-section">
-        <div class="a-sec-head" onclick="toggleSec(this)">
-          <span class="a-sec-title">Press</span>
-          <span class="rot-x">&#215;</span>
-        </div>
-        <div class="a-sec-body">
-          <div class="a-table">
-            <div class="a-col-a">
-              <div>Good Design Award</div><div>Time Best Inventions</div>
-              <div>GQ Design Award</div><div>Fast Companies' World Changing Ideas</div>
-            </div>
-            <div class="a-col-b">
-              <div>2025</div><div>2024</div><div>2023</div><div>2021</div>
+        <!-- Press -->
+        <div class="a-section">
+          <div class="a-sec-head" onclick="toggleSec(this)">
+            <span class="a-sec-title">Press</span>
+            <span class="rot-x">&#215;</span>
+          </div>
+          <div class="a-sec-body">
+            <div class="a-table">
+              <div class="a-col-a">
+                <div>Good Design Award</div><div>Time Best Inventions</div>
+                <div>GQ Design Award</div><div>Fast Companies' World Changing Ideas</div>
+              </div>
+              <div class="a-col-b">
+                <div>2025</div><div>2024</div><div>2023</div><div>2021</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Credits -->
-      <div class="a-section">
-        <div class="a-sec-head" onclick="toggleSec(this)">
-          <span class="a-sec-title">Credits</span>
-          <span class="rot-x">&#215;</span>
-        </div>
-        <div class="a-sec-body">
-          <div class="a-table">
-            <div class="a-col-a">
-              <div>Ryan Stewart</div><div>Naman Nanda</div><div>Arya Tehatlabi</div>
-            </div>
-            <div class="a-col-b">
-              <div>Design + Dev</div><div>Photography</div><div>Production Engineer</div>
+        <!-- Credits -->
+        <div class="a-section">
+          <div class="a-sec-head" onclick="toggleSec(this)">
+            <span class="a-sec-title">Credits</span>
+            <span class="rot-x">&#215;</span>
+          </div>
+          <div class="a-sec-body">
+            <div class="a-table">
+              <div class="a-col-a">
+                <div>Ryan Stewart</div><div>Naman Nanda</div>
+              </div>
+              <div class="a-col-b">
+                <div>Design + Dev</div><div>Photography</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Camera -->
-      <div class="a-section" id="sec-camera" style="margin-bottom:0">
-        <div class="a-sec-head" onclick="toggleSec(this)">
-          <span class="a-sec-title">Camera</span>
-          <span class="rot-x">&#215;</span>
-        </div>
-        <div class="a-sec-body">
-          <div id="cam-wrapper">
-            <div id="cam-placeholder" onclick="requestCamera()">
-              <span>Allow Camera Access</span>
+        <!-- Camera -->
+        <div class="a-section" id="sec-camera" style="margin-bottom:0">
+          <div class="a-sec-head" onclick="toggleSec(this)">
+            <span class="a-sec-title">Camera</span>
+            <span class="rot-x">&#215;</span>
+          </div>
+          <div class="a-sec-body">
+            <div id="cam-wrapper">
+              <div id="cam-placeholder" onclick="requestCamera()">
+                <span>Allow Camera Access</span>
+              </div>
+              <video id="cam-video" autoplay muted playsinline></video>
             </div>
-            <video id="cam-video" autoplay muted playsinline></video>
           </div>
         </div>
-      </div>
+
+      </div><!-- /#card-body -->
 
     </div><!-- /#card-inner -->
     </div><!-- /#card-scroll -->
@@ -314,31 +337,48 @@ const card        = document.getElementById('about-card');
 const drawCanvas  = document.getElementById('draw-canvas');
 const ctx         = drawCanvas.getContext('2d');
 
+// Reliable dimension helpers — fallback to window size if clip hasn't laid out yet
+function clipW() { return clip.offsetWidth  || (window.innerWidth  - 30); }
+function clipH() { return clip.offsetHeight || (window.innerHeight - 56); }
+
 function resizeCanvas() {
   const tmp = document.createElement('canvas');
   tmp.width = drawCanvas.width; tmp.height = drawCanvas.height;
   tmp.getContext('2d').drawImage(drawCanvas, 0, 0);
-  drawCanvas.width  = clip.offsetWidth;
-  drawCanvas.height = clip.offsetHeight;
+  drawCanvas.width  = clipW();
+  drawCanvas.height = clipH();
   ctx.drawImage(tmp, 0, 0);
 }
 
 function layout() {
-  const u = clip.offsetWidth / D.W;
+  const w = clipW();
+  const h = clipH();
+  const u = w / D.W;
   card.style.top   = Math.round(D.card.y * u) + 'px';
   card.style.right = Math.round((D.W - D.card.x - D.card.w) * u) + 'px';
   card.style.width = Math.round(D.card.w * u) + 'px';
-  card.style.maxHeight = (clip.offsetHeight - Math.round(D.card.y * u) - 20) + 'px';
+  card.style.maxHeight = (h - Math.round(D.card.y * u) - 20) + 'px';
+  // No explicit height — card shrinks to content, glass hugs the camera
   resizeCanvas();
-  drawColorBar(); // redraw bar when clip resizes
+  drawColorBar();
+  updateBtns();
+  updateCursor();
 }
 
 window.addEventListener('resize', layout);
-layout();
+// Defer first layout so browser has calculated all dimensions
+requestAnimationFrame(() => requestAnimationFrame(() => layout()));
 
 // ════════════════════════════════════════════════════════
 //  SECTION TOGGLE
 // ════════════════════════════════════════════════════════
+function togglePanel() {
+  const body = document.getElementById('card-body');
+  const icon = document.getElementById('sec-bio-x');
+  body.classList.toggle('collapsed');
+  icon.classList.toggle('closed');
+}
+
 function toggleSec(head) {
   const body = head.nextElementSibling;
   const icon = head.querySelector('.rot-x');
@@ -357,25 +397,26 @@ let barT          = 0.71;         // default position (~blue in spectrum)
 let barDragging   = false;
 
 function drawColorBar() {
-  barCanvas.width  = barCanvas.offsetWidth  || barCanvas.parentElement.offsetWidth;
-  barCanvas.height = barCanvas.offsetHeight || 8;
+  const wrapRect = barCanvas.parentElement.getBoundingClientRect();
+  barCanvas.width  = Math.round(wrapRect.width)  || Math.round(clipW() * 0.44) || 400;
+  barCanvas.height = 8;
   const w = barCanvas.width;
   const h = barCanvas.height;
 
   // Gradient: black zone → full hue spectrum
   const g = barCtx.createLinearGradient(0, 0, w, 0);
   g.addColorStop(0.00, '#000000');
-  g.addColorStop(0.08, '#000000');
-  g.addColorStop(0.12, 'hsl(0,100%,50%)');    // red
-  g.addColorStop(0.25, 'hsl(40,100%,50%)');   // orange
-  g.addColorStop(0.33, 'hsl(60,100%,50%)');   // yellow
-  g.addColorStop(0.46, 'hsl(120,100%,50%)');  // green
-  g.addColorStop(0.54, 'hsl(180,100%,50%)');  // cyan
-  g.addColorStop(0.63, 'hsl(210,100%,50%)');  // sky blue
-  g.addColorStop(0.71, 'hsl(240,100%,50%)');  // blue
-  g.addColorStop(0.83, 'hsl(270,100%,50%)');  // violet
-  g.addColorStop(0.92, 'hsl(300,100%,50%)');  // magenta
-  g.addColorStop(1.00, 'hsl(330,100%,50%)');  // pink→red
+  g.addColorStop(0.06, 'hsl(0,100%,50%)');    // black → red
+  g.addColorStop(0.20, 'hsl(40,100%,50%)');   // orange
+  g.addColorStop(0.28, 'hsl(60,100%,50%)');   // yellow
+  g.addColorStop(0.40, 'hsl(120,100%,50%)');  // green
+  g.addColorStop(0.50, 'hsl(180,100%,50%)');  // cyan
+  g.addColorStop(0.58, 'hsl(210,100%,50%)');  // sky blue
+  g.addColorStop(0.66, 'hsl(240,100%,50%)');  // blue
+  g.addColorStop(0.77, 'hsl(270,100%,50%)');  // violet
+  g.addColorStop(0.83, 'hsl(300,100%,50%)');  // magenta
+  g.addColorStop(0.90, 'hsl(330,100%,50%)');  // pink
+  g.addColorStop(0.97, '#ffffff');             // white — shorter end to match black
   barCtx.fillStyle = g;
   barCtx.fillRect(0, 0, w, h);
 
@@ -404,14 +445,70 @@ document.addEventListener('mousemove', e => { if (barDragging) pickFromBar(e.cli
 document.addEventListener('mouseup',   () => { barDragging = false; });
 
 // ════════════════════════════════════════════════════════
+//  UNDO HISTORY
+// ════════════════════════════════════════════════════════
+const MAX_HISTORY = 30;
+const undoStack = [];
+let drawn = false; // true once any stroke has been painted
+
+function updateBtns() {
+  const btns = document.querySelectorAll('#draw-controls button');
+  const clearBtn = btns[1];
+  const undoBtn  = btns[2];
+  const states = [drawn, undoStack.length > 0];
+  [clearBtn, undoBtn].forEach((b, i) => {
+    b.style.opacity       = states[i] ? '1'      : '0.45';
+    b.style.pointerEvents = states[i] ? ''        : 'none';
+    b.style.cursor        = states[i] ? 'pointer' : 'default';
+  });
+}
+
+function saveHistory() {
+  undoStack.push(ctx.getImageData(0, 0, drawCanvas.width, drawCanvas.height));
+  if (undoStack.length > MAX_HISTORY) undoStack.shift();
+  drawn = true;
+  updateBtns();
+}
+
+function undoCanvas() {
+  if (undoStack.length === 0) return;
+  const prev = undoStack.pop();
+  ctx.putImageData(prev, 0, 0);
+  if (undoStack.length === 0) drawn = false;
+  updateBtns();
+}
+
+// ════════════════════════════════════════════════════════
 //  AIRBRUSH — fine pixelated stipple
 // ════════════════════════════════════════════════════════
 let drawing = false;
 let lastX = 0, lastY = 0;
 
+let brushRadius = 6;
+const MIN_BRUSH = 1;
+const MAX_BRUSH = 40;
+
+function updateCursor() {
+  const r  = brushRadius;
+  const pad = 2;
+  const d  = (r + pad) * 2;
+  const c  = r + pad;
+  // Outer dark ring + inner light ring for visibility on any background
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${d}' height='${d}'>`
+    + `<circle cx='${c}' cy='${c}' r='${r}' fill='none' stroke='rgba(255,255,255,0.7)' stroke-width='2'/>`
+    + `<circle cx='${c}' cy='${c}' r='${r}' fill='none' stroke='rgba(0,0,0,0.55)' stroke-width='1'/>`
+    + `</svg>`;
+  clip.style.cursor = `url("data:image/svg+xml,${encodeURIComponent(svg)}") ${c} ${c}, crosshair`;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === '[') { brushRadius = Math.max(MIN_BRUSH, brushRadius - 1); updateCursor(); }
+  if (e.key === ']') { brushRadius = Math.min(MAX_BRUSH, brushRadius + 1); updateCursor(); }
+});
+
 function airbrush(x, y) {
-  const RADIUS = 6;
-  const COUNT  = 18;
+  const RADIUS = brushRadius;
+  const COUNT  = Math.max(6, Math.round(brushRadius * 3));
   const [r, g, b] = currentColor;
   for (let i = 0; i < COUNT; i++) {
     const angle = Math.random() * Math.PI * 2;
@@ -423,21 +520,30 @@ function airbrush(x, y) {
   }
 }
 
-function canvasPos(e) {
-  const r = drawCanvas.getBoundingClientRect();
+// Convert any mouse event to canvas coordinates
+function clipPos(e) {
+  const r = clip.getBoundingClientRect();
   return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
 
-drawCanvas.addEventListener('mousedown', e => {
+// Skip drawing when clicking on card headers, buttons, color bar, etc.
+function isNonDrawTarget(el) {
+  return el.closest('#about-card, #draw-controls, #color-bar-wrap');
+}
+
+// Listen on the whole clip so drawing works behind the panel too
+clip.addEventListener('mousedown', e => {
+  if (isNonDrawTarget(e.target)) return;
+  saveHistory(); // snapshot before this stroke
   drawing = true;
-  const { x, y } = canvasPos(e);
+  const { x, y } = clipPos(e);
   lastX = x; lastY = y;
   airbrush(x, y);
 });
 
-drawCanvas.addEventListener('mousemove', e => {
+clip.addEventListener('mousemove', e => {
   if (!drawing) return;
-  const { x, y } = canvasPos(e);
+  const { x, y } = clipPos(e);
   const steps = Math.max(1, Math.ceil(Math.hypot(x - lastX, y - lastY) / 2));
   for (let i = 1; i <= steps; i++) {
     const t = i / steps;
@@ -454,6 +560,9 @@ window.addEventListener('mouseleave', () => { drawing = false; });
 // ════════════════════════════════════════════════════════
 function clearCanvas() {
   ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+  drawn = false;
+  undoStack.length = 0;
+  updateBtns();
 }
 
 // ════════════════════════════════════════════════════════
@@ -466,62 +575,184 @@ async function requestCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
     video.srcObject = stream;
-    await video.play();
+    video.onloadedmetadata = () => video.play();
     placeholder.style.display = 'none';
     video.style.display = 'block';
-  } catch (err) { /* stays on placeholder */ }
+  } catch (err) {
+    // Permission denied or no camera — placeholder stays
+    placeholder.querySelector('span').textContent = 'Camera unavailable';
+  }
 }
-requestCamera();
+// Don't auto-request — wait for user click so gesture fires getUserMedia correctly
 
 
 // ════════════════════════════════════════════════════════
-//  CAPTURE DRAWING — composites drawing + card + camera frame
+//  CAPTURE DRAWING — white canvas + nav bar + drawing + card + camera
 // ════════════════════════════════════════════════════════
 async function captureDrawing() {
-  // Collapse camera section so it doesn't appear in saved image
-  const camSection = document.getElementById('sec-camera');
-  const camHead    = camSection.querySelector('.a-sec-head');
-  const camBody    = camSection.querySelector('.a-sec-body');
-  const camIcon    = camHead.querySelector('.rot-x');
-  const wasCollapsed = camBody.classList.contains('collapsed');
-  camBody.classList.add('collapsed');
-  camIcon.classList.add('closed');
+  // Frame dimensions matching the page chrome
+  const border = 15; // left + right gray strips (#bl / #br)
+  const navH   = 28; // nav bar height
+  const footH  = 28; // footer height
+  const CW     = clipW();
+  const CH     = clipH();
+  const xOff   = border;
+  const yOff   = navH;
 
-  // Small delay for CSS transition
-  await new Promise(r => setTimeout(r, 50));
-
-  const out   = document.createElement('canvas');
-  out.width   = clip.offsetWidth;
-  out.height  = clip.offsetHeight;
+  const out = document.createElement('canvas');
+  out.width  = border + CW + border;
+  out.height = navH + CH + footH;
   const oc    = out.getContext('2d');
   const clipR = clip.getBoundingClientRect();
 
-  // 1. White background
-  oc.fillStyle = '#ffffff';
-  oc.fillRect(0, 0, out.width, out.height);
-
-  // 2. Drawing layer
-  oc.drawImage(drawCanvas, 0, 0);
-
-  // 3. Card widget via SVG foreignObject
   const cardR = card.getBoundingClientRect();
-  const cx = Math.round(cardR.left - clipR.left);
-  const cy = Math.round(cardR.top  - clipR.top);
+  const cx = Math.round(cardR.left - clipR.left) + xOff;
+  const cy = Math.round(cardR.top  - clipR.top)  + yOff;
   const cw = Math.round(cardR.width);
   const ch = Math.round(cardR.height);
+
+  // 1. Full gray frame (nav + sides + footer)
+  oc.fillStyle = '#D9D9D9';
+  oc.fillRect(0, 0, out.width, out.height);
+
+  // 2. Nav text
+  oc.fillStyle = '#1a1a1a';
+  oc.font = '10px Arial, sans-serif';
+  oc.textBaseline = 'middle';
+  oc.textAlign = 'left';   oc.fillText('Work',         border,              navH / 2);
+  oc.textAlign = 'center'; oc.fillText('Naman Nanda',  out.width / 2,       navH / 2);
+  oc.textAlign = 'right';  oc.fillText('About',        out.width - border,  navH / 2);
+  oc.textAlign = 'left';
+
+  // Footer text
+  oc.textAlign = 'center';
+  oc.fillText('© 2026 All Rights Reserved', out.width / 2, out.height - footH / 2);
+  oc.textAlign = 'left';
+
+  // 3. White content area
+  oc.fillStyle = '#ffffff';
+  oc.fillRect(xOff, yOff, CW, CH);
+
+  // 4. Drawing layer — always behind card
+  oc.drawImage(drawCanvas, xOff, yOff);
+
+  // 5. Glass card background — simulate backdrop-filter: blur(24px) saturate(140%)
+  //    Grab a padded snapshot of the canvas content already painted behind the card,
+  //    blur + saturate it on an offscreen canvas, then crop back to card size.
+  {
+    const bpad = 24;
+    const snapW = cw + bpad * 2;
+    const snapH = ch + bpad * 2;
+    // Step A: extract the area behind the card (with padding for blur edge feathering)
+    const snapCanvas = document.createElement('canvas');
+    snapCanvas.width  = snapW;
+    snapCanvas.height = snapH;
+    const snapCtx = snapCanvas.getContext('2d');
+    snapCtx.drawImage(out, cx - bpad, cy - bpad, snapW, snapH, 0, 0, snapW, snapH);
+    // Step B: apply blur + saturation
+    const blurCanvas = document.createElement('canvas');
+    blurCanvas.width  = snapW;
+    blurCanvas.height = snapH;
+    const blurCtx = blurCanvas.getContext('2d');
+    blurCtx.filter = 'blur(24px) saturate(140%)';
+    blurCtx.drawImage(snapCanvas, 0, 0);
+    blurCtx.filter = 'none';
+    // Step C: draw only the card-sized centre crop back to the output
+    oc.drawImage(blurCanvas, bpad, bpad, cw, ch, cx, cy, cw, ch);
+  }
+
+  // 6. Card text / sections via SVG foreignObject (background:none so no extra tint)
   await renderWidget(oc, cx, cy, cw, ch);
 
-  // 4. Download
+  // 6b. Camera section header — drawn manually from live-DOM measurements so the
+  //     position is always exact regardless of how the SVG rendered content above it.
+  {
+    const camHead  = document.querySelector('#sec-camera .a-sec-head');
+    const camTitle = document.querySelector('#sec-camera .a-sec-title');
+    const camXEl   = camHead.querySelector('.rot-x');
+    const camHeadR  = camHead.getBoundingClientRect();
+    const camTitleR = camTitle.getBoundingClientRect();
+    const camXR     = camXEl.getBoundingClientRect();
+
+    oc.save();
+    oc.beginPath(); oc.rect(cx, cy, cw, ch); oc.clip();
+
+    oc.fillStyle = '#1a1a1a';
+    oc.font = '10px Arial, sans-serif';
+    oc.textBaseline = 'middle';
+
+    // "Camera" label
+    oc.textAlign = 'left';
+    oc.fillText('Camera',
+      Math.round(camTitleR.left  - clipR.left) + xOff,
+      Math.round(camTitleR.top   + camTitleR.height / 2 - clipR.top) + yOff
+    );
+
+    // "×" close symbol
+    oc.textAlign = 'right';
+    oc.fillText('×',
+      Math.round(camXR.right - clipR.left) + xOff,
+      Math.round(camXR.top   + camXR.height / 2 - clipR.top) + yOff
+    );
+
+    oc.textAlign = 'left';
+
+    // Border line at the bottom edge of the a-sec-head
+    oc.strokeStyle = 'rgba(0,0,0,0.25)'; oc.lineWidth = 1;
+    oc.beginPath();
+    oc.moveTo(Math.round(camHeadR.left  - clipR.left) + xOff, (camHeadR.bottom - clipR.top) + yOff - 0.5);
+    oc.lineTo(Math.round(camHeadR.right - clipR.left) + xOff, (camHeadR.bottom - clipR.top) + yOff - 0.5);
+    oc.stroke();
+
+    oc.restore();
+  }
+
+  // 7. Camera frame — clipped inside card (object-fit:cover)
+  if (video.style.display !== 'none' && video.readyState >= 2) {
+    const vidR = video.getBoundingClientRect();
+    const vx   = Math.round(vidR.left - clipR.left) + xOff;
+    const vy   = Math.round(vidR.top  - clipR.top)  + yOff;
+    const vw   = Math.round(vidR.width);
+    const vh   = Math.round(vidR.height);
+    const vA   = video.videoWidth / video.videoHeight;
+    const bA   = vw / vh;
+    let sx = 0, sy = 0, sw = video.videoWidth, sh = video.videoHeight;
+    if (vA > bA) { sw = Math.round(video.videoHeight * bA); sx = Math.round((video.videoWidth  - sw) / 2); }
+    else          { sh = Math.round(video.videoWidth  / bA); sy = Math.round((video.videoHeight - sh) / 2); }
+    oc.save();
+    oc.beginPath(); oc.rect(cx, cy, cw, ch); oc.clip();
+    oc.drawImage(video, sx, sy, sw, sh, vx, vy, vw, vh);
+    oc.restore();
+  }
+
+  // 7b. Uniform glass tint over entire card (text + camera) — matches live rgba(0,0,0,0.10)
+  oc.fillStyle = 'rgba(0,0,0,0.10)';
+  oc.fillRect(cx, cy, cw, ch);
+
+  // 8. Card border
+  oc.strokeStyle = 'rgba(0,0,0,0.12)'; oc.lineWidth = 1;
+  oc.strokeRect(cx + 0.5, cy + 0.5, cw - 1, ch - 1);
+
+  // 9. Color bar + cursor
+  const barWrapR = barCanvas.parentElement.getBoundingClientRect();
+  const bx = Math.round(barWrapR.left - clipR.left) + xOff;
+  const by = Math.round(barWrapR.top  - clipR.top)  + yOff;
+  if (barCanvas.width > 0) {
+    oc.drawImage(barCanvas, bx, by, Math.round(barWrapR.width), barCanvas.height);
+  }
+  const curR = barCursorEl.getBoundingClientRect();
+  oc.strokeStyle = 'rgba(0,0,0,0.6)'; oc.lineWidth = 1;
+  oc.strokeRect(
+    Math.round(curR.left - clipR.left) + xOff,
+    Math.round(curR.top  - clipR.top)  + yOff,
+    Math.round(curR.width), Math.round(curR.height)
+  );
+
+  // 10. Download
   const a = document.createElement('a');
   a.download = 'naman-nanda.png';
   a.href = out.toDataURL('image/png');
   a.click();
-
-  // 5. Restore camera section if it was open before
-  if (!wasCollapsed) {
-    camBody.classList.remove('collapsed');
-    camIcon.classList.remove('closed');
-  }
 }
 
 function renderWidget(oc, x, y, w, h) {
@@ -530,29 +761,33 @@ function renderWidget(oc, x, y, w, h) {
     clone.style.cssText = `
       position:static; width:${w}px; max-height:none;
       backdrop-filter:none; -webkit-backdrop-filter:none;
-      background:rgba(0,0,0,0.10); overflow:visible;
+      background:none; overflow:visible;
     `;
-    // Hide collapsed camera (already collapsed before this runs)
+    // Hide the entire Camera section — its header is drawn manually in captureDrawing
+    // at exact live-DOM pixel positions, so SVG layout differences can't cause a gap.
+    const cloneCamSec = clone.querySelector('#sec-camera');
+    if (cloneCamSec) cloneCamSec.style.display = 'none';
+    // Always remove the live <video> element — it makes SVG foreignObject rendering fail
     const cloneVid = clone.querySelector('#cam-video');
     if (cloneVid) cloneVid.remove();
-    const clonePh = clone.querySelector('#cam-placeholder');
-    if (clonePh) clonePh.style.display = 'none';
 
     const styleBlob = `
       *{box-sizing:border-box;margin:0;padding:0;border:0;font-family:Arial,sans-serif;font-size:10px;}
       #card-inner{padding:20px;} #card-scroll{overflow:visible;}
-      #sec-bio{margin-bottom:14px;}
-      #sec-bio-head{padding-bottom:5px;border-bottom:.5px solid rgba(0,0,0,.25);margin-bottom:8px;}
+      #sec-bio-head{display:flex;align-items:center;justify-content:space-between;padding-bottom:5px;border-bottom:1px solid rgba(0,0,0,.25);margin-bottom:0;}
+      #sec-bio-title{font-size:10px;color:#1a1a1a;}
+      #sec-bio-x{font-size:10px;}
+      #card-body.collapsed{display:none;}
+      #sec-bio-body{padding-top:8px;padding-bottom:14px;}
       .a-bio-p{font-size:10px;color:#1a1a1a;line-height:1.55;margin-bottom:1em;text-indent:32%;}
       .a-bio-p:last-child{margin-bottom:0;}
       .a-section{margin-bottom:14px;} .a-section:last-child{margin-bottom:0;}
-      .a-sec-head{display:flex;align-items:center;justify-content:space-between;padding-bottom:5px;border-bottom:.5px solid rgba(0,0,0,.25);margin-bottom:8px;}
+      .a-sec-head{display:flex;align-items:center;justify-content:space-between;padding-bottom:5px;border-bottom:1px solid rgba(0,0,0,.25);margin-bottom:8px;}
       .a-sec-title{font-size:10px;color:#1a1a1a;}
       .a-sec-body.collapsed{display:none;}
       .a-table{display:flex;gap:6px;} .a-col-a{flex:1;} .a-col-b{flex:0 0 auto;}
-      .a-table .a-col-a>div,.a-table .a-col-b>div{font-size:10px;color:#1a1a1a;line-height:1.9;white-space:nowrap;}
+      .a-table .a-col-a>div,.a-col-b>div{font-size:10px;color:#1a1a1a;line-height:1.9;white-space:nowrap;}
       .a-email{font-size:10px;color:#1a1a1a;}
-      #cam-wrapper{display:none;} .cam-row{display:none;}
     `;
     const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
       <foreignObject width="${w}" height="${h}">
@@ -571,16 +806,8 @@ function renderWidget(oc, x, y, w, h) {
   });
 }
 
-// Init color bar after layout sets dimensions
-drawColorBar();
-// Set initial cursor to blue position
-barT = 0.71;
-updateBarCursor();
-const initPx = Math.round(0.71 * (barCanvas.width - 1));
-if (barCanvas.width > 0) {
-  const d = barCtx.getImageData(initPx, 0, 1, 1).data;
-  currentColor = [d[0], d[1], d[2]];
-}
+// layout() is called deferred via rAF above — it calls drawColorBar() which
+// also picks the initial color. Nothing else needed here.
 </script>
 </body>
 </html>

@@ -147,6 +147,8 @@ body {
 }
 #glass-card.open { cursor:default; }
 #glass-card.open #card-header { cursor:pointer; }
+/* Hide body content when card is closed — max-height alone can bleed on large screens */
+#glass-card:not(.open) #card-body { opacity: 0; pointer-events: none; }
 
 /* Inner scroll wrapper — scrolls content when card is taller than available space */
 #card-scroll {
@@ -408,7 +410,7 @@ body {
 <nav id="nav">
   <a href="index.html">Work</a>
   <a id="nav-center" href="index.html">Naman Nanda</a>
-  <a href="#">About</a>
+  <a href="about.html">About</a>
 </nav>
 
 <div id="clip">
