@@ -410,13 +410,13 @@ const projects=[
   {name:'Portable Speaker',        year:'2022',client:'Pax Technologies', img:'./images/product-8.png'},
 ];
 const pvProjects=[
-  {name:'Flaus Flosser',   year:'2023', img:'./images/01 - flaus.png'},
-  {name:'Grinder',         year:'2023', img:'./images/02 - grinder.png'},
-  {name:'Metal Spoon',     year:'2023', img:'./images/03 - spoon.png'},
-  {name:'Showerhead',      year:'2023', img:'./images/04 - canopy.png'},
-  {name:'Metal Whisk',     year:'2023', img:'./images/05 - wisk.png'},
-  {name:'Tushy',           year:'2023', img:'./images/06 - tushy.png'},
-  {name:'Pax Accessories', year:'2023', img:'./images/07 - pax.png'},
+  {name:'Flaus Flosser',   year:'2023', img:'./images/01 - flaus.png',   url:'project.html'},
+  {name:'Grinder',         year:'2023', img:'./images/02 - grinder.png', url:'pax-project.html'},
+  {name:'Metal Spoon',     year:'2023', img:'./images/03 - spoon.png',   url:'project.html'},
+  {name:'Showerhead',      year:'2023', img:'./images/04 - canopy.png',  url:'project.html'},
+  {name:'Metal Whisk',     year:'2023', img:'./images/05 - wisk.png',    url:'project.html'},
+  {name:'Tushy',           year:'2023', img:'./images/06 - tushy.png',   url:'project.html'},
+  {name:'Pax Accessories', year:'2023', img:'./images/07 - pax.png',     url:'pax-project.html'},
 ];
 // 8 directions: rotation for the SVG arrow (which points LEFT at 0°)
 // dr = row delta (-1=up, 0=none, 1=down), dc = col delta
@@ -464,9 +464,11 @@ function buildGrid(){
     card.className = 'card';
     card.style.cssText = 'left:'+L+'px;top:'+T+'px;width:'+cardW+'px;height:'+cardH+'px;';
 
-    // Link overlay
+    // Link overlay — Pax products go to pax page, others to project page
     const link = document.createElement('a');
-    link.className = 'card-link'; link.href='project.html'; link.id='cl'+i;
+    link.className = 'card-link';
+    link.href = (p.client && p.client.includes('Pax')) ? 'pax-project.html' : 'project.html';
+    link.id='cl'+i;
     card.appendChild(link);
 
     // Image via CSS background-image — no img element, no element boundary
@@ -574,7 +576,7 @@ function buildProjectView() {
   strip.innerHTML = '';
   pvProjects.forEach(p => {
     const a = document.createElement('a');
-    a.href = 'project.html';
+    a.href = p.url || 'project.html';
     a.className = 'pv-item';
     a.style.backgroundImage = 'url(' + JSON.stringify(p.img) + ')';
 
@@ -700,26 +702,7 @@ let swipeAccX = 0, swipeAccY = 0;
 const SWIPE_THRESHOLD = 40;
 
 clip.addEventListener('wheel', e => {
-  e.preventDefault();
-  if (pvMode || swipeLocked) return;
-
-  swipeAccX += e.deltaX;
-  swipeAccY += e.deltaY;
-
-  const aX = Math.abs(swipeAccX), aY = Math.abs(swipeAccY);
-  if (aX < SWIPE_THRESHOLD && aY < SWIPE_THRESHOLD) return;
-
-  const dir = aX >= aY
-    ? (swipeAccX > 0 ? 'right' : 'left')
-    : (swipeAccY > 0 ? 'down'  : 'up');
-
-  navTo(dir);
-  swipeLocked = true;
-  swipeAccX = swipeAccY = 0;
-  setTimeout(() => {
-    swipeLocked = false;
-    swipeAccX = swipeAccY = 0;
-  }, 620); // matches 0.55s transition + small buffer
+  e.preventDefault(); // block scroll — navigate via arrows or minimap only
 }, { passive: false });
 
 // ════════════════════════════════════════════
@@ -878,7 +861,7 @@ function buildMobileLayout() {
   projects.forEach(p => {
     const link = document.createElement('a');
     link.className = 'm-card';
-    link.href = 'project.html';
+    link.href = (p.client && p.client.includes('Pax')) ? 'pax-project.html' : 'project.html';
 
     const imgDiv = document.createElement('div');
     imgDiv.className = 'm-card-img';

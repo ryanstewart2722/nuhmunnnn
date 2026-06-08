@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pax Products — Naman Nanda</title>
+<style>
+@font-face {
+  font-family: 'ABCDiatype';
+  src: url('./fonts/ABCDiatype-Regular.otf') format('opentype');
+  font-weight: normal; font-style: normal;
+}
+*, *::before, *::after {
+  margin: 0; padding: 0; box-sizing: border-box;
+  border: 0 none; outline: 0 none;
+  -webkit-tap-highlight-color: transparent;
+}
+html {
+  width: 100%; height: 100%;
+  background: #D9D9D9;
+  overflow: hidden;
+}
+body {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #D9D9D9;
+  overflow: hidden;
+  font-family: 'ABCDiatype', Arial, sans-serif;
+}
+
+/* ── Frame ── */
+#bl { position: absolute; top:0; left:0; bottom:0; width:15px; background:#D9D9D9; z-index:100; }
+#br { position: absolute; top:0; right:0; bottom:0; width:15px; background:#D9D9D9; z-index:100; }
+#nav {
+  position: absolute; top:0; left:0; right:0; height:28px;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 15px; background:#D9D9D9; z-index:100;
+}
+#nav a { font-family:'ABCDiatype',Arial,sans-serif; font-size:10px; color:#1a1a1a; text-decoration:none; }
+#nav a:hover { opacity:0.5; }
+#nav-center {
+  position:absolute; left:50%; transform:translateX(-50%);
+  font-family:'ABCDiatype',Arial,sans-serif; font-size:10px; color:#1a1a1a;
+}
+#footer {
+  position:absolute; bottom:0; left:0; right:0; height:28px;
+  display:flex; align-items:center; justify-content:center;
+  background:#D9D9D9; z-index:100;
+  font-family:'ABCDiatype',Arial,sans-serif; font-size:10px; color:#1a1a1a;
+}
+
+/* ── Scroll viewport ── */
+#clip {
+  position:absolute;
+  top:28px; bottom:28px; left:15px; right:15px;
+  overflow:hidden;
+  background:#fff;
+}
+
+#page {
+  position:absolute;
+  top:0; left:0;
+  width:100%;
+  background:#fff;
+  will-change:transform;
+}
+
+/* ── Scaled module system ── */
+.mod {
+  position:absolute;
+  font-family:'ABCDiatype',Arial,sans-serif;
+  font-size:10px; color:#1a1a1a; line-height:normal;
+}
+
+/* ── Image slots ── */
+.img-slot { background:#d9d9d9; }
+.img-slot.light { background:#f6f6f6; }
+.img-slot.dark  { background:#1a1a1a; }
+.img-slot {
+  filter:blur(40px); opacity:0;
+  transition:filter 1.4s cubic-bezier(0.25,0,0.1,1), opacity 1.2s ease;
+}
+.img-slot.loaded { filter:blur(0); opacity:1; }
+
+/* ── Slideshow ── */
+.img-slot.ss {
+  position: relative;
+  overflow: hidden;
+  cursor: none;
+}
+.ss-flash {
+  position: absolute; inset: 0;
+  background: rgba(255,255,255,0.38);
+  filter: blur(14px);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  transition: none;
+}
+.ss-flash.snap { opacity: 1; transition: none; }
+.ss-flash.fade {
+  opacity: 0; filter: blur(0px);
+  transition: opacity 0.45s ease-out, filter 0.38s ease-out;
+}
+#ss-cursor {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  font-family: 'ABCDiatype', Arial, sans-serif;
+  font-size: 10px;
+  color: #fff;
+  mix-blend-mode: difference;
+  transform: translate(-50%, -50%);
+  display: none;
+  white-space: nowrap;
+  user-select: none; -webkit-user-select: none;
+}
+
+/* ── Two-column rows ── */
+.row-2 { display:flex; gap:10px; }
+.col-2 { display:flex; flex-direction:column; gap:5px; flex:1 1 0; }
+
+/* ── Glass card ── */
+#glass-card {
+  position:absolute;
+  background:rgba(255,255,255,0.62);
+  backdrop-filter:blur(24px) saturate(160%);
+  -webkit-backdrop-filter:blur(24px) saturate(160%);
+  border:0.5px solid rgba(255,255,255,0.7);
+  overflow:hidden;
+  z-index:200;
+  cursor:pointer;
+  max-height:63px;
+  transition:max-height 0.55s cubic-bezier(0.77,0,0.175,1);
+}
+#glass-card.open { cursor:default; }
+#glass-card.open #card-header { cursor:pointer; }
+#glass-card:not(.open) #card-body { opacity: 0; pointer-events: none; }
+
+#card-scroll {
+  overflow-y:auto;
+  scrollbar-width:none;
+  height:100%;
+}
+#card-scroll::-webkit-scrollbar { display:none; }
+
+#card-inner { padding:25px; }
+
+.rot-x {
+  display:inline-block;
+  font-size:10px; line-height:1;
+  transition:transform 0.38s cubic-bezier(0.77,0,0.175,1);
+  transform:rotate(0deg);
+  cursor:pointer;
+}
+.rot-x.closed { transform:rotate(45deg); }
+
+.s-body {
+  overflow:hidden;
+  max-height:600px;
+  opacity:1;
+  transition:max-height 0.45s cubic-bezier(0.77,0,0.175,1),
+             opacity 0.3s ease;
+}
+.s-body.collapsed {
+  max-height:0;
+  opacity:0;
+}
+
+.card-section-head {
+  cursor:pointer;
+  user-select:none;
+}
+
+.card-rule { height:1px; background:#1a1a1a; margin-bottom:3px; }
+
+.card-header-row {
+  position:relative; height:13px;
+  font-family:'ABCDiatype',Arial,sans-serif; font-size:10px; color:#1a1a1a;
+}
+.h-name   { position:absolute; left:0; white-space:nowrap; }
+.h-toggle {
+  position:absolute; right:0;
+  background:none; cursor:pointer;
+  font-family:'ABCDiatype',Arial,sans-serif; font-size:10px; color:#1a1a1a;
+}
+.h-year   { position:absolute; white-space:nowrap; }
+.h-client { position:absolute; white-space:nowrap; }
+
+#card-desc { margin-top:39px; }
+.card-p {
+  font-size:10px; line-height:1.55; color:#1a1a1a;
+  margin-bottom:1em;
+}
+.card-p:last-child { margin-bottom:0; }
+.card-p-indent { text-indent:32%; }
+
+.card-section { margin-top:15px; }
+.card-section-head {
+  border-top:1px solid #1a1a1a; padding-top:4px;
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:10px; color:#1a1a1a;
+}
+.s-body { overflow:hidden; }
+.s-body-pad { padding-top:15px; }
+.card-table { position:relative; }
+.card-table .col-a { font-size:10px; line-height:1.7; }
+.card-table .col-b {
+  position:absolute; top:0; left:214px;
+  font-size:10px; line-height:1.7;
+}
+.card-also-img { background:#d9d9d9; margin-bottom:7px; }
+.card-also-meta { display:flex; gap:74px; font-size:10px; margin-bottom:5px; }
+.card-also-link { font-size:10px; color:rgba(0,0,0,0.45); cursor:pointer; }
+.card-also-link:hover { color:rgba(0,0,0,0.25); }
+
+/* Hidden by default — mobile media query turns it on */
+#mobile-project { display: none; }
+
+/* ── Mobile ── */
+@media (max-width:768px) {
+  html {
+    height: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  html::-webkit-scrollbar { display: none; }
+  body {
+    position: relative;
+    top: auto; left: auto; right: auto; bottom: auto;
+    width: 100%; height: auto;
+    overflow: visible;
+    cursor: auto;
+    background: #D9D9D9;
+    padding: 28px 0;
+  }
+  #nav    { position: fixed; top: 0; left: 0; right: 0; z-index: 200; }
+  #footer { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; }
+  #bl, #br { display: none; }
+  #clip { display: none !important; }
+
+  #mobile-project {
+    display: block;
+    background: #fff;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    margin: 0 15px;
+  }
+  #mobile-project::-webkit-scrollbar { display: none; }
+
+  /* ─ Sticky info widget ─ */
+  #mp-widget {
+    position: sticky;
+    top: 10px;
+    z-index: 50;
+    margin: 10px 10px 0;
+    background: rgba(0,0,0,0.05);
+    backdrop-filter: blur(10px) saturate(140%);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
+    border: 0.5px solid rgba(0,0,0,0.1);
+    overflow: hidden;
+    cursor: pointer;
+    max-height: 40px;
+    transition: max-height 0.55s cubic-bezier(0.77,0,0.175,1);
+  }
+  #mp-widget.open {
+    max-height: 55vh;
+    cursor: default;
+  }
+  #mp-widget.open #mp-widget-header { cursor: pointer; }
+
+  #mp-widget-header {
+    padding: 10px 10px 8px;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #mp-widget-scroll {
+    overflow-y: auto;
+    max-height: calc(55vh - 40px);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 0 10px 10px;
+  }
+  #mp-widget-scroll::-webkit-scrollbar { display: none; }
+
+  #mp-widget-scroll .mp-card-desc { width: auto !important; margin-top: 20px; }
+  #mp-widget-scroll .card-table { position: static; }
+  #mp-widget-scroll .card-table .col-b { position: static; margin-top: 4px; }
+  #mp-widget-scroll .card-also-img {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 200/239;
+    background-size: calc(100% + 4px) calc(100% + 4px) !important;
+  }
+  #mp-widget-scroll .card-also-meta { gap: 16px; flex-wrap: wrap; }
+
+  .mp-header {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 2px 0 0;
+    font-family: 'ABCDiatype', Arial, sans-serif;
+    font-size: 10px;
+    color: #1a1a1a;
+  }
+  .mp-h-name  { flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mp-h-year,
+  .mp-h-client { flex: 0 0 auto; }
+
+  #mp-toggle {
+    position: static !important;
+    background: none;
+    flex-shrink: 0;
+  }
+
+  #mp-images {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .mp-img {
+    width: 100%;
+    overflow: hidden;
+    background-color: #e8e8e8;
+    background-size: calc(100% + 4px) calc(100% + 4px);
+    background-position: center;
+    background-repeat: no-repeat;
+    display: block;
+  }
+  .mp-img-cap {
+    font-family: 'ABCDiatype', Arial, sans-serif;
+    font-size: 10px;
+    color: #1a1a1a;
+    padding: 4px 0 0;
+  }
+
+  .mp-next-label {
+    display: block;
+    font-family: 'ABCDiatype', Arial, sans-serif;
+    font-size: 15px;
+    color: #1a1a1a;
+    padding: 14px 10px 8px;
+  }
+  .mp-next-card {
+    width: calc(100% - 20px);
+    margin: 0 10px 20px;
+    aspect-ratio: 1418/306;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+  }
+  .mp-next-bg {
+    position: absolute; inset: 0;
+    background-color: #1a1a1a;
+    background-size: calc(100% + 4px) calc(100% + 4px);
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  .mp-next-title {
+    position: absolute; left: 10px; top: 10px; z-index: 2;
+    font-family: 'ABCDiatype', Arial, sans-serif;
+    font-size: 10px; color: #fff; white-space: nowrap;
+  }
+  .mp-next-meta {
+    position: absolute; right: 10px; top: 10px; z-index: 2;
+    font-family: 'ABCDiatype', Arial, sans-serif;
+    font-size: 10px; color: #fff;
+    display: flex; gap: 10px;
+  }
+}
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <a href="index.html">Work</a>
+  <a id="nav-center" href="index.html">Naman Nanda</a>
+  <a href="about.html">About</a>
+</nav>
+
+<div id="clip">
+  <div id="page">
+
+    <!-- © copyright — hidden on this page -->
+    <div id="m-copy" class="mod" style="display:none;"></div>
+
+    <!-- MODULE 1: Hero — Figma x:365 y:56 w:709 -->
+    <div id="m-hero" class="mod">
+      <div class="img-slot loaded" id="img-hero" style="width:100%;aspect-ratio:1418/906;background-image:url('./images/01-pax.png');background-size:cover;background-position:center;"></div>
+      <p id="cap-hero" style="margin-top:5px;font-size:12px;text-align:center;">PAX 3 Grinder System — Complete Kit</p>
+    </div>
+
+    <!-- MODULE 2: Single centered — Figma x:0 y:975 w:1440, inner w:709 centered -->
+    <div id="m-single" class="mod" style="width:100%;display:flex;justify-content:center;padding:10px;">
+      <div style="width:49.24%;display:flex;flex-direction:column;gap:5px;align-items:center;">
+        <div class="img-slot loaded" style="width:100%;aspect-ratio:709/906;background-image:url('./images/02-pax.png');background-size:cover;background-position:center;"></div>
+        <p style="text-align:center;width:100%;">PAX 3 Complete Kit — 2023</p>
+      </div>
+    </div>
+
+    <!-- MODULE 3: Two-column — Figma x:10 y:1937 w:1418 — children offset y:33 -->
+    <div id="m-2col" class="mod">
+      <div class="row-2">
+        <div class="col-2">
+          <div class="img-slot loaded" style="width:100%;aspect-ratio:709/906;margin-top:33px;background-image:url('./images/03-pax.png');background-size:cover;background-position:center;"></div>
+          <p>Precision Ground Aerospace Aluminum</p>
+        </div>
+        <div class="col-2">
+          <div class="img-slot loaded" style="width:100%;aspect-ratio:709/906;margin-top:33px;background-image:url('./images/04-pax.png');background-size:cover;background-position:center;"></div>
+          <p>The PAX Complete Smoking Tray</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODULE 4a: Staggered portrait left — Figma x:101 y:3115 w:527 img-h:673 -->
+    <div id="m-port-l" class="mod">
+      <div class="img-slot loaded ss" data-ss-id="ss-port-l" style="width:100%;aspect-ratio:527/673;background-image:url('./images/05-pax.png');background-size:cover;background-position:center;"></div>
+      <p id="cap-port-l" style="margin-top:113px;">PAX Magnetic Lid System</p>
+    </div>
+
+    <!-- MODULE 4b: Staggered portrait right — Figma x:810 y:3115 w:527 img-h:673 -->
+    <div id="m-port-r" class="mod">
+      <div class="img-slot loaded ss" data-ss-id="ss-port-r" style="width:100%;aspect-ratio:527/673;background-image:url('./images/06-pax.png');background-size:cover;background-position:center;"></div>
+      <p id="cap-port-r" style="margin-top:113px;">Limited Edition — White PAX 3</p>
+    </div>
+
+    <!-- MODULE 5: Full-width — Figma x:10 y:4102 w:1418 -->
+    <div id="m-full" class="mod">
+      <div class="img-slot loaded" style="width:100%;aspect-ratio:1418/906;background-image:url('./images/07-pax.png');background-size:cover;background-position:center;"></div>
+      <p style="margin-top:5px;">PAX Complete Collection — 2023</p>
+    </div>
+
+    <!-- "Behind the Scenes:" label — Figma x:10 y:5214 -->
+    <div id="m-bts-label" class="mod" style="font-size:20px;">Behind the Scenes:</div>
+
+    <!-- MODULE 6: Behind-the-scenes strip — Figma x:10 y:5262 w:1221 h:198 -->
+    <!-- Widths from Figma: 348, 127, 268, 293, 145 — 10px gaps between -->
+    <div id="m-bts" class="mod" style="display:flex;gap:10px;align-items:stretch;">
+      <div class="img-slot loaded" id="bts-1" style="flex-shrink:0;height:100%;background-image:url('./images/1-BTS-Pax.png');background-size:cover;background-position:center;"></div>
+      <div class="img-slot loaded" id="bts-2" style="flex-shrink:0;height:100%;background-image:url('./images/2-BTS-Pax.png');background-size:cover;background-position:center;"></div>
+      <div class="img-slot loaded" id="bts-3" style="flex-shrink:0;height:100%;background-image:url('./images/3-BTS-Pax.png');background-size:cover;background-position:center;"></div>
+      <div class="img-slot loaded" id="bts-4" style="flex-shrink:0;height:100%;background-image:url('./images/4-BTS-Pax.png');background-size:cover;background-position:center;"></div>
+      <div class="img-slot loaded" id="bts-5" style="flex:1;height:100%;background-image:url('./images/5-BTS-Pax.png');background-size:cover;background-position:center;"></div>
+    </div>
+
+    <!-- "Next Project" label — Figma x:10 y:5648 -->
+    <div id="m-next-label" class="mod" style="font-size:20px;">Next Project</div>
+
+    <!-- MODULE 7: Next project card — Figma x:10 y:5696 w:1418 h:306 -->
+    <div id="m-next" class="mod" style="overflow:hidden;cursor:pointer;" onclick="window.location.href='project.html'">
+      <div class="img-slot dark loaded" style="position:absolute;inset:0;background-image:url('./images/footer-nxt-flausy.png');background-size:104% auto;background-position:center center;"></div>
+      <p style="position:absolute;left:20px;top:17px;z-index:2;
+                font-family:'ABCDiatype',Arial,sans-serif;font-size:13px;
+                color:#1a1a1a;line-height:normal;white-space:nowrap;">
+        Flaus Flossing Pick
+      </p>
+      <div style="position:absolute;right:10px;top:17px;z-index:2;
+                  display:flex;gap:10px;
+                  font-family:'ABCDiatype',Arial,sans-serif;font-size:13px;
+                  color:#1a1a1a;line-height:normal;white-space:nowrap;">
+        <span>2024</span><span>Flaus</span>
+      </div>
+    </div>
+
+  </div><!-- /#page -->
+
+  <!-- ═══════════════════════════════════════════
+       GLASS CARD — absolute in #clip, not in #page
+  ═══════════════════════════════════════════ -->
+  <div id="glass-card">
+    <div id="card-scroll">
+    <div id="card-inner">
+
+      <div class="card-rule" id="card-rule"></div>
+      <div class="card-header-row" id="card-header">
+        <span class="h-name">Pax Technologies Projects</span>
+        <span class="h-year" id="h-year">2023</span>
+        <span class="h-client" id="h-client">Pax</span>
+        <button class="h-toggle rot-x closed" id="card-toggle">&#215;</button>
+      </div>
+
+      <div id="card-body">
+
+        <div id="card-desc">
+          <p class="card-p card-p-indent">Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Donec odio. Quisque volutpat mattis eros. Nullam malesuada erat ut turpis. Suspendisse urna nibh viverra non semper suscipit posuere a pede.</p>
+          <p class="card-p card-p-indent">Donec nec justo eget felis facilisis fermentum. Aliquam porttitor mauris sit amet orci. Aenean dignissim pellentesque felis. Morbi in sem quis dui placerat ornare. Pellentesque odio nisi euismod in pharetra a ultricies in diam. Sed arcu. Cras consequat.</p>
+        </div>
+
+        <div class="card-section">
+          <div class="card-section-head" onclick="toggleSection(this)">
+            <span>Credits</span>
+            <span class="rot-x">&#215;</span>
+          </div>
+          <div class="s-body">
+            <div class="s-body-pad">
+            <div class="card-table" id="card-credits">
+              <div class="col-a">
+                <div>Naman Nanda</div><div>Ryan Stewart</div>
+                <div>Naman Nanda</div><div>Ryan Stewart</div>
+              </div>
+              <div class="col-b">
+                <div>Industrial Design</div><div>Photography</div>
+                <div>Packaging</div><div>Agency</div>
+              </div>
+            </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-section">
+          <div class="card-section-head" onclick="toggleSection(this)">
+            <span>Awards</span>
+            <span class="rot-x">&#215;</span>
+          </div>
+          <div class="s-body">
+            <div class="s-body-pad">
+            <div class="card-table" id="card-awards">
+              <div class="col-a">
+                <div>Good Design Award</div><div>Time Best Inventions</div>
+                <div>GQ Design Award</div><div>Fast Companies' World Changing Ideas</div>
+              </div>
+              <div class="col-b">
+                <div>2025</div><div>2024</div><div>2023</div><div>2021</div>
+              </div>
+            </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-section" id="card-last-section" style="margin-bottom:0;">
+          <div class="card-section-head" onclick="toggleSection(this)">
+            <span>You Might Also Like:</span>
+            <span class="rot-x">&#215;</span>
+          </div>
+          <div class="s-body">
+            <div class="s-body-pad">
+            <div class="card-also-img img-slot loaded" id="card-also-img"
+                 style="width:200px;height:239px;background-image:url('./images/product-hero.jpg');background-size:cover;background-position:center;cursor:pointer;"
+                 onclick="window.location.href='project.html'"></div>
+            <div class="card-also-meta">
+              <span>Flaus Flosser</span><span>2023</span><span>Flaus</span>
+            </div>
+            <p class="card-also-link" onclick="window.location.href='project.html'">View Next →</p>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /#card-body -->
+      <div id="card-spacer"></div>
+    </div><!-- /#card-inner -->
+    </div><!-- /#card-scroll -->
+  </div><!-- /#glass-card -->
+
+  <!-- Bottom-edge scroll blur overlay -->
+  <div id="scroll-blur" style="
+    position:absolute;bottom:0;left:0;right:0;height:180px;
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0%,black 55%);
+    mask-image:linear-gradient(to bottom,transparent 0%,black 55%);
+    opacity:0;pointer-events:none;z-index:50;
+  "></div>
+</div><!-- /#clip -->
+
+<div id="footer">© 2026 All Rights Reserved</div>
+<div id="mobile-project"></div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  DESIGN CONSTANTS — Figma frame "PDP Info Open" 1440×6002px
+//  node 2107-4268
+// ════════════════════════════════════════════════════════
+const D = {
+  W: 1440,
+  H: 6032,
+  copy:      { x:0,    y:941,  w:1440, h:16  },
+  hero:      { x:0,    y:0,    w:1440        },   // full-width, flush top
+  single:    { x:0,    y:1005, w:1440        },   // +30 gap after hero
+  '2col':    { x:10,   y:1967, w:1418        },
+  portL:     { x:101,  y:3145, w:527         },
+  portR:     { x:810,  y:3145, w:527         },
+  full:      { x:10,   y:4132, w:1418        },
+  btsLabel:  { x:10,   y:5244               },
+  bts:       { x:10,   y:5292, w:1221, h:198 },
+  nextLabel: { x:10,   y:5678               },
+  next:      { x:0,    y:5726, w:1440, h:306 },   // full-width, no side gaps
+  btsWidths: [348, 127, 268, 293, 145],
+  card: { x:1010, y:30, w:400, hClosed:63 },
+  cardYear:   238,
+  cardClient: 297,
+};
+
+// ════════════════════════════════════════════════════════
+//  LAYOUT
+// ════════════════════════════════════════════════════════
+const clip = document.getElementById('clip');
+const page = document.getElementById('page');
+let u = 1;
+
+function px(n) { return Math.round(n * u) + 'px'; }
+
+function layout() {
+  u = clip.offsetWidth / D.W;
+
+  page.style.height = px(D.H);
+
+  pos('m-copy',       D.copy);
+  pos('m-hero',       D.hero);
+  pos('m-single',     D.single);
+  pos('m-2col',       D['2col']);
+  pos('m-port-l',     D.portL);
+  pos('m-port-r',     D.portR);
+  pos('m-full',       D.full);
+  pos('m-bts-label',  D.btsLabel);
+  pos('m-bts',        D.bts);
+  pos('m-next-label', D.nextLabel);
+  pos('m-next',       D.next);
+
+  // BTS strip individual image widths
+  D.btsWidths.forEach((w, i) => {
+    const el = document.getElementById('bts-' + (i + 1));
+    if (el && i < D.btsWidths.length - 1) el.style.width = px(w);
+  });
+
+  // Portrait captions — scale the 113px gap
+  document.getElementById('cap-port-l').style.marginTop = px(113);
+  document.getElementById('cap-port-r').style.marginTop = px(113);
+
+  // Glass card
+  const card    = document.getElementById('glass-card');
+  const cardW   = Math.round(D.card.w * u);
+  const cardTop = Math.round(D.card.y * u);
+  openMaxH = clip.offsetHeight - cardTop - 8;
+  card.style.top   = cardTop + 'px';
+  card.style.right = px(D.W - D.card.x - D.card.w);
+  card.style.width = cardW + 'px';
+  if (isOpen) {
+    card.style.maxHeight = openMaxH + 'px';
+  } else {
+    card.style.maxHeight = px(D.card.hClosed);
+  }
+  document.getElementById('card-scroll').style.maxHeight = openMaxH + 'px';
+
+  const innerPad = Math.round(25 * u);
+  document.getElementById('card-inner').style.cssText +=
+    `;padding:${innerPad}px ${innerPad}px 0 ${innerPad}px`;
+  document.getElementById('card-spacer').style.height = innerPad + 'px';
+  const innerW = cardW - innerPad * 2;
+  document.getElementById('card-rule').style.width = innerW + 'px';
+
+  const yearLeft   = Math.round(D.cardYear   * (innerW / 348));
+  const clientLeft = Math.round(D.cardClient * (innerW / 348));
+  document.getElementById('h-year').style.left   = yearLeft + 'px';
+  document.getElementById('h-client').style.left = clientLeft + 'px';
+
+  document.getElementById('card-desc').style.width    = innerW + 'px';
+  document.getElementById('card-credits').style.width = innerW + 'px';
+  document.getElementById('card-awards').style.width  = innerW + 'px';
+
+  targetY = Math.min(targetY, maxScroll());
+}
+
+function pos(id, d) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (d.x !== undefined) el.style.left   = px(d.x);
+  if (d.y !== undefined) el.style.top    = px(d.y);
+  if (d.w !== undefined) el.style.width  = px(d.w);
+  if (d.h !== undefined) el.style.height = px(d.h);
+}
+
+// ════════════════════════════════════════════════════════
+//  SMOOTH SCROLL
+// ════════════════════════════════════════════════════════
+let targetY = 0, currentY = 0;
+const LERP = 0.05;
+
+function maxScroll() { return Math.max(0, page.offsetHeight - clip.offsetHeight); }
+function clampScroll(v) { return Math.min(Math.max(v, 0), maxScroll()); }
+
+clip.addEventListener('wheel', e => {
+  e.preventDefault();
+  targetY = clampScroll(targetY + e.deltaY * 1.2);
+}, { passive: false });
+
+document.addEventListener('wheel', e => {
+  e.preventDefault();
+  targetY = clampScroll(targetY + e.deltaY * 1.2);
+}, { passive: false });
+
+let touchY0 = 0;
+clip.addEventListener('touchstart', e => { touchY0 = e.touches[0].clientY; }, { passive: true });
+clip.addEventListener('touchmove', e => {
+  const dy = touchY0 - e.touches[0].clientY;
+  touchY0 = e.touches[0].clientY;
+  targetY = clampScroll(targetY + dy);
+}, { passive: true });
+
+document.addEventListener('keydown', e => {
+  const map = { ArrowDown:80, ArrowUp:-80, PageDown:500, PageUp:-500 };
+  if (map[e.key] !== undefined) { e.preventDefault(); targetY = clampScroll(targetY + map[e.key]); }
+});
+
+// ── Lazy load ──
+const lazySlots = () => Array.from(page.querySelectorAll('.img-slot:not(.loaded)'));
+const BUFFER = 300;
+
+function checkLazy() {
+  const cr = clip.getBoundingClientRect();
+  lazySlots().forEach(el => {
+    const r = el.getBoundingClientRect();
+    if (r.bottom > cr.top - BUFFER && r.top < cr.bottom + BUFFER) {
+      el.classList.add('loaded');
+    }
+  });
+}
+
+// ── RAF tick ──
+const scrollBlur = document.getElementById('scroll-blur');
+function tick() {
+  const diff = targetY - currentY;
+  currentY = Math.abs(diff) < 0.04 ? targetY : currentY + diff * LERP;
+  page.style.transform = `translateY(${-currentY}px)`;
+  if (scrollBlur) scrollBlur.style.opacity = Math.min(Math.abs(diff) * 0.012, 0.85).toFixed(3);
+  checkLazy();
+  requestAnimationFrame(tick);
+}
+
+// ════════════════════════════════════════════════════════
+//  GLASS CARD TOGGLE
+// ════════════════════════════════════════════════════════
+const card       = document.getElementById('glass-card');
+const cardScroll = document.getElementById('card-scroll');
+const toggle     = document.getElementById('card-toggle');
+let isOpen = false;
+let openMaxH = 800;
+
+function toggleCard() {
+  isOpen = !isOpen;
+  card.classList.toggle('open', isOpen);
+  toggle.classList.toggle('closed', !isOpen);
+  if (isOpen) {
+    card.style.maxHeight = openMaxH + 'px';
+  } else {
+    card.style.maxHeight = px(D.card.hClosed);
+    cardScroll.scrollTop = 0;
+  }
+}
+
+function toggleSection(head) {
+  const body = head.nextElementSibling;
+  const icon = head.querySelector('.rot-x');
+  const closing = !body.classList.contains('collapsed');
+  body.classList.toggle('collapsed', closing);
+  icon.classList.toggle('closed', closing);
+}
+
+card.addEventListener('click', () => {
+  if (!isOpen) toggleCard();
+});
+
+const cardHeader = document.getElementById('card-header');
+cardHeader.addEventListener('click', e => {
+  if (isOpen) { e.stopPropagation(); toggleCard(); }
+});
+
+toggle.addEventListener('click', e => {
+  e.stopPropagation();
+  toggleCard();
+});
+
+// ════════════════════════════════════════════════════════
+//  RANDOM IMAGE COLORS — for BTS placeholders
+// ════════════════════════════════════════════════════════
+function randomiseSlots() {
+  page.querySelectorAll('.img-slot').forEach(el => {
+    if (el.style.backgroundImage) return;
+    const h = Math.floor(Math.random() * 360);
+    const s = Math.floor(20 + Math.random() * 30);
+    const l = Math.floor(72 + Math.random() * 16);
+    el.style.backgroundColor = `hsl(${h},${s}%,${l}%)`;
+  });
+}
+
+// ════════════════════════════════════════════════════════
+//  MOBILE PROJECT BUILD
+// ════════════════════════════════════════════════════════
+function buildMobileProject() {
+  const mp = document.getElementById('mobile-project');
+  if (!mp) return;
+  mp.innerHTML = '';
+
+  function makeImg(src, ratio, caption) {
+    const wrap = document.createElement('div');
+    const img  = document.createElement('div');
+    img.className = 'mp-img';
+    img.style.aspectRatio = ratio;
+    if (src) {
+      img.style.backgroundImage = `url('${src}')`;
+    } else {
+      const h = Math.floor(Math.random() * 360);
+      const s = Math.floor(20 + Math.random() * 30);
+      const l = Math.floor(72 + Math.random() * 16);
+      img.style.backgroundColor = `hsl(${h},${s}%,${l}%)`;
+    }
+    wrap.appendChild(img);
+    if (caption) {
+      const cap = document.createElement('p');
+      cap.className = 'mp-img-cap';
+      cap.textContent = caption;
+      wrap.appendChild(cap);
+    }
+    return wrap;
+  }
+
+  // ── Sticky info widget ──
+  const mpWidget = document.createElement('div');
+  mpWidget.id = 'mp-widget';
+
+  const mpWidgetHeader = document.createElement('div');
+  mpWidgetHeader.id = 'mp-widget-header';
+  mpWidgetHeader.innerHTML =
+    '<div class="card-rule"></div>' +
+    '<div class="mp-header">' +
+      '<span class="mp-h-name">Pax Technologies Projects</span>' +
+      '<span class="mp-h-year">2023</span>' +
+      '<span class="mp-h-client">Pax</span>' +
+      '<button class="h-toggle rot-x closed" id="mp-toggle">&#215;</button>' +
+    '</div>';
+  mpWidget.appendChild(mpWidgetHeader);
+
+  const mpWidgetScroll = document.createElement('div');
+  mpWidgetScroll.id = 'mp-widget-scroll';
+
+  const bodyClone = document.getElementById('card-body').cloneNode(true);
+  const descEl = bodyClone.querySelector('#card-desc');
+  if (descEl) descEl.classList.add('mp-card-desc');
+  bodyClone.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+  bodyClone.removeAttribute('id');
+  bodyClone.querySelectorAll('[style]').forEach(n => {
+    n.style.removeProperty('width');
+    n.style.removeProperty('height');
+  });
+  mpWidgetScroll.appendChild(bodyClone);
+  mpWidget.appendChild(mpWidgetScroll);
+  mp.appendChild(mpWidget);
+
+  let mpOpen = false;
+  const mpToggleBtn = mpWidget.querySelector('#mp-toggle');
+
+  function toggleMpWidget() {
+    mpOpen = !mpOpen;
+    mpWidget.classList.toggle('open', mpOpen);
+    if (mpToggleBtn) mpToggleBtn.classList.toggle('closed', !mpOpen);
+    if (!mpOpen) mpWidgetScroll.scrollTop = 0;
+  }
+
+  mpWidget.addEventListener('click', () => { if (!mpOpen) toggleMpWidget(); });
+  mpWidgetHeader.addEventListener('click', e => {
+    if (mpOpen) { e.stopPropagation(); toggleMpWidget(); }
+  });
+  if (mpToggleBtn) {
+    mpToggleBtn.addEventListener('click', e => { e.stopPropagation(); toggleMpWidget(); });
+  }
+
+  // ── Project images ──
+  const mpImages = document.createElement('div');
+  mpImages.id = 'mp-images';
+  mpImages.appendChild(makeImg('./images/01-pax.png',  '1418/906', 'PAX 3 Grinder System — Complete Kit'));
+  mpImages.appendChild(makeImg('./images/02-pax.png',  '709/906',  'Campaign Imagery 2024'));
+  mpImages.appendChild(makeImg('./images/03-pax.png',  '709/906',  'Campaign Imagery 2024'));
+  mpImages.appendChild(makeImg('./images/04-pax.png',  '709/906',  'Campaign Imagery 2024'));
+  mpImages.appendChild(makeImg('./images/05-pax.png',  '527/673',  'Campaign Imagery 2024'));
+  mpImages.appendChild(makeImg('./images/06-pax.png',  '527/673',  'Campaign Imagery 2024'));
+  mpImages.appendChild(makeImg('./images/07-pax.png',  '1418/906', 'Campaign Imagery 2024'));
+  mp.appendChild(mpImages);
+
+  // ── Next project ──
+  const nextLabel = document.createElement('span');
+  nextLabel.className = 'mp-next-label';
+  nextLabel.textContent = 'Next Project';
+  mp.appendChild(nextLabel);
+
+  const nextCard = document.createElement('div');
+  nextCard.className = 'mp-next-card';
+  nextCard.onclick = () => { window.location.href = 'project.html'; };
+  nextCard.innerHTML =
+    '<div class="mp-next-bg" style="background-image:url(\'./images/footer-nxt-flausy.png\');"></div>' +
+    '<p class="mp-next-title">Flaus Flossing Pick</p>' +
+    '<div class="mp-next-meta"><span>2024</span><span>Flaus</span></div>';
+  mp.appendChild(nextCard);
+}
+
+// ════════════════════════════════════════════════════════
+//  SLIDESHOWS — portrait slots cycle colour palettes
+// ════════════════════════════════════════════════════════
+const SS_PALETTES = {
+  'ss-port-l': ['#c5bdb4','#b4bfc5','#bdc5b4','#c5b4be','#c8c2b0'],
+  'ss-port-r': ['#b8c4c0','#c4b8bc','#c0c4b8','#bcb8c4','#c4c0b4'],
+};
+
+// ════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════
+const isMobile = window.matchMedia('(max-width:768px)').matches;
+
+if (isMobile) {
+  buildMobileProject();
+} else {
+  window.addEventListener('resize', layout);
+  layout();
+  randomiseSlots();
+  initSlideshows();
+  tick();
+  checkLazy();
+}
+
+function initSlideshows() {
+  const cursor = document.createElement('div');
+  cursor.id = 'ss-cursor';
+  document.body.appendChild(cursor);
+
+  document.querySelectorAll('.img-slot.ss').forEach(slot => {
+    const colors = (SS_PALETTES[slot.dataset.ssId] || SS_PALETTES['ss-port-l']).slice();
+    let ssIndex = 0;
+
+    const flash = document.createElement('div');
+    flash.className = 'ss-flash';
+    slot.appendChild(flash);
+
+    slot.addEventListener('click', e => {
+      const right = (e.clientX - slot.getBoundingClientRect().left) > slot.offsetWidth / 2;
+      ssIndex = (ssIndex + (right ? 1 : -1) + colors.length) % colors.length;
+      // Tint background-color overlay (image stays via background-image)
+      slot.style.setProperty('--ss-tint', colors[ssIndex]);
+      flash.className = 'ss-flash snap';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        flash.className = 'ss-flash fade';
+      }));
+    });
+
+    slot.addEventListener('mousemove', e => {
+      const right = (e.clientX - slot.getBoundingClientRect().left) > slot.offsetWidth / 2;
+      cursor.textContent = right ? 'Next' : 'Prev';
+      cursor.style.display = 'block';
+      cursor.style.left = e.clientX + 'px';
+      cursor.style.top  = e.clientY + 'px';
+    });
+    slot.addEventListener('mouseleave', () => { cursor.style.display = 'none'; });
+  });
+}
+</script>
+
+</body>
+</html>
