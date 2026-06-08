@@ -337,6 +337,12 @@ const card        = document.getElementById('about-card');
 const drawCanvas  = document.getElementById('draw-canvas');
 const ctx         = drawCanvas.getContext('2d');
 
+// Default background image — 'pending' → 'active' (drawn) → 'cleared' (Reset pressed)
+let defaultBgState = 'pending';
+const defaultBg    = new Image();
+defaultBg.src      = 'images/01-Drawing-default.png';
+defaultBg.onload   = () => drawDefaultBg();
+
 // Reliable dimension helpers — fallback to window size if clip hasn't laid out yet
 function clipW() { return clip.offsetWidth  || (window.innerWidth  - 30); }
 function clipH() { return clip.offsetHeight || (window.innerHeight - 56); }
@@ -360,6 +366,7 @@ function layout() {
   card.style.maxHeight = (h - Math.round(D.card.y * u) - 20) + 'px';
   // No explicit height — card shrinks to content, glass hugs the camera
   resizeCanvas();
+  drawDefaultBg();
   drawColorBar();
   updateBtns();
   updateCursor();
@@ -455,7 +462,7 @@ function updateBtns() {
   const btns = document.querySelectorAll('#draw-controls button');
   const clearBtn = btns[1];
   const undoBtn  = btns[2];
-  const states = [drawn, undoStack.length > 0];
+  const states = [drawn || defaultBgState === 'active', undoStack.length > 0];
   [clearBtn, undoBtn].forEach((b, i) => {
     b.style.opacity       = states[i] ? '1'      : '0.45';
     b.style.pointerEvents = states[i] ? ''        : 'none';
@@ -556,11 +563,23 @@ window.addEventListener('mouseup',    () => { drawing = false; });
 window.addEventListener('mouseleave', () => { drawing = false; });
 
 // ════════════════════════════════════════════════════════
+//  DEFAULT BACKGROUND
+// ════════════════════════════════════════════════════════
+function drawDefaultBg() {
+  if (defaultBgState !== 'pending') return;        // already active, or user cleared it
+  if (!defaultBg.complete || !defaultBg.naturalWidth) return; // image not ready yet
+  ctx.drawImage(defaultBg, 0, 0, drawCanvas.width, drawCanvas.height);
+  defaultBgState = 'active';
+  updateBtns();
+}
+
+// ════════════════════════════════════════════════════════
 //  CLEAR
 // ════════════════════════════════════════════════════════
 function clearCanvas() {
   ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
   drawn = false;
+  if (defaultBgState === 'active') defaultBgState = 'cleared';
   undoStack.length = 0;
   updateBtns();
 }
