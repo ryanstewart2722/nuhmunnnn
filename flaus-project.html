@@ -28,13 +28,13 @@ body {
   font-family: 'ABCDiatype', Arial, sans-serif;
 }
 
-/* ── Frame (identical to index.html) ── */
-#bl { position: absolute; top:0; left:0; bottom:0; width:15px; background:#D9D9D9; z-index:100; }
-#br { position: absolute; top:0; right:0; bottom:0; width:15px; background:#D9D9D9; z-index:100; }
+/* ── Frame — all 4 strips always fixed ── */
+#bl { position: fixed; top:0; left:0; bottom:0; width:15px; background:#D9D9D9; z-index:950; pointer-events:none; }
+#br { position: fixed; top:0; right:0; bottom:0; width:15px; background:#D9D9D9; z-index:950; pointer-events:none; }
 #nav {
-  position: absolute; top:0; left:0; right:0; height:28px;
+  position: fixed; top:0; left:0; right:0; height:28px;
   display:flex; align-items:center; justify-content:space-between;
-  padding:0 15px; background:#D9D9D9; z-index:100;
+  padding:0 15px; background:#D9D9D9; z-index:200;
 }
 #nav a { font-family:'ABCDiatype',Arial,sans-serif; font-size:10px; color:#1a1a1a; text-decoration:none; }
 #nav a:hover { opacity:0.5; }
@@ -43,9 +43,9 @@ body {
   font-family:'ABCDiatype',Arial,sans-serif; font-size:10px; color:#1a1a1a;
 }
 #footer {
-  position:absolute; bottom:0; left:0; right:0; height:28px;
+  position:fixed; bottom:0; left:0; right:0; height:28px;
   display:flex; align-items:center; justify-content:center;
-  background:#D9D9D9; z-index:100;
+  background:#D9D9D9; z-index:200;
   font-family:'ABCDiatype',Arial,sans-serif; font-size:10px; color:#1a1a1a;
 }
 
@@ -261,7 +261,7 @@ body {
   }
   #nav    { position: fixed; top: 0; left: 0; right: 0; z-index: 200; }
   #footer { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; }
-  #bl, #br { display: none; }
+  /* #bl and #br stay visible on all screen sizes */
   #clip { display: none !important; }
 
   #mobile-project {
@@ -645,21 +645,21 @@ body {
 // ════════════════════════════════════════════════════════
 const D = {
   W: 1440,
-  H: 7401,
+  H: 7467,
   copy:      { x:0,    y:941,  w:1440, h:16  },
   hero:      { x:365,  y:56,   w:709         },
-  wide:      { x:10,   y:1010, w:1418        },  // single wide slideshow
-  single:    { x:0,    y:1972, w:1440        },  // Carousel 1 slideshow (8 images)
-  '2col-b':  { x:10,   y:2972, w:1418        },  // static two-column
-  single2:   { x:0,    y:3944, w:1440        },  // Carousel 2 slideshow (5 images)
-  full:      { x:10,   y:4954, w:1418        },  // full-width static (right after Carousel 2)
-  small2up:  { x:10,   y:5748, w:1418        },  // hidden
-  portL:     { x:101,  y:5748, w:527         },  // staggered portrait left
-  portR:     { x:810,  y:5748, w:527         },  // staggered portrait right
-  btsLabel:  { x:10,   y:6600              },
-  bts:       { x:10,   y:6648, w:1418, h:199 },
-  nextLabel: { x:10,   y:6947              },
-  next:      { x:0,    y:6995, w:1440, h:406 },
+  wide:      { x:10,   y:1037, w:1418        },  // single wide slideshow
+  single:    { x:0,    y:2031, w:1440        },  // Carousel 1 slideshow (8 images)
+  '2col-b':  { x:10,   y:3031, w:1418        },  // static two-column
+  single2:   { x:0,    y:4003, w:1440        },  // Carousel 2 slideshow (5 images)
+  full:      { x:10,   y:5013, w:1418        },  // full-width static (right after Carousel 2)
+  small2up:  { x:10,   y:5814, w:1418        },  // hidden
+  portL:     { x:101,  y:5814, w:527         },  // staggered portrait left
+  portR:     { x:810,  y:5814, w:527         },  // staggered portrait right
+  btsLabel:  { x:10,   y:6666              },
+  bts:       { x:10,   y:6714, w:1418, h:199 },
+  nextLabel: { x:10,   y:7013              },
+  next:      { x:0,    y:7061, w:1440, h:406 },
   btsWidths: [149, 265, 149, 250],
   card: { x:1010, y:30, w:400, hClosed:63 },
   cardYear:   238,
@@ -1096,6 +1096,49 @@ function initSlideshows() {
   });
 }
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     GALLERY — image list in visual page order
+     Captions match the caption shown on the page for that image
+═══════════════════════════════════════════════════════════ -->
+<script>
+window.GALLERY_IMAGES = [
+  // Hero
+  { src:'./images/Flaus-Hero.png',                   caption:'Lorem Ipsum Dolor Sit Amet', w:2127, h:2718 },
+  // Full-width slideshow (2 frames)
+  { src:'./images/Flaus-Full width-Carousel-1.png',  caption:'Campaign Imagery 2024',      w:4194, h:2718 },
+  { src:'./images/Flaus-Full width-Carousel-2.png',  caption:'Campaign Imagery 2024',      w:4194, h:2718 },
+  // 1-up Carousel 1 (8 frames)
+  { src:'./images/Flaus-Carousel-1-1.png',           caption:'Campaign Imagery 2024',      w:2127, h:2718 },
+  { src:'./images/Flaus-Carousel-1-2.png',           caption:'Campaign Imagery 2024',      w:2127, h:2718 },
+  { src:'./images/Flaus-Carousel-1-3.png',           caption:'Campaign Imagery 2024',      w:2127, h:2718 },
+  { src:'./images/Flaus-Carousel-1-4.png',           caption:'Campaign Imagery 2024',      w:2127, h:2718 },
+  { src:'./images/Flaus-Carousel-1-5.png',           caption:'Campaign Imagery 2024',      w:2127, h:2718 },
+  { src:'./images/Flaus-Carousel-1-6.png',           caption:'Campaign Imagery 2024',      w:2127, h:2718 },
+  { src:'./images/Flaus-Carousel-1-7.png',           caption:'Campaign Imagery 2024',      w:2127, h:2718 },
+  { src:'./images/Flaus-Carousel-1-8.png',           caption:'Campaign Imagery 2024',      w:2127, h:2718 },
+  // 2-up full width (V1 pair)
+  { src:'./images/Flaus 2 up 1 V1.png',             caption:'Campaign Imagery 2024',      w:1418, h:1812 },
+  { src:'./images/Flaus 2 up 2 V1.png',             caption:'Campaign Imagery 2024',      w:1418, h:1812 },
+  // 1-up Carousel 2 (5 frames)
+  { src:'./images/Flaus-Carousel 2-1.png',           caption:'Campaign Imagery 2024',      w:2127, h:2718 },
+  { src:'./images/Flaus-Carousel 2-2.png',           caption:'Campaign Imagery 2024',      w:2127, h:2718 },
+  { src:'./images/Flaus-Carousel 2-3.png',           caption:'Campaign Imagery 2024',      w:2127, h:2718 },
+  { src:'./images/Flaus-Carousel 2-4.png',           caption:'Campaign Imagery 2024',      w:2127, h:2718 },
+  { src:'./images/Flaus-Carousel 2-5.png',           caption:'Campaign Imagery 2024',      w:2127, h:2718 },
+  // Full-width static
+  { src:'./images/Flaus full width Last.png',        caption:'Campaign Imagery 2024',      w:2836, h:1452 },
+  // 2-up small (staggered pair)
+  { src:'./images/Flaus-Small 2 up-1.png',           caption:'Campaign Imagery 2024',      w:1581, h:2019 },
+  { src:'./images/Flaus-Small 2 up-1-1.png',         caption:'Campaign Imagery 2024',      w:1581, h:2019 },
+  // Behind the Scenes (4 images)
+  { src:'./images/Flaus-BTS-1.png',                  caption:'',                           w:1300, h:1733 },
+  { src:'./images/Flaus-BTS-2.png',                  caption:'',                           w:2307, h:1731 },
+  { src:'./images/Flaus-BTS-3.png',                  caption:'',                           w:1300, h:1733 },
+  { src:'./images/Flaus-BTS-4.png',                  caption:'',                           w:2176, h:1731 },
+];
+</script>
+<script src="./gallery.js"></script>
 
 </body>
 </html>

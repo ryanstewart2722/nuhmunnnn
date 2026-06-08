@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emoji Collage — Naman Nanda</title>
+<style>
+@font-face {
+  font-family: 'ABCDiatype';
+  src: url('./fonts/ABCDiatype-Regular.otf') format('opentype');
+  font-weight: normal; font-style: normal;
+}
+*, *::before, *::after {
+  margin: 0; padding: 0; box-sizing: border-box;
+  border: 0 none; outline: 0 none;
+  -webkit-tap-highlight-color: transparent;
+}
+html { width: 100%; height: 100%; background: #D9D9D9; overflow: hidden; }
+body {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: #D9D9D9; overflow: hidden;
+  font-family: 'ABCDiatype', Arial, sans-serif;
+  cursor: default;
+}
+
+/* ── Frame — all 4 strips always fixed ── */
+#bl { position: fixed; top: 0; left: 0; bottom: 0; width: 15px; background: #D9D9D9; z-index: 950; pointer-events: none; }
+#br { position: fixed; top: 0; right: 0; bottom: 0; width: 15px; background: #D9D9D9; z-index: 950; pointer-events: none; }
+
+#nav {
+  position: fixed; top: 0; left: 0; right: 0; height: 28px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 15px; background: #D9D9D9; z-index: 200; cursor: auto;
+}
+#nav a { font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a; text-decoration: none; }
+#nav a:hover { opacity: 0.5; }
+#nav span.nav-cur { font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a; }
+#nav-center {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a;
+}
+
+#footer {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  background: #D9D9D9; z-index: 200; cursor: auto;
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a;
+}
+
+/* ── Content clip ── */
+#clip {
+  position: absolute; top: 28px; bottom: 28px; left: 15px; right: 15px;
+  overflow: hidden; background: #fff;
+  user-select: none; -webkit-user-select: none;
+}
+
+/* ── Mode tabs — top-left ── */
+#mode-tabs {
+  position: absolute; top: 10px; left: 10px;
+  z-index: 300; display: inline-flex; align-items: stretch;
+  border: 0.5px solid rgb(209, 209, 209);
+  background: rgba(236, 236, 236, 0.60);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  cursor: auto;
+  user-select: none; -webkit-user-select: none;
+}
+.mode-tab {
+  font-family: 'ABCDiatype', Arial, sans-serif;
+  font-size: 10px; color: #1a1a1a;
+  padding: 4px 9px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.mode-tab.active {
+  background: rgba(255,255,255,0.72);
+  cursor: default;
+}
+.mode-tab:not(.active) {
+  color: rgba(26,26,26,0.40);
+}
+.mode-tab:not(.active):hover {
+  color: rgba(26,26,26,0.70);
+}
+.mode-tab + .mode-tab {
+  border-left: 0.5px solid rgb(209,209,209);
+}
+</style>
+</head>
+<body>
+
+<div id="bl"></div>
+<div id="br"></div>
+
+<nav id="nav">
+  <a href="index.html">Work</a>
+  <span id="nav-center">Naman Nanda</span>
+  <a href="about.html">About</a>
+</nav>
+
+<footer id="footer">© 2026 All Rights Reserved</footer>
+
+<div id="clip">
+
+  <!-- Mode tabs — top-left -->
+  <div id="mode-tabs">
+    <span class="mode-tab" onclick="window.location.href='about.html'">Canvas</span>
+    <span class="mode-tab active">Emoji Collage</span>
+  </div>
+
+  <!-- Emoji builder content goes here -->
+
+</div><!-- /#clip -->
+
+</body>
+</html>

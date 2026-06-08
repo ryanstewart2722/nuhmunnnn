@@ -28,13 +28,13 @@ body {
   font-family: 'ABCDiatype', Arial, sans-serif;
 }
 
-/* ── Frame ── */
-#bl { position: absolute; top:0; left:0; bottom:0; width:15px; background:#D9D9D9; z-index:100; }
-#br { position: absolute; top:0; right:0; bottom:0; width:15px; background:#D9D9D9; z-index:100; }
+/* ── Frame — all 4 strips always fixed ── */
+#bl { position: fixed; top:0; left:0; bottom:0; width:15px; background:#D9D9D9; z-index:950; pointer-events:none; }
+#br { position: fixed; top:0; right:0; bottom:0; width:15px; background:#D9D9D9; z-index:950; pointer-events:none; }
 #nav {
-  position: absolute; top:0; left:0; right:0; height:28px;
+  position: fixed; top:0; left:0; right:0; height:28px;
   display:flex; align-items:center; justify-content:space-between;
-  padding:0 15px; background:#D9D9D9; z-index:100;
+  padding:0 15px; background:#D9D9D9; z-index:200;
 }
 #nav a { font-family:'ABCDiatype',Arial,sans-serif; font-size:10px; color:#1a1a1a; text-decoration:none; }
 #nav a:hover { opacity:0.5; }
@@ -43,9 +43,9 @@ body {
   font-family:'ABCDiatype',Arial,sans-serif; font-size:10px; color:#1a1a1a;
 }
 #footer {
-  position:absolute; bottom:0; left:0; right:0; height:28px;
+  position:fixed; bottom:0; left:0; right:0; height:28px;
   display:flex; align-items:center; justify-content:center;
-  background:#D9D9D9; z-index:100;
+  background:#D9D9D9; z-index:200;
   font-family:'ABCDiatype',Arial,sans-serif; font-size:10px; color:#1a1a1a;
 }
 
@@ -238,7 +238,7 @@ body {
   }
   #nav    { position: fixed; top: 0; left: 0; right: 0; z-index: 200; }
   #footer { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; }
-  #bl, #br { display: none; }
+  /* #bl and #br stay visible on all screen sizes */
   #clip { display: none !important; }
 
   #mobile-project {
@@ -379,6 +379,9 @@ body {
 </head>
 <body>
 
+<div id="bl"></div>
+<div id="br"></div>
+
 <nav id="nav">
   <a href="index.html">Work</a>
   <a id="nav-center" href="index.html">Naman Nanda</a>
@@ -454,7 +457,7 @@ body {
     <div id="m-next-label" class="mod" style="font-size:20px;">Next Project</div>
 
     <!-- MODULE 7: Next project card — Figma x:10 y:5696 w:1418 h:306 -->
-    <div id="m-next" class="mod" style="overflow:hidden;cursor:pointer;" onclick="window.location.href='project.html'">
+    <div id="m-next" class="mod" style="overflow:hidden;cursor:pointer;" onclick="window.location.href='flaus-project.html'">
       <div class="img-slot dark loaded" style="position:absolute;inset:0;background-image:url('./images/footer-nxt-flausy.png');background-size:104% auto;background-position:center center;"></div>
       <p style="position:absolute;left:20px;top:17px;z-index:2;
                 font-family:'ABCDiatype',Arial,sans-serif;font-size:13px;
@@ -543,11 +546,11 @@ body {
             <div class="s-body-pad">
             <div class="card-also-img img-slot loaded" id="card-also-img"
                  style="width:200px;height:239px;background-image:url('./images/product-hero.jpg');background-size:cover;background-position:center;cursor:pointer;"
-                 onclick="window.location.href='project.html'"></div>
+                 onclick="window.location.href='flaus-project.html'"></div>
             <div class="card-also-meta">
               <span>Flaus Flosser</span><span>2023</span><span>Flaus</span>
             </div>
-            <p class="card-also-link" onclick="window.location.href='project.html'">View Next →</p>
+            <p class="card-also-link" onclick="window.location.href='flaus-project.html'">View Next →</p>
             </div>
           </div>
         </div>
@@ -889,7 +892,7 @@ function buildMobileProject() {
 
   const nextCard = document.createElement('div');
   nextCard.className = 'mp-next-card';
-  nextCard.onclick = () => { window.location.href = 'project.html'; };
+  nextCard.onclick = () => { window.location.href = 'flaus-project.html'; };
   nextCard.innerHTML =
     '<div class="mp-next-bg" style="background-image:url(\'./images/footer-nxt-flausy.png\');"></div>' +
     '<p class="mp-next-title">Flaus Flossing Pick</p>' +
@@ -956,6 +959,33 @@ function initSlideshows() {
   });
 }
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     GALLERY — image list in visual page order
+═══════════════════════════════════════════════════════════ -->
+<script>
+window.GALLERY_IMAGES = [
+  // Hero (full-width)
+  { src:'./images/01-pax.png',     caption:'PAX 3 Grinder System — Complete Kit',  w:4254, h:2724 },
+  // 1-up single
+  { src:'./images/02-pax.png',     caption:'PAX 3 Complete Kit — 2023',            w:2127, h:2718 },
+  // 2-up full width (pair)
+  { src:'./images/03-pax.png',     caption:'Precision Ground Aerospace Aluminum',  w:2127, h:2718 },
+  { src:'./images/04-pax.png',     caption:'The PAX Complete Smoking Tray',        w:2127, h:2718 },
+  // 2-up small (staggered pair)
+  { src:'./images/05-pax.png',     caption:'PAX Magnetic Lid System',              w:1581, h:2019 },
+  { src:'./images/06-pax.png',     caption:'Limited Edition — White PAX 3',        w:1581, h:2019 },
+  // Full-width static
+  { src:'./images/07-pax.png',     caption:'PAX Complete Collection — 2023',       w:4254, h:2718 },
+  // Behind the Scenes (5 images)
+  { src:'./images/1-BTS-Pax.png',  caption:'',                                     w:2088, h:1188 },
+  { src:'./images/2-BTS-Pax.png',  caption:'',                                     w:762,  h:1188 },
+  { src:'./images/3-BTS-Pax.png',  caption:'',                                     w:1608, h:1188 },
+  { src:'./images/4-BTS-Pax.png',  caption:'',                                     w:1758, h:1188 },
+  { src:'./images/5-BTS-Pax.png',  caption:'',                                     w:870,  h:1188 },
+];
+</script>
+<script src="./gallery.js"></script>
 
 </body>
 </html>

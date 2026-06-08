@@ -23,14 +23,14 @@ body {
   cursor: crosshair;
 }
 
-/* ── Frame ── */
-#bl { position: absolute; top: 0; left: 0; bottom: 0; width: 15px; background: #D9D9D9; z-index: 100; pointer-events: none; }
-#br { position: absolute; top: 0; right: 0; bottom: 0; width: 15px; background: #D9D9D9; z-index: 100; pointer-events: none; }
+/* ── Frame — all 4 strips always fixed ── */
+#bl { position: fixed; top: 0; left: 0; bottom: 0; width: 15px; background: #D9D9D9; z-index: 950; pointer-events: none; }
+#br { position: fixed; top: 0; right: 0; bottom: 0; width: 15px; background: #D9D9D9; z-index: 950; pointer-events: none; }
 
 #nav {
-  position: absolute; top: 0; left: 0; right: 0; height: 28px;
+  position: fixed; top: 0; left: 0; right: 0; height: 28px;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 15px; background: #D9D9D9; z-index: 100; cursor: auto;
+  padding: 0 15px; background: #D9D9D9; z-index: 200; cursor: auto;
 }
 #nav a { font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a; text-decoration: none; }
 #nav a:hover { opacity: 0.5; }
@@ -41,9 +41,9 @@ body {
 }
 
 #footer {
-  position: absolute; bottom: 0; left: 0; right: 0; height: 28px;
+  position: fixed; bottom: 0; left: 0; right: 0; height: 28px;
   display: flex; align-items: center; justify-content: center;
-  background: #D9D9D9; z-index: 100; cursor: auto;
+  background: #D9D9D9; z-index: 200; cursor: auto;
   font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a;
 }
 
@@ -51,6 +51,7 @@ body {
 #clip {
   position: absolute; top: 28px; bottom: 28px; left: 15px; right: 15px;
   overflow: hidden; background: #fff;
+  user-select: none; -webkit-user-select: none;
 }
 
 /* ── Drawing canvas — z-index 1 so it's always behind the glass card ── */
@@ -58,17 +59,77 @@ body {
 /* Crosshair everywhere in clip except over card/controls */
 #clip { cursor: none; }
 
-/* ── Capture / Clear — bottom-left ── */
-#draw-controls {
+/* ── Emoji mode — hide canvas-only elements ── */
+#clip.emoji-mode { cursor: default; }
+#clip.emoji-mode #draw-canvas { opacity: 0; pointer-events: none; }
+#clip.emoji-mode #brush-shortcut { display: none; }
+#clip.emoji-mode #color-bar-wrap { display: none; }
+
+/* ── Mode tabs — top-left ── */
+#mode-tabs {
+  position: absolute; top: 10px; left: 10px;
+  z-index: 300; display: inline-flex; align-items: stretch;
+  border: 0.5px solid rgb(209, 209, 209);
+  background: rgba(236, 236, 236, 0.60);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  cursor: auto;
+  user-select: none; -webkit-user-select: none;
+}
+.mode-tab {
+  font-family: 'ABCDiatype', Arial, sans-serif;
+  font-size: 10px; color: #1a1a1a;
+  padding: 4px 9px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.mode-tab.active {
+  background: rgba(255,255,255,0.72);
+  cursor: default;
+}
+.mode-tab:not(.active) {
+  color: rgba(26,26,26,0.40);
+}
+.mode-tab:not(.active):hover {
+  color: rgba(26,26,26,0.70);
+}
+.mode-tab + .mode-tab {
+  border-left: 0.5px solid rgb(209,209,209);
+}
+
+/* ── Controls group — bottom-left stack ── */
+#controls-wrap {
   position: absolute; bottom: 10px; left: 10px;
-  z-index: 300; display: flex; gap: 12px; cursor: auto;
+  z-index: 300; display: flex; flex-direction: column; gap: 8px;
+  align-items: flex-start; cursor: auto;
+}
+
+/* Brush size shortcut */
+#brush-shortcut {
+  display: flex; align-items: center; gap: 5px;
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #000;
+}
+.key-cap {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 25px; height: 13px; flex-shrink: 0;
+  background: rgba(236, 236, 236, 0.60);
+  border: 0.5px solid rgb(209, 209, 209);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Capture / Clear / Undo / Blank */
+#draw-controls {
+  display: flex; gap: 12px; cursor: auto;
 }
 #draw-controls button {
   font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a;
   background: none; cursor: pointer; padding: 0;
   transition: opacity 0.2s;
 }
-#draw-controls button:hover { opacity: 0.5; }
+#draw-controls button:hover { opacity: 1; color: #000; }
+#clear-btn, #undo-btn, #blank-btn { opacity: 0.45; }
+#clear-btn:hover, #undo-btn:hover, #blank-btn:hover { opacity: 1; color: #000; }
 
 /* ── Color bar — bottom center ── */
 #color-bar-wrap {
@@ -202,11 +263,25 @@ body {
 
   <canvas id="draw-canvas"></canvas>
 
-  <!-- Draw controls — bottom-left -->
-  <div id="draw-controls">
-    <button onclick="captureDrawing()">Capture</button>
-    <button onclick="clearCanvas()">Reset</button>
-    <button onclick="undoCanvas()">Undo</button>
+  <!-- Mode tabs — top-left -->
+  <div id="mode-tabs">
+    <span class="mode-tab active" id="tab-canvas" onclick="setMode('canvas')">Canvas</span>
+    <span class="mode-tab" id="tab-emoji" onclick="setMode('emoji')">Emoji Collage</span>
+  </div>
+
+  <!-- Controls group — bottom-left -->
+  <div id="controls-wrap">
+    <div id="brush-shortcut">
+      Brush Size Shortcut:
+      <span class="key-cap"><svg width="3" height="7" viewBox="0 0 3 7" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 0V7H3V6.45465H0.764151V0.545349H3V0H0Z" fill="black"/></svg></span>
+      <span class="key-cap"><svg width="3" height="7" viewBox="0 0 3 7" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 0V7H0V6.45465H2.23585V0.545349H0V0H3Z" fill="black"/></svg></span>
+    </div>
+    <div id="draw-controls">
+      <button onclick="captureDrawing()">Capture</button>
+      <button id="clear-btn" onclick="clearCanvas()">Clear</button>
+      <button id="undo-btn" onclick="undoCanvas()">Undo</button>
+      <button id="blank-btn" onclick="blankCanvas()">Blank</button>
+    </div>
   </div>
 
   <!-- Color bar — bottom center -->
@@ -340,7 +415,7 @@ const ctx         = drawCanvas.getContext('2d');
 // Default background image — 'pending' → 'active' (drawn) → 'cleared' (Reset pressed)
 let defaultBgState = 'pending';
 const defaultBg    = new Image();
-defaultBg.src      = 'images/01-Drawing-default.png';
+defaultBg.src      = 'images/Nam-drawing-about.png';
 defaultBg.onload   = () => drawDefaultBg();
 
 // Reliable dimension helpers — fallback to window size if clip hasn't laid out yet
@@ -364,7 +439,9 @@ function layout() {
   card.style.right = Math.round((D.W - D.card.x - D.card.w) * u) + 'px';
   card.style.width = Math.round(D.card.w * u) + 'px';
   card.style.maxHeight = (h - Math.round(D.card.y * u) - 20) + 'px';
-  // No explicit height — card shrinks to content, glass hugs the camera
+  // Reset bg state so it redraws at the correct canvas size on every layout
+  // (only when user hasn't drawn any strokes — preserves user artwork on resize)
+  if (!drawn) defaultBgState = 'pending';
   resizeCanvas();
   drawDefaultBg();
   drawColorBar();
@@ -399,8 +476,8 @@ function toggleSec(head) {
 const barCanvas  = document.getElementById('color-bar-canvas');
 const barCtx     = barCanvas.getContext('2d');
 const barCursorEl = document.getElementById('color-bar-cursor');
-let currentColor  = [0, 0, 255]; // default blue
-let barT          = 0.71;         // default position (~blue in spectrum)
+let currentColor  = [0, 0, 0];   // default black
+let barT          = 0.06;        // default position (black)
 let barDragging   = false;
 
 function drawColorBar() {
@@ -410,24 +487,29 @@ function drawColorBar() {
   const w = barCanvas.width;
   const h = barCanvas.height;
 
-  // Gradient: black zone → full hue spectrum
+  // Gradient: white → black → full hue spectrum
   const g = barCtx.createLinearGradient(0, 0, w, 0);
-  g.addColorStop(0.00, '#000000');
-  g.addColorStop(0.06, 'hsl(0,100%,50%)');    // black → red
-  g.addColorStop(0.20, 'hsl(40,100%,50%)');   // orange
-  g.addColorStop(0.28, 'hsl(60,100%,50%)');   // yellow
-  g.addColorStop(0.40, 'hsl(120,100%,50%)');  // green
-  g.addColorStop(0.50, 'hsl(180,100%,50%)');  // cyan
-  g.addColorStop(0.58, 'hsl(210,100%,50%)');  // sky blue
-  g.addColorStop(0.66, 'hsl(240,100%,50%)');  // blue
-  g.addColorStop(0.77, 'hsl(270,100%,50%)');  // violet
-  g.addColorStop(0.83, 'hsl(300,100%,50%)');  // magenta
-  g.addColorStop(0.90, 'hsl(330,100%,50%)');  // pink
-  g.addColorStop(0.97, '#ffffff');             // white — shorter end to match black
+  g.addColorStop(0.00, '#ffffff');             // white
+  g.addColorStop(0.06, '#000000');             // black
+  g.addColorStop(0.12, 'hsl(0,100%,50%)');    // red
+  g.addColorStop(0.25, 'hsl(40,100%,50%)');   // orange
+  g.addColorStop(0.33, 'hsl(60,100%,50%)');   // yellow
+  g.addColorStop(0.44, 'hsl(120,100%,50%)');  // green
+  g.addColorStop(0.54, 'hsl(180,100%,50%)');  // cyan
+  g.addColorStop(0.61, 'hsl(210,100%,50%)');  // sky blue
+  g.addColorStop(0.68, 'hsl(240,100%,50%)');  // blue
+  g.addColorStop(0.78, 'hsl(270,100%,50%)');  // violet
+  g.addColorStop(0.85, 'hsl(300,100%,50%)');  // magenta
+  g.addColorStop(0.93, 'hsl(330,100%,50%)');  // pink
+  g.addColorStop(1.00, 'hsl(360,100%,50%)');
   barCtx.fillStyle = g;
   barCtx.fillRect(0, 0, w, h);
 
   updateBarCursor();
+  // Sync currentColor to the cursor position after (re)drawing the bar
+  const px = Math.min(Math.round(barT * (w - 1)), w - 1);
+  const d  = barCtx.getImageData(px, 0, 1, 1).data;
+  currentColor = [d[0], d[1], d[2]];
 }
 
 function updateBarCursor() {
@@ -459,15 +541,12 @@ const undoStack = [];
 let drawn = false; // true once any stroke has been painted
 
 function updateBtns() {
-  const btns = document.querySelectorAll('#draw-controls button');
-  const clearBtn = btns[1];
-  const undoBtn  = btns[2];
-  const states = [drawn || defaultBgState === 'active', undoStack.length > 0];
-  [clearBtn, undoBtn].forEach((b, i) => {
-    b.style.opacity       = states[i] ? '1'      : '0.45';
-    b.style.pointerEvents = states[i] ? ''        : 'none';
-    b.style.cursor        = states[i] ? 'pointer' : 'default';
-  });
+  // Capture: enabled only once user has drawn something
+  const captureBtn = document.querySelectorAll('#draw-controls button')[0];
+  captureBtn.style.opacity       = drawn ? '1'       : '0.45';
+  captureBtn.style.pointerEvents = drawn ? ''         : 'none';
+  captureBtn.style.cursor        = drawn ? 'pointer'  : 'default';
+  // Clear, Undo, Blank: always grey via CSS, always clickable
 }
 
 function saveHistory() {
@@ -533,14 +612,16 @@ function clipPos(e) {
   return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
 
-// Skip drawing when clicking on card headers, buttons, color bar, etc.
+// Skip drawing when clicking on card headers, buttons, color bar, or in emoji mode
 function isNonDrawTarget(el) {
-  return el.closest('#about-card, #draw-controls, #color-bar-wrap');
+  if (currentMode === 'emoji') return true;
+  return el.closest('#about-card, #draw-controls, #color-bar-wrap, #mode-tabs');
 }
 
 // Listen on the whole clip so drawing works behind the panel too
 clip.addEventListener('mousedown', e => {
   if (isNonDrawTarget(e.target)) return;
+  e.preventDefault(); // prevent text selection while drawing
   saveHistory(); // snapshot before this stroke
   drawing = true;
   const { x, y } = clipPos(e);
@@ -568,7 +649,17 @@ window.addEventListener('mouseleave', () => { drawing = false; });
 function drawDefaultBg() {
   if (defaultBgState !== 'pending') return;        // already active, or user cleared it
   if (!defaultBg.complete || !defaultBg.naturalWidth) return; // image not ready yet
-  ctx.drawImage(defaultBg, 0, 0, drawCanvas.width, drawCanvas.height);
+  // Draw contain-style: scale image to fit canvas, maintaining aspect ratio, left-aligned
+  const cw = drawCanvas.width;
+  const ch = drawCanvas.height;
+  const iw = defaultBg.naturalWidth;
+  const ih = defaultBg.naturalHeight;
+  const scale = Math.min(cw / iw, ch / ih);
+  const dw = iw * scale;
+  const dh = ih * scale;
+  const dx = 0;
+  const dy = (ch - dh) / 2;
+  ctx.drawImage(defaultBg, dx, dy, dw, dh);
   defaultBgState = 'active';
   updateBtns();
 }
@@ -577,9 +668,28 @@ function drawDefaultBg() {
 //  CLEAR
 // ════════════════════════════════════════════════════════
 function clearCanvas() {
+  // Clear strokes and restore the default background image
+  ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+  if (defaultBg.complete && defaultBg.naturalWidth) {
+    const cw = drawCanvas.width, ch = drawCanvas.height;
+    const iw = defaultBg.naturalWidth, ih = defaultBg.naturalHeight;
+    const scale = Math.min(cw / iw, ch / ih);
+    const s = scale;
+    ctx.drawImage(defaultBg, 0, (ch - ih*s)/2, iw*s, ih*s);
+    defaultBgState = 'active';
+  } else {
+    defaultBgState = 'pending';
+  }
+  drawn = false;
+  undoStack.length = 0;
+  updateBtns();
+}
+
+function blankCanvas() {
+  // Wipe everything — pure white canvas
   ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
   drawn = false;
-  if (defaultBgState === 'active') defaultBgState = 'cleared';
+  defaultBgState = 'cleared';
   undoStack.length = 0;
   updateBtns();
 }
@@ -767,7 +877,67 @@ async function captureDrawing() {
     Math.round(curR.width), Math.round(curR.height)
   );
 
-  // 10. Download
+  // 10. Brush shortcut widget + draw-controls buttons
+  {
+    const shortEl = document.getElementById('brush-shortcut');
+    const shortR  = shortEl.getBoundingClientRect();
+    const sy      = Math.round(shortR.top  - clipR.top)  + yOff;
+    const sh      = Math.round(shortR.height);
+
+    oc.save();
+    oc.font = '10px Arial, sans-serif';
+    oc.textBaseline = 'middle';
+    oc.textAlign = 'left';
+    oc.fillStyle = '#000';
+
+    // Label
+    const lx = Math.round(shortR.left - clipR.left) + xOff;
+    const ly = sy + sh / 2;
+    oc.fillText('Brush Size Shortcut:', lx, ly);
+
+    // Key cap positions — label + 5px gap, then two 25×13 caps with 5px gap
+    const labelW = oc.measureText('Brush Size Shortcut:').width;
+    const k1x = lx + labelW + 5;
+    const k2x = k1x + 25 + 5;
+    const ky  = sy + Math.round((sh - 13) / 2);
+
+    // Key cap: glass fill + stroke
+    function drawKeyCap(kx) {
+      oc.fillStyle = 'rgba(236,236,236,0.6)';
+      oc.fillRect(kx, ky, 25, 13);
+      oc.strokeStyle = 'rgb(209,209,209)';
+      oc.lineWidth = 0.5;
+      oc.strokeRect(kx + 0.25, ky + 0.25, 24.5, 12.5);
+    }
+    drawKeyCap(k1x);
+    drawKeyCap(k2x);
+
+    // Bracket SVG paths (3×7), centered in 25×13 cap
+    const bOX = Math.round((25 - 3) / 2);
+    const bOY = Math.round((13 - 7) / 2);
+    const pOpen  = new Path2D('M0 0V7H3V6.45465H0.764151V0.545349H3V0H0Z');
+    const pClose = new Path2D('M3 0V7H0V6.45465H2.23585V0.545349H0V0H3Z');
+
+    oc.fillStyle = '#000';
+    oc.save(); oc.translate(k1x + bOX, ky + bOY); oc.fill(pOpen);  oc.restore();
+    oc.save(); oc.translate(k2x + bOX, ky + bOY); oc.fill(pClose); oc.restore();
+
+    // Draw-controls buttons (respect live opacity for dim state)
+    const btns = document.querySelectorAll('#draw-controls button');
+    oc.fillStyle = '#1a1a1a';
+    btns.forEach(btn => {
+      const br = btn.getBoundingClientRect();
+      const bx = Math.round(br.left  - clipR.left) + xOff;
+      const by = Math.round(br.top + br.height / 2 - clipR.top) + yOff;
+      oc.globalAlpha = parseFloat(btn.style.opacity) || 1;
+      oc.fillText(btn.textContent, bx, by);
+    });
+
+    oc.globalAlpha = 1;
+    oc.restore();
+  }
+
+  // 11. Download
   const a = document.createElement('a');
   a.download = 'naman-nanda.png';
   a.href = out.toDataURL('image/png');
@@ -823,6 +993,28 @@ function renderWidget(oc, x, y, w, h) {
     };
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
   });
+}
+
+// ════════════════════════════════════════════════════════
+//  MODE TOGGLE — Canvas ↔ Emoji Collage
+// ════════════════════════════════════════════════════════
+let currentMode = 'canvas';
+
+function setMode(mode) {
+  if (mode === currentMode) return;
+  currentMode = mode;
+
+  document.getElementById('tab-canvas').classList.toggle('active', mode === 'canvas');
+  document.getElementById('tab-emoji').classList.toggle('active', mode === 'emoji');
+
+  if (mode === 'emoji') {
+    clip.classList.add('emoji-mode');
+    drawCanvas.style.pointerEvents = 'none';
+  } else {
+    clip.classList.remove('emoji-mode');
+    drawCanvas.style.pointerEvents = 'none'; // always none — drawing uses clip events
+    updateCursor();
+  }
 }
 
 // layout() is called deferred via rAF above — it calls drawColorBar() which
