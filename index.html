@@ -245,15 +245,46 @@ body {
 .pv-item {
   flex-shrink: 0;
   display: block;
-  overflow: hidden;
-  background-size: cover;
+  position: relative;
+  overflow: visible;
+  background-size: contain;
+  background-repeat: no-repeat;
   background-position: center;
   background-color: transparent;
   cursor: pointer;
   text-decoration: none;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.2s ease;
 }
-.pv-item:hover { opacity: 0.75; }
+/* Fade all siblings when strip is hovered; full opacity on the hovered one */
+#pv-strip:hover .pv-item         { opacity: 0.5; }
+#pv-strip:hover .pv-item:hover   { opacity: 1; }
+
+/* Label: name + rule + year — hidden until hover */
+.pv-label {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0; right: 0;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+.pv-item:hover .pv-label { opacity: 1; }
+.pv-l-rule {
+  width: 100%;
+  height: 1px;
+  background: #000;
+  margin-bottom: 5px;
+}
+.pv-l-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: 'ABCDiatype', Arial, sans-serif;
+  font-size: 10px;
+  color: #000;
+  white-space: nowrap;
+  line-height: 1;
+}
 
 /* ── Mobile: simple single-column scroll ── */
 #mobile-layout { display: none; }
@@ -379,13 +410,13 @@ const projects=[
   {name:'Portable Speaker',        year:'2022',client:'Pax Technologies', img:'./images/product-8.png'},
 ];
 const pvProjects=[
-  {name:'Flaus Flosser',   img:'./images/01 - flaus.png'},
-  {name:'Grinder',         img:'./images/02 - grinder.png'},
-  {name:'Metal Spoon',     img:'./images/03 - spoon.png'},
-  {name:'Showerhead',      img:'./images/04 - canopy.png'},
-  {name:'Metal Whisk',     img:'./images/05 - wisk.png'},
-  {name:'Tushy',           img:'./images/06 - tushy.png'},
-  {name:'Pax Accessories', img:'./images/07 - pax.png'},
+  {name:'Flaus Flosser',   year:'2023', img:'./images/01 - flaus.png'},
+  {name:'Grinder',         year:'2023', img:'./images/02 - grinder.png'},
+  {name:'Metal Spoon',     year:'2023', img:'./images/03 - spoon.png'},
+  {name:'Showerhead',      year:'2023', img:'./images/04 - canopy.png'},
+  {name:'Metal Whisk',     year:'2023', img:'./images/05 - wisk.png'},
+  {name:'Tushy',           year:'2023', img:'./images/06 - tushy.png'},
+  {name:'Pax Accessories', year:'2023', img:'./images/07 - pax.png'},
 ];
 // 8 directions: rotation for the SVG arrow (which points LEFT at 0°)
 // dr = row delta (-1=up, 0=none, 1=down), dc = col delta
@@ -546,6 +577,17 @@ function buildProjectView() {
     a.href = 'project.html';
     a.className = 'pv-item';
     a.style.backgroundImage = 'url(' + JSON.stringify(p.img) + ')';
+
+    // Hover label: name + rule + year
+    const label = document.createElement('div');
+    label.className = 'pv-label';
+    label.innerHTML =
+      '<div class="pv-l-rule"></div>' +
+      '<div class="pv-l-meta">' +
+        '<span class="pv-l-name">' + p.name + '</span>' +
+        '<span class="pv-l-year">' + p.year + '</span>' +
+      '</div>';
+    a.appendChild(label);
     strip.appendChild(a);
   });
   layoutPv();

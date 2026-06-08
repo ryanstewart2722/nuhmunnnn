@@ -92,9 +92,45 @@ body {
 }
 .img-slot.loaded { filter:blur(0); opacity:1; }
 
+/* ── Slideshow ── */
+.img-slot.ss {
+  position: relative;
+  overflow: hidden;
+  cursor: none;
+}
+/* Flash overlay — snaps on, fades out slowly */
+.ss-flash {
+  position: absolute; inset: 0;
+  background: rgba(255,255,255,0.38);
+  filter: blur(14px);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  transition: none;
+}
+.ss-flash.snap { opacity: 1; transition: none; }
+.ss-flash.fade {
+  opacity: 0; filter: blur(0px);
+  transition: opacity 0.45s ease-out, filter 0.38s ease-out;
+}
+/* Custom Prev/Next cursor */
+#ss-cursor {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  font-family: 'ABCDiatype', Arial, sans-serif;
+  font-size: 10px;
+  color: #fff;
+  mix-blend-mode: difference;
+  transform: translate(-50%, -50%);
+  display: none;
+  white-space: nowrap;
+  user-select: none; -webkit-user-select: none;
+}
+
 /* ── Two-column rows ── */
-.row-2 { display:flex; justify-content:space-between; }
-.col-2 { display:flex; flex-direction:column; gap:5px; }
+.row-2 { display:flex; gap:10px; }
+.col-2 { display:flex; flex-direction:column; gap:5px; flex:1 1 0; }
 
 /* ── Glass card ── */
 #glass-card {
@@ -394,11 +430,11 @@ body {
     <!-- MODULE 2: Two-column — Figma x:10 y:975 w:1418 — children offset y:33 -->
     <div id="m-2col-a" class="mod">
       <div class="row-2">
-        <div class="col-2" style="width:49.93%;"><!-- 709/1418 -->
+        <div class="col-2"><!-- 709/1418 -->
           <div class="img-slot" style="width:100%;aspect-ratio:709/906;margin-top:33px;"></div>
           <p>Campaign Imagery 2024</p>
         </div>
-        <div class="col-2" style="width:49.93%;">
+        <div class="col-2">
           <div class="img-slot light" style="width:100%;aspect-ratio:709/906;margin-top:33px;"></div>
           <p>Campaign Imagery 2024</p>
         </div>
@@ -408,7 +444,7 @@ body {
     <!-- MODULE 3: Single centered — Figma x:0 y:1942 w:1440, inner w:709 centered -->
     <div id="m-single" class="mod" style="width:100%;display:flex;justify-content:center;padding:10px;">
       <div style="width:49.24%;display:flex;flex-direction:column;gap:5px;align-items:center;"><!-- 709/1440 -->
-        <div class="img-slot light" style="width:100%;aspect-ratio:709/906;"></div>
+        <div class="img-slot light ss" data-ss-id="ss-single" style="width:100%;aspect-ratio:709/906;"></div>
         <p style="text-align:center;width:100%;">Campaign Imagery 2024</p>
       </div>
     </div>
@@ -416,11 +452,11 @@ body {
     <!-- MODULE 4: Two-column — Figma x:10 y:2942 w:1418 -->
     <div id="m-2col-b" class="mod">
       <div class="row-2">
-        <div class="col-2" style="width:49.93%;">
+        <div class="col-2">
           <div class="img-slot" style="width:100%;aspect-ratio:709/906;"></div>
           <p>Campaign Imagery 2024</p>
         </div>
-        <div class="col-2" style="width:49.93%;">
+        <div class="col-2">
           <div class="img-slot light" style="width:100%;aspect-ratio:709/906;"></div>
           <p>Campaign Imagery 2024</p>
         </div>
@@ -429,19 +465,19 @@ body {
 
     <!-- MODULE 5a: Staggered portrait left — Figma x:101 y:4047 w:527 img-h:673 -->
     <div id="m-port-l" class="mod">
-      <div class="img-slot" style="width:100%;aspect-ratio:527/673;"></div>
+      <div class="img-slot ss" data-ss-id="ss-port-l" style="width:100%;aspect-ratio:527/673;"></div>
       <p id="cap-port-l" style="margin-top:113px;">Campaign Imagery 2024</p>
     </div>
 
     <!-- MODULE 5b: Staggered portrait right — Figma x:810 y:4047 w:527 img-h:673 -->
     <div id="m-port-r" class="mod">
-      <div class="img-slot light" style="width:100%;aspect-ratio:527/673;"></div>
+      <div class="img-slot light ss" data-ss-id="ss-port-r" style="width:100%;aspect-ratio:527/673;"></div>
       <p id="cap-port-r" style="margin-top:113px;">Campaign Imagery 2024</p>
     </div>
 
     <!-- MODULE 6: Full-width — Figma x:10 y:4902 w:1418 img-h:906 -->
     <div id="m-full" class="mod">
-      <div class="img-slot" style="width:100%;aspect-ratio:1418/906;"></div>
+      <div class="img-slot ss" data-ss-id="ss-full" style="width:100%;aspect-ratio:1418/906;"></div>
       <p style="margin-top:5px;">Campaign Imagery 2024</p>
     </div>
 
@@ -948,6 +984,17 @@ function buildMobileProject() {
 }
 
 // ════════════════════════════════════════════════════════
+//  SLIDESHOWS — single-image modules
+// Slide types: 'full' | 'center' {pct,inner} | 'split' {colors[]} | 'offset' {side,pct,inner}
+// ════════════════════════════════════════════════════════
+const SS_PALETTES = {
+  'ss-single':  ['#c5bdb4','#b4bfc5','#bdc5b4','#c5b4be','#c8c2b0'],
+  'ss-port-l':  ['#b8c4c0','#c4b8bc','#c0c4b8','#bcb8c4','#c4c0b4'],
+  'ss-port-r':  ['#c4c0b8','#b4c5c0','#c0b8c4','#c4bcb8','#b8bcc5'],
+  'ss-full':    ['#bfc4b8','#b8bfc4','#c4b8bf','#bfb8c4','#c4bfb4'],
+};
+
+// ════════════════════════════════════════════════════════
 //  INIT
 // ════════════════════════════════════════════════════════
 const isMobile = window.matchMedia('(max-width:768px)').matches;
@@ -958,8 +1005,49 @@ if (isMobile) {
   window.addEventListener('resize', layout);
   layout();           // set all positions
   randomiseSlots();   // colour the image placeholders
+  initSlideshows();   // set up slideshow slots (overrides randomiseSlots for .ss)
   tick();             // start RAF loop
   checkLazy();        // reveal anything already in view
+}
+
+function initSlideshows() {
+  // Create cursor element in JS so it exists at call time
+  const cursor = document.createElement('div');
+  cursor.id = 'ss-cursor';
+  document.body.appendChild(cursor);
+
+  document.querySelectorAll('.img-slot.ss').forEach(slot => {
+    const colors = (SS_PALETTES[slot.dataset.ssId] || SS_PALETTES['ss-single']).slice();
+    let ssIndex = 0;
+    slot.style.backgroundColor = colors[0];
+    slot.classList.add('loaded');
+
+    // Flash overlay
+    const flash = document.createElement('div');
+    flash.className = 'ss-flash';
+    slot.appendChild(flash);
+
+    // Click → swap color + flash
+    slot.addEventListener('click', e => {
+      const right = (e.clientX - slot.getBoundingClientRect().left) > slot.offsetWidth / 2;
+      ssIndex = (ssIndex + (right ? 1 : -1) + colors.length) % colors.length;
+      slot.style.backgroundColor = colors[ssIndex];
+      flash.className = 'ss-flash snap';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        flash.className = 'ss-flash fade';
+      }));
+    });
+
+    // Cursor text: Prev / Next
+    slot.addEventListener('mousemove', e => {
+      const right = (e.clientX - slot.getBoundingClientRect().left) > slot.offsetWidth / 2;
+      cursor.textContent = right ? 'Next' : 'Prev';
+      cursor.style.display = 'block';
+      cursor.style.left = e.clientX + 'px';
+      cursor.style.top  = e.clientY + 'px';
+    });
+    slot.addEventListener('mouseleave', () => { cursor.style.display = 'none'; });
+  });
 }
 </script>
 
