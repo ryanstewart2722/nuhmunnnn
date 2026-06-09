@@ -54,6 +54,13 @@ body {
   cursor: default;
 }
 
+/* ── Load-in overlay — pastel that sits on top and fades out ── */
+#load-overlay {
+  position: absolute; inset: 0; z-index: 400;
+  pointer-events: none;
+  transition: opacity 0.65s ease;
+}
+
 /* ── Emoji stage — fills full clip ── */
 #emoji-stage {
   position: absolute; inset: 0;
@@ -217,7 +224,7 @@ body {
   display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
 #cam-placeholder span { font-size: 10px; color: #fff; pointer-events: none; }
-#cam-video { width: 100%; aspect-ratio: 5/3; object-fit: cover; display: none; background: #000; }
+#cam-video { width: 100%; aspect-ratio: 5/3; object-fit: cover; display: none; background: #000; transform: scaleX(-1); }
 
 /* ── Emoji panel — glass container, bottom-left ── */
 #emoji-panel {
@@ -271,6 +278,9 @@ body {
 /* Emoji grid with gradient fade */
 #emoji-grid-wrap {
   position: relative; flex: 1; overflow: hidden; min-height: 0;
+  /* Mask fades the emoji content in from the top — no dark overlay, fully seamless */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 18px, black calc(100% - 18px), transparent 100%);
+  mask-image:         linear-gradient(to bottom, transparent 0px, black 18px, black calc(100% - 18px), transparent 100%);
 }
 #emoji-grid {
   width: 100%; height: 100%;
@@ -355,6 +365,9 @@ body {
 
 <div id="clip">
 
+  <!-- Pastel load-in overlay — color fades out once content is ready -->
+  <div id="load-overlay"></div>
+
   <!-- Stage — emoji placement area, fills entire clip -->
   <div id="emoji-stage">
     <img id="default-comp" src="images/default-emoji-comp.png" alt="">
@@ -364,6 +377,7 @@ body {
   <div id="mode-tabs">
     <span class="mode-tab" onclick="window.location.href='about.html'">Canvas</span>
     <span class="mode-tab active">Emoji Collage</span>
+    <span class="mode-tab" onclick="window.location.href='about-camera.html'">Camera</span>
   </div>
 
   <!-- Controls row — 10px below mode tabs -->
@@ -488,7 +502,8 @@ body {
     </div>
     <div id="panel-body">
       <div id="panel-cats">
-        <span class="panel-cat active" data-cat="Smileys">Smileys</span>
+        <span class="panel-cat active" data-cat="All">All</span>
+        <span class="panel-cat" data-cat="Smileys">Smileys</span>
         <span class="panel-cat" data-cat="People">People</span>
         <span class="panel-cat" data-cat="Animals">Animals</span>
         <span class="panel-cat" data-cat="Food">Food</span>
@@ -530,6 +545,28 @@ const defaultComp = document.getElementById('default-comp');
 const emojiPanel  = document.getElementById('emoji-panel');
 const emojiGrid   = document.getElementById('emoji-grid');
 
+// ── Pastel load-in overlay ──
+// Overlay sits on top of the stage; fades out after initial layout completes.
+function randomPastel() {
+  const last = parseInt(localStorage.getItem('bgHue') ?? '-1', 10);
+  let h;
+  do { h = Math.floor(Math.random() * 360); }
+  while (last >= 0 && Math.min(Math.abs(h - last), 360 - Math.abs(h - last)) < 60);
+  localStorage.setItem('bgHue', h);
+  const s = 35 + Math.floor(Math.random() * 20);
+  const l = 62 + Math.floor(Math.random() * 10);
+  return `hsl(${h}, ${s}%, ${l}%)`;
+}
+const loadOverlay = document.getElementById('load-overlay');
+loadOverlay.style.background = randomPastel();
+function dismissOverlay() {
+  requestAnimationFrame(() => {           // let layout paint first
+    loadOverlay.style.opacity = '0';
+    loadOverlay.addEventListener('transitionend', () => loadOverlay.remove(), { once: true });
+    setTimeout(() => { if (loadOverlay.parentNode) loadOverlay.remove(); }, 900);
+  });
+}
+
 function clipW() { return clip.offsetWidth  || (window.innerWidth  - 30); }
 function clipH() { return clip.offsetHeight || (window.innerHeight - 56); }
 
@@ -566,7 +603,10 @@ function layout() {
 }
 
 window.addEventListener('resize', layout);
-requestAnimationFrame(() => requestAnimationFrame(() => layout()));
+requestAnimationFrame(() => requestAnimationFrame(() => {
+  layout();
+  dismissOverlay();   // fade the pastel out now that layout has painted
+}));
 
 // ════════════════════════════════════════════════════════
 //  SCROLL-VELOCITY EDGE FADE  (mask-image on grid-wrap)
@@ -815,12 +855,15 @@ const EMOJI_CATS = {
   ]
 };
 
-let currentCat = 'Smileys';
+let currentCat = 'All';
 
 function buildPicker(cat) {
   currentCat = cat;
   emojiGrid.innerHTML = '';
-  (EMOJI_CATS[cat] || []).forEach(ch => {
+  const list = cat === 'All'
+    ? Object.values(EMOJI_CATS).flat()
+    : (EMOJI_CATS[cat] || []);
+  list.forEach(ch => {
     const span = document.createElement('span');
     span.className   = 'emoji-item';
     span.textContent = ch;
@@ -837,7 +880,7 @@ document.querySelectorAll('.panel-cat').forEach(el => {
     buildPicker(el.dataset.cat);
   });
 });
-buildPicker('Smileys');
+buildPicker('All');
 
 // ════════════════════════════════════════════════════════
 //  EMOJI STATE
@@ -941,6 +984,28 @@ function updateTransform(data) {
   data.el.style.top       = data.y + 'px';
   const flip = data.flipped ? ' scaleX(-1)' : '';
   data.el.style.transform = `translate(-50%,-50%) rotate(${data.rotation}deg) scale(${data.scale})${flip}`;
+
+  // Counter-scale handles so they stay a fixed visual size and distance from
+  // the emoji regardless of how much the emoji has been scaled.
+  // The parent's scale(S) would push a child at top:-44px to -44*S visually;
+  // setting top:-44/S cancels that out: (-44/S)*S = -44 visual px always.
+  const cs = 1 / data.scale;
+  const rH = data.el.querySelector('.emoji-rotate-handle');
+  const sH = data.el.querySelector('.emoji-scale-handle');
+  if (rH) {
+    // Keep top at constant visual distance (-44px from emoji top) by dividing
+    // by parent scale; size grows naturally with emoji so it stays easy to click.
+    rH.style.top       = (-44 * cs) + 'px';
+    rH.style.transform = 'translateX(-50%)';
+  }
+  if (sH) {
+    // Same principle: constant 24px visual offset outside the bottom-right corner.
+    // No size counter-scale — handle grows with emoji, always easy to find.
+    sH.style.right           = (-24 * cs) + 'px';
+    sH.style.bottom          = (-24 * cs) + 'px';
+    sH.style.transformOrigin = '';
+    sH.style.transform       = '';
+  }
 }
 
 function selectEmoji(data) {
@@ -1206,20 +1271,60 @@ async function captureCollage() {
   selectEmoji(null);
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-  const canvas = await html2canvas(document.body, {
-    useCORS: true,
-    allowTaint: true,
-    scale: 1,
-    logging: false,
-    width: window.innerWidth,
-    height: window.innerHeight,
-    windowWidth: window.innerWidth,
-    windowHeight: window.innerHeight,
-  });
+  const fullW = window.innerWidth;
+  const fullH = window.innerHeight;
+  const clipX = 15, clipY = 28;
+  const cW    = fullW - 30;
+  const cH    = fullH - 56;
+
+  let uiLayer = null;
+  try {
+    const race = Promise.race([
+      html2canvas(document.body, {
+        useCORS:         true,
+        allowTaint:      false,
+        scale:           1,
+        logging:         false,
+        backgroundColor: null,
+        onclone(doc) {
+          doc.body.style.background = 'transparent';
+          const c = doc.getElementById('clip');
+          if (c) c.style.background = 'transparent';
+        },
+      }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000)),
+    ]);
+    uiLayer = await race;
+  } catch (err) {
+    console.warn('html2canvas failed, using clip-only fallback:', err);
+  }
+
+  const rW   = (uiLayer && uiLayer.width  > 0) ? uiLayer.width  : fullW;
+  const rH   = (uiLayer && uiLayer.height > 0) ? uiLayer.height : fullH;
+  const sx   = rW / fullW;
+  const sy   = rH / fullH;
+
+  const out  = document.createElement('canvas');
+  out.width  = rW;
+  out.height = rH;
+  const octx = out.getContext('2d');
+
+  // Grey frame (nav, footer, side strips)
+  octx.fillStyle = '#D9D9D9';
+  octx.fillRect(0, 0, rW, rH);
+
+  // White clip background
+  octx.fillStyle = '#ffffff';
+  octx.fillRect(clipX * sx, clipY * sy, cW * sx, cH * sy);
+
+  // Full UI layer on top — drawn 1:1, no stretching
+  if (uiLayer) {
+    octx.drawImage(uiLayer, 0, 0);
+  }
 
   const a = document.createElement('a');
   a.download = 'naman-nanda-emoji.png';
-  a.href = canvas.toDataURL('image/png');
+  a.href = out.toDataURL('image/png');
   a.click();
 }
 </script>

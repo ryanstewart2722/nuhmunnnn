@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>About — Naman Nanda</title>
+<title>About Camera — Naman Nanda</title>
 <style>
 @font-face {
   font-family: 'ABCDiatype';
@@ -50,27 +50,37 @@ body {
 /* ── Content clip ── */
 #clip {
   position: absolute; top: 28px; bottom: 28px; left: 15px; right: 15px;
-  overflow: hidden; background: #fff;
+  overflow: hidden;
+  /* background set by JS to a random pastel on load */
   user-select: none; -webkit-user-select: none;
 }
 
-/* ── Load-in overlay — pastel that sits on top and fades out ── */
-#load-overlay {
-  position: absolute; inset: 0; z-index: 400;
+/* ── Camera background — fills entire clip behind canvas ── */
+#bg-video {
+  position: absolute; inset: 0; z-index: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
   pointer-events: none;
-  transition: opacity 0.65s ease;
+  transform: scaleX(-1);
+  /* Start invisible + blurry; JS transitions to clear when stream plays */
+  opacity: 0;
+  filter: blur(28px);
+  transition: opacity 0.5s ease, filter 0.7s ease;
 }
 
-/* ── Drawing canvas — z-index 1 so it's always behind the glass card ── */
-#draw-canvas { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
-/* Crosshair everywhere in clip except over card/controls */
-#clip { cursor: none; }
+/* ── Camera-denied message — centered over the pastel background ── */
+#cam-denied {
+  display: none; position: absolute; inset: 0; z-index: 2;
+  align-items: center; justify-content: center;
+  font-family: 'ABCDiatype', Arial, sans-serif;
+  font-size: 10px; color: rgba(26,26,26,0.5);
+  pointer-events: none;
+}
+#cam-denied.visible { display: flex; }
 
-/* ── Emoji mode — hide canvas-only elements ── */
-#clip.emoji-mode { cursor: default; }
-#clip.emoji-mode #draw-canvas { opacity: 0; pointer-events: none; }
-#clip.emoji-mode #brush-shortcut { display: none; }
-#clip.emoji-mode #color-bar-wrap { display: none; }
+/* ── Drawing canvas — transparent so camera shows through ── */
+#draw-canvas { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+#clip { cursor: none; }
 
 /* ── Mode tabs — top-left ── */
 #mode-tabs {
@@ -121,7 +131,7 @@ body {
   user-select: none; -webkit-user-select: none;
 }
 
-/* Brush size shortcut + eyedropper shortcut — label text grey */
+/* Brush size shortcut + eyedropper shortcut */
 #brush-shortcut, #eyedropper-shortcut {
   display: inline-flex; align-items: center; gap: 10px;
   padding: 4px 9px;
@@ -137,7 +147,7 @@ body {
   -webkit-backdrop-filter: blur(4px);
 }
 
-/* Capture / Clear / Undo / Blank */
+/* Capture / Clear / Undo / Blank / Restore */
 #draw-controls {
   display: inline-flex; align-items: stretch; cursor: auto;
 }
@@ -165,7 +175,7 @@ body {
 }
 #current-color-swatch {
   width: 11px; height: 11px; flex-shrink: 0;
-  background: rgb(0,0,0); /* default black, updated by JS */
+  background: rgb(0,0,0);
   border: 0.5px solid rgba(0,0,0,0.45);
 }
 #bar-container { position: relative; flex-shrink: 0; }
@@ -203,14 +213,13 @@ body {
   overflow: hidden;
   z-index: 200;
   cursor: auto;
-  transform: translateZ(0); /* force compositing layer — clips video element */
+  transform: translateZ(0);
 }
 
 #card-scroll { overflow-y: auto; scrollbar-width: none; max-height: inherit; }
 #card-scroll::-webkit-scrollbar { display: none; }
 #card-inner { padding: 20px; }
 
-/* ── Panel header — "About Me" collapses entire panel ── */
 #sec-bio-head {
   display: flex; align-items: center; justify-content: space-between;
   cursor: pointer; user-select: none;
@@ -220,7 +229,6 @@ body {
 }
 #sec-bio-title { font-size: 10px; color: #1a1a1a; }
 
-/* card-body: everything below the header, collapses as one unit */
 #card-body {
   overflow: hidden;
   max-height: 2000px; opacity: 1;
@@ -228,7 +236,6 @@ body {
 }
 #card-body.collapsed { max-height: 0; opacity: 0; }
 
-/* Bio paragraphs — 32% indent matching project page */
 #sec-bio-body { padding-top: 8px; padding-bottom: 0; }
 .a-bio-p {
   font-size: 10px; color: #1a1a1a;
@@ -237,7 +244,6 @@ body {
 }
 .a-bio-p:last-child { margin-bottom: 0; }
 
-/* ── Collapsible sections ── */
 .a-section { margin-top: 15px; margin-bottom: 0; }
 
 .a-sec-head {
@@ -262,7 +268,6 @@ body {
 }
 .a-sec-body.collapsed { max-height: 0; opacity: 0; }
 
-/* ── Two-column table ── */
 .a-table { display: flex; gap: 6px; }
 .a-col-a { flex: 1 1 auto; min-width: 0; }
 .a-col-b { flex: 0 0 auto; }
@@ -270,20 +275,8 @@ body {
 .a-table .a-col-b > div { font-size: 10px; color: #1a1a1a; line-height: 1.9; white-space: nowrap; }
 .a-col-a > div { overflow: hidden; text-overflow: ellipsis; }
 
-/* ── Contact ── */
 .a-email { font-size: 10px; color: #1a1a1a; text-decoration: none; transition: opacity 0.2s; }
 .a-email:hover { opacity: 0.45; }
-
-/* ── Camera ── */
-#cam-wrapper { width: 100%; margin-top: 5px; }
-#cam-placeholder {
-  width: 100%; aspect-ratio: 5/3;
-  background: #888;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-}
-#cam-placeholder span { font-size: 10px; color: #fff; pointer-events: none; }
-#cam-video { width: 100%; aspect-ratio: 5/3; object-fit: cover; display: none; background: #000; transform: scaleX(-1); }
 </style>
 </head>
 <body>
@@ -301,16 +294,19 @@ body {
 
 <div id="clip">
 
-  <!-- Pastel load-in overlay — color fades out once content is ready -->
-  <div id="load-overlay"></div>
+  <!-- Camera feed — fills clip, drawing canvas is transparent above it -->
+  <video id="bg-video" autoplay muted playsinline></video>
+
+  <!-- Shown only when camera permission is denied -->
+  <div id="cam-denied"></div>
 
   <canvas id="draw-canvas"></canvas>
 
   <!-- Mode tabs — top-left -->
   <div id="mode-tabs">
-    <span class="mode-tab active" id="tab-canvas" onclick="setMode('canvas')">Canvas</span>
+    <span class="mode-tab" id="tab-canvas" onclick="window.location.href='about.html'">Canvas</span>
     <span class="mode-tab" id="tab-emoji" onclick="window.location.href='emoji.html'">Emoji Collage</span>
-    <span class="mode-tab" id="tab-camera" onclick="window.location.href='about-camera.html'">Camera</span>
+    <span class="mode-tab active" id="tab-camera">Camera</span>
   </div>
 
   <!-- Controls group — bottom-left row -->
@@ -420,7 +416,7 @@ body {
         </div>
 
         <!-- Credits -->
-        <div class="a-section">
+        <div class="a-section" style="margin-bottom:0">
           <div class="a-sec-head" onclick="toggleSec(this)">
             <span class="a-sec-title">Credits</span>
             <span class="rot-x">&#215;</span>
@@ -433,22 +429,6 @@ body {
               <div class="a-col-b">
                 <div>Design + Dev</div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Camera -->
-        <div class="a-section" id="sec-camera" style="margin-bottom:0">
-          <div class="a-sec-head" onclick="toggleSec(this)">
-            <span class="a-sec-title">Camera</span>
-            <span class="rot-x">&#215;</span>
-          </div>
-          <div class="a-sec-body">
-            <div id="cam-wrapper">
-              <div id="cam-placeholder" onclick="requestCamera()">
-                <span>Allow Camera Access</span>
-              </div>
-              <video id="cam-video" autoplay muted playsinline></video>
             </div>
           </div>
         </div>
@@ -472,37 +452,7 @@ const clip        = document.getElementById('clip');
 const card        = document.getElementById('about-card');
 const drawCanvas  = document.getElementById('draw-canvas');
 const ctx         = drawCanvas.getContext('2d');
-
-// ── Pastel load-in overlay ──
-// The overlay sits on top of the canvas; it fades out once the drawing is ready.
-function randomPastel() {
-  const last = parseInt(localStorage.getItem('bgHue') ?? '-1', 10);
-  let h;
-  do { h = Math.floor(Math.random() * 360); }
-  while (last >= 0 && Math.min(Math.abs(h - last), 360 - Math.abs(h - last)) < 60);
-  localStorage.setItem('bgHue', h);
-  const s = 35 + Math.floor(Math.random() * 20); // 35–55%
-  const l = 62 + Math.floor(Math.random() * 10); // 62–72%
-  return `hsl(${h}, ${s}%, ${l}%)`;
-}
-const loadOverlay = document.getElementById('load-overlay');
-loadOverlay.style.background = randomPastel();
-let overlayDismissed = false;
-function dismissOverlay() {
-  if (overlayDismissed) return;
-  overlayDismissed = true;
-  requestAnimationFrame(() => {           // let the drawing paint first
-    loadOverlay.style.opacity = '0';
-    loadOverlay.addEventListener('transitionend', () => loadOverlay.remove(), { once: true });
-    setTimeout(() => { if (loadOverlay.parentNode) loadOverlay.remove(); }, 900);
-  });
-}
-
-// Default background image — 'pending' → 'active' (drawn) → 'cleared' (Reset pressed)
-let defaultBgState = 'pending';
-const defaultBg    = new Image();
-defaultBg.src      = 'images/Nam-drawing-about.png';
-defaultBg.onload   = () => drawDefaultBg();
+const bgVideo     = document.getElementById('bg-video');
 
 // Reliable dimension helpers — fallback to window size if clip hasn't laid out yet
 function clipW() { return clip.offsetWidth  || (window.innerWidth  - 30); }
@@ -525,11 +475,8 @@ function layout() {
   card.style.right = Math.round((D.W - D.card.x - D.card.w) * u) + 'px';
   card.style.width = Math.round(D.card.w * u) + 'px';
   card.style.maxHeight = (h - Math.round(D.card.y * u) - 20) + 'px';
-  // Reset bg state so it redraws at the correct canvas size on every layout
-  // (only when user hasn't drawn any strokes — preserves user artwork on resize)
-  if (!drawn) defaultBgState = 'pending';
   resizeCanvas();
-  drawDefaultBg();
+  // No default background — camera shows through transparent canvas
   drawColorBar();
   updateBtns();
   updateCursor();
@@ -540,6 +487,44 @@ function layout() {
 window.addEventListener('resize', layout);
 // Defer first layout so browser has calculated all dimensions
 requestAnimationFrame(() => requestAnimationFrame(() => layout()));
+
+// ════════════════════════════════════════════════════════
+//  CAMERA — auto-start on page load
+// ════════════════════════════════════════════════════════
+// Random soft pastel — guaranteed to be visually different from the last load
+// by storing the previous hue in localStorage and requiring ≥60° separation.
+function randomPastel() {
+  const last = parseInt(localStorage.getItem('bgHue') ?? '-1', 10);
+  let h;
+  do {
+    h = Math.floor(Math.random() * 360);
+  } while (last >= 0 && Math.min(Math.abs(h - last), 360 - Math.abs(h - last)) < 60);
+  localStorage.setItem('bgHue', h);
+  const s = 35 + Math.floor(Math.random() * 20); // 35–55 %
+  const l = 62 + Math.floor(Math.random() * 10); // 62–72 %
+  return `hsl(${h}, ${s}%, ${l}%)`;
+}
+
+async function startCamera() {
+  // Set a random pastel immediately so the clip is never plain black
+  clip.style.background = randomPastel();
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    bgVideo.srcObject = stream;
+    // Once the video is actually playing, dissolve it in over the pastel
+    bgVideo.addEventListener('playing', () => {
+      bgVideo.style.opacity = '1';
+      bgVideo.style.filter  = 'blur(0px)';
+    }, { once: true });
+  } catch (err) {
+    // Permission denied — show message over the pastel background
+    console.warn('Camera unavailable:', err);
+    const denied = document.getElementById('cam-denied');
+    if (denied) { denied.textContent = 'Allow Camera Access'; denied.classList.add('visible'); }
+  }
+}
+startCamera();
 
 // ════════════════════════════════════════════════════════
 //  SECTION TOGGLE
@@ -568,7 +553,7 @@ let currentColor  = [0, 0, 0];   // default black
 let barT          = 0.06;        // default position (black)
 let barDragging   = false;
 
-// Recent colors — populated from drawing on load, then updated as you draw
+// Recent colors — updated as you draw
 let recentColors = [null, null, null, null];
 
 function updateCurrentSwatch() {
@@ -583,7 +568,6 @@ function renderRecentColors() {
     if (!el) continue;
     if (recentColors[i]) {
       const [r, g, b] = recentColors[i];
-      // Fade unused slots via background alpha, not element opacity — keeps border visible
       const a = i >= 2 ? '0.12' : '1';
       el.style.background = `rgba(${r},${g},${b},${a})`;
     } else {
@@ -606,7 +590,7 @@ function addRecentColor(color) {
   renderRecentColors();
 }
 
-// Click recent swatch to restore that color (bound immediately — elements exist in HTML)
+// Click recent swatch to restore that color
 document.querySelectorAll('.recent-swatch').forEach((el, i) => {
   el.addEventListener('click', e => {
     e.stopPropagation();
@@ -625,24 +609,23 @@ function drawColorBar() {
 
   // Gradient: white → black → full hue spectrum
   const g = barCtx.createLinearGradient(0, 0, w, 0);
-  g.addColorStop(0.00, '#ffffff');             // white
-  g.addColorStop(0.06, '#000000');             // black
-  g.addColorStop(0.12, 'hsl(0,100%,50%)');    // red
-  g.addColorStop(0.25, 'hsl(40,100%,50%)');   // orange
-  g.addColorStop(0.33, 'hsl(60,100%,50%)');   // yellow
-  g.addColorStop(0.44, 'hsl(120,100%,50%)');  // green
-  g.addColorStop(0.54, 'hsl(180,100%,50%)');  // cyan
-  g.addColorStop(0.61, 'hsl(210,100%,50%)');  // sky blue
-  g.addColorStop(0.68, 'hsl(240,100%,50%)');  // blue
-  g.addColorStop(0.78, 'hsl(270,100%,50%)');  // violet
-  g.addColorStop(0.85, 'hsl(300,100%,50%)');  // magenta
-  g.addColorStop(0.93, 'hsl(330,100%,50%)');  // pink
+  g.addColorStop(0.00, '#ffffff');
+  g.addColorStop(0.06, '#000000');
+  g.addColorStop(0.12, 'hsl(0,100%,50%)');
+  g.addColorStop(0.25, 'hsl(40,100%,50%)');
+  g.addColorStop(0.33, 'hsl(60,100%,50%)');
+  g.addColorStop(0.44, 'hsl(120,100%,50%)');
+  g.addColorStop(0.54, 'hsl(180,100%,50%)');
+  g.addColorStop(0.61, 'hsl(210,100%,50%)');
+  g.addColorStop(0.68, 'hsl(240,100%,50%)');
+  g.addColorStop(0.78, 'hsl(270,100%,50%)');
+  g.addColorStop(0.85, 'hsl(300,100%,50%)');
+  g.addColorStop(0.93, 'hsl(330,100%,50%)');
   g.addColorStop(1.00, 'hsl(360,100%,50%)');
   barCtx.fillStyle = g;
   barCtx.fillRect(0, 0, w, h);
 
   updateBarCursor();
-  // Sync currentColor to the cursor position after (re)drawing the bar
   const px = Math.min(Math.round(barT * (w - 1)), w - 1);
   const d  = barCtx.getImageData(px, 0, 1, 1).data;
   currentColor = [d[0], d[1], d[2]];
@@ -674,8 +657,8 @@ document.addEventListener('mouseup', () => { barDragging = false; });
 // ════════════════════════════════════════════════════════
 const MAX_HISTORY = 30;
 const undoStack = [];
-let drawn = false; // true once any stroke has been painted
-let restoreSnapshot = null; // saved before Clear/Blank so Restore can undo it
+let drawn = false;
+let restoreSnapshot = null;
 
 function updateBtns() {
   // All buttons always grey via CSS — nothing to manage here
@@ -711,7 +694,6 @@ function updateCursor() {
   const pad = 2;
   const d  = (r + pad) * 2;
   const c  = r + pad;
-  // Outer dark ring + inner light ring for visibility on any background
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${d}' height='${d}'>`
     + `<circle cx='${c}' cy='${c}' r='${r}' fill='none' stroke='rgba(255,255,255,0.7)' stroke-width='2'/>`
     + `<circle cx='${c}' cy='${c}' r='${r}' fill='none' stroke='rgba(0,0,0,0.55)' stroke-width='1'/>`
@@ -773,9 +755,8 @@ function clipPos(e) {
   return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
 
-// Skip drawing when clicking on card headers, buttons, color bar, or in emoji mode
+// Skip drawing when clicking on card headers, buttons, or color bar
 function isNonDrawTarget(el) {
-  if (currentMode === 'emoji') return true;
   return el.closest('#about-card, #controls-wrap, #color-bar-wrap, #mode-tabs');
 }
 
@@ -783,14 +764,29 @@ function isNonDrawTarget(el) {
 document.addEventListener('mousedown', e => {
   if (!e.target?.closest?.('#clip')) return; // ignore events outside #clip
   // Eyedropper: sample pixel on click
-  if (eyedropperMode && currentMode !== 'emoji') {
+  if (eyedropperMode) {
     if (!e.target.closest('#about-card, #controls-wrap, #color-bar-wrap, #mode-tabs')) {
       e.preventDefault();
       const { x, y } = clipPos(e);
       const px = Math.round(Math.max(0, Math.min(x, drawCanvas.width  - 1)));
       const py = Math.round(Math.max(0, Math.min(y, drawCanvas.height - 1)));
       const d = ctx.getImageData(px, py, 1, 1).data;
-      currentColor = d[3] === 0 ? [255, 255, 255] : [d[0], d[1], d[2]];
+      if (d[3] > 0) {
+        // Stroke pixel — use it directly
+        currentColor = [d[0], d[1], d[2]];
+      } else if (bgVideo.readyState >= 2) {
+        // Transparent (no stroke) — sample from the live camera frame.
+        // Render full frame cover-fit + mirrored to match what the user sees,
+        // then read the pixel at the click position.
+        const tmp  = document.createElement('canvas');
+        tmp.width  = drawCanvas.width;
+        tmp.height = drawCanvas.height;
+        drawVideoMirroredCover(tmp.getContext('2d'), tmp.width, tmp.height);
+        const vd = tmp.getContext('2d').getImageData(px, py, 1, 1).data;
+        currentColor = [vd[0], vd[1], vd[2]];
+      } else {
+        currentColor = [255, 255, 255];
+      }
       addRecentColor(currentColor);
       updateCurrentSwatch();
       setEyedropperMode(false);
@@ -798,8 +794,8 @@ document.addEventListener('mousedown', e => {
     }
   }
   if (isNonDrawTarget(e.target)) return;
-  e.preventDefault(); // prevent text selection while drawing
-  saveHistory(); // snapshot before this stroke
+  e.preventDefault();
+  saveHistory();
   drawing = true;
   const { x, y } = clipPos(e);
   lastX = x; lastY = y;
@@ -819,75 +815,19 @@ document.addEventListener('mousemove', e => {
 });
 
 window.addEventListener('mouseup', () => {
-  if (drawing) addRecentColor(currentColor); // record color used for this stroke
+  if (drawing) addRecentColor(currentColor);
   drawing = false;
 });
 window.addEventListener('mouseleave', () => { drawing = false; });
 
 // ════════════════════════════════════════════════════════
-//  DEFAULT BACKGROUND
-// ════════════════════════════════════════════════════════
-function drawDefaultBg() {
-  if (defaultBgState !== 'pending') return;        // already active, or user cleared it
-  if (!defaultBg.complete || !defaultBg.naturalWidth) return; // image not ready yet
-  // Draw contain-style: scale image to fit canvas, maintaining aspect ratio, left-aligned
-  const cw = drawCanvas.width;
-  const ch = drawCanvas.height;
-  const iw = defaultBg.naturalWidth;
-  const ih = defaultBg.naturalHeight;
-  const scale = Math.min(cw / iw, ch / ih);
-  const dw = iw * scale;
-  const dh = ih * scale;
-  const dx = 0;
-  const dy = (ch - dh) / 2;
-  ctx.drawImage(defaultBg, dx, dy, dw, dh);
-  defaultBgState = 'active';
-  updateBtns();
-  // Seed recent colors from the drawing's actual pixels
-  seedColorsFromCanvas();
-  // Dismiss the pastel overlay now that the drawing is painted
-  dismissOverlay();
-}
-
-function seedColorsFromCanvas() {
-  const w = drawCanvas.width, h = drawCanvas.height;
-  const found = [];
-  // Scan a grid; collect first 4 non-white, non-transparent pixels
-  outer: for (let sy = 0.15; sy <= 0.85; sy += 0.07) {
-    for (let sx = 0.05; sx <= 0.75; sx += 0.05) {
-      const d = ctx.getImageData(Math.round(sx * w), Math.round(sy * h), 1, 1).data;
-      if (d[3] < 30) continue;                          // transparent
-      if (d[0] > 220 && d[1] > 220 && d[2] > 220) continue; // near-white
-      const col = [d[0], d[1], d[2]];
-      // Avoid near-duplicates
-      const isDupe = found.some(c => Math.abs(c[0]-col[0])+Math.abs(c[1]-col[1])+Math.abs(c[2]-col[2]) < 30);
-      if (!isDupe) { found.push(col); if (found.length >= 4) break outer; }
-    }
-  }
-  if (found.length > 0) {
-    recentColors = [...found, ...Array(4).fill(null)].slice(0, 4);
-    renderRecentColors();
-  }
-}
-
-// ════════════════════════════════════════════════════════
-//  CLEAR
+//  CLEAR / BLANK / RESTORE
 // ════════════════════════════════════════════════════════
 function clearCanvas() {
   // Save current state so Restore can bring it back
   restoreSnapshot = ctx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
-  // Clear strokes and restore the default background image
+  // Clear all strokes — camera shows through transparent canvas
   ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-  if (defaultBg.complete && defaultBg.naturalWidth) {
-    const cw = drawCanvas.width, ch = drawCanvas.height;
-    const iw = defaultBg.naturalWidth, ih = defaultBg.naturalHeight;
-    const scale = Math.min(cw / iw, ch / ih);
-    const s = scale;
-    ctx.drawImage(defaultBg, 0, (ch - ih*s)/2, iw*s, ih*s);
-    defaultBgState = 'active';
-  } else {
-    defaultBgState = 'pending';
-  }
   drawn = false;
   undoStack.length = 0;
   updateBtns();
@@ -896,10 +836,8 @@ function clearCanvas() {
 function blankCanvas() {
   // Save current state so Restore can bring it back
   restoreSnapshot = ctx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
-  // Wipe everything — pure white canvas
   ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
   drawn = false;
-  defaultBgState = 'cleared';
   undoStack.length = 0;
   updateBtns();
 }
@@ -908,125 +846,144 @@ function restoreCanvas() {
   if (!restoreSnapshot) return;
   ctx.putImageData(restoreSnapshot, 0, 0);
   drawn = true;
-  defaultBgState = 'active';
   undoStack.length = 0;
   updateBtns();
 }
 
 // ════════════════════════════════════════════════════════
-//  CAMERA
+//  VIDEO HELPER — draw video cover-fit + mirrored to canvas ctx
 // ════════════════════════════════════════════════════════
-const video       = document.getElementById('cam-video');
-const placeholder = document.getElementById('cam-placeholder');
-
-async function requestCamera() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-    video.srcObject = stream;
-    video.onloadedmetadata = () => video.play();
-    placeholder.style.display = 'none';
-    video.style.display = 'block';
-  } catch (err) {
-    // Permission denied or no camera — placeholder stays
-    placeholder.querySelector('span').textContent = 'Camera unavailable';
-  }
+// Used for eyedropper sampling — matches exactly what the user sees on screen (mirrored).
+function drawVideoMirroredCover(ctx, w, h) {
+  const vw = bgVideo.videoWidth  || w;
+  const vh = bgVideo.videoHeight || h;
+  const scale = Math.max(w / vw, h / vh);
+  const dw = vw * scale, dh = vh * scale;
+  ctx.save();
+  ctx.translate(w, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(bgVideo, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  ctx.restore();
 }
-// Don't auto-request — wait for user click so gesture fires getUserMedia correctly
 
+// Used for the capture download — cover-fit without mirror so the saved PNG
+// shows the real (un-flipped) scene.  The live preview stays mirrored via CSS.
+function drawVideoCover(ctx, w, h) {
+  const vw = bgVideo.videoWidth  || w;
+  const vh = bgVideo.videoHeight || h;
+  const scale = Math.max(w / vw, h / vh);
+  const dw = vw * scale, dh = vh * scale;
+  ctx.drawImage(bgVideo, (w - dw) / 2, (h - dh) / 2, dw, dh);
+}
 
 // ════════════════════════════════════════════════════════
-//  CAPTURE — full visual: nav bars + clip content
+//  CAPTURE — full visual: nav bars + un-mirrored camera + strokes + all UI
 // ════════════════════════════════════════════════════════
 async function captureDrawing() {
+  const dpr   = window.devicePixelRatio || 1;
   const fullW = window.innerWidth;
   const fullH = window.innerHeight;
-  const clipX = 15, clipY = 28;
-  const cW    = fullW - 30;
-  const cH    = fullH - 56;
+  const clipX = clip.offsetLeft  || 15;
+  const clipY = clip.offsetTop   || 28;
+  const cW    = clip.offsetWidth  || (fullW - 30);
+  const cH    = clip.offsetHeight || (fullH - 56);
 
-  // Render everything via html2canvas(body).
-  // onclone edits the *clone* so the live page never flickers.
-  // No width/height overrides — those were causing the previous hang.
+  // Physical-pixel dimensions
+  const outW   = Math.round(fullW * dpr);
+  const outH   = Math.round(fullH * dpr);
+  const cWpx   = Math.round(cW   * dpr);
+  const cHpx   = Math.round(cH   * dpr);
+  const clipXpx = Math.round(clipX * dpr);
+  const clipYpx = Math.round(clipY * dpr);
+
+  // Step 1a — snapshot strokes NOW, before the async html2canvas call can touch anything
+  const strokesSnap = document.createElement('canvas');
+  strokesSnap.width  = drawCanvas.width  || cW;
+  strokesSnap.height = drawCanvas.height || cH;
+  if (strokesSnap.width > 0 && strokesSnap.height > 0) {
+    try { strokesSnap.getContext('2d').drawImage(drawCanvas, 0, 0); } catch (_) {}
+  }
+
+  // Step 1b — snapshot un-mirrored camera at physical-pixel resolution (synchronous)
+  const videoSnap = document.createElement('canvas');
+  videoSnap.width  = cWpx;
+  videoSnap.height = cHpx;
+  if (bgVideo.readyState >= 2) {
+    drawVideoCover(videoSnap.getContext('2d'), cWpx, cHpx);
+  } else {
+    const vc = videoSnap.getContext('2d');
+    vc.fillStyle = '#000';
+    vc.fillRect(0, 0, cWpx, cHpx);
+  }
+
+  // Step 2 — html2canvas for UI chrome only.
+  //   In the clone: remove bg-video AND wipe draw-canvas so the clip area is
+  //   fully transparent.  Card, controls, nav, footer etc. still render opaquely.
+  //   We draw the camera and strokes manually in Step 3 before applying this layer.
   let uiLayer = null;
   try {
-    const race = Promise.race([
+    uiLayer = await Promise.race([
       html2canvas(document.body, {
         useCORS:         true,
         allowTaint:      false,
-        scale:           1,
+        scale:           dpr,
         logging:         false,
         backgroundColor: null,
+        windowWidth:     fullW,
+        windowHeight:    fullH,
+        scrollX:         0,
+        scrollY:         0,
         onclone(doc) {
+          doc.documentElement.style.background = 'transparent';
           doc.body.style.background = 'transparent';
           const c = doc.getElementById('clip');
           if (c) c.style.background = 'transparent';
+          // Remove video so html2canvas never sees it
+          const v = doc.getElementById('bg-video');
+          if (v) v.remove();
+          // Blank the draw-canvas in the clone — strokes are drawn manually below
+          const dc = doc.getElementById('draw-canvas');
+          if (dc) {
+            try { dc.getContext('2d').clearRect(0, 0, dc.width, dc.height); } catch (_) {}
+          }
         },
       }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000)),
     ]);
-    uiLayer = await race;
   } catch (err) {
     console.warn('html2canvas failed, using canvas-only fallback:', err);
   }
 
-  // Size output to match html2canvas exactly — avoids compression if its
-  // measurement of the body differs slightly from window.innerWidth/Height.
-  const rW   = (uiLayer && uiLayer.width  > 0) ? uiLayer.width  : fullW;
-  const rH   = (uiLayer && uiLayer.height > 0) ? uiLayer.height : fullH;
-  const sx   = rW / fullW;   // scale factor for fill coordinates
-  const sy   = rH / fullH;
-
+  // Step 3 — composite in explicit order so nothing overwrites the camera
   const out  = document.createElement('canvas');
-  out.width  = rW;
-  out.height = rH;
+  out.width  = outW;
+  out.height = outH;
   const octx = out.getContext('2d');
 
-  // Grey frame (nav, footer, side strips)
+  // Layer 1: grey frame base
   octx.fillStyle = '#D9D9D9';
-  octx.fillRect(0, 0, rW, rH);
+  octx.fillRect(0, 0, outW, outH);
 
-  // White clip background (shows through where canvas has no drawing)
-  octx.fillStyle = '#ffffff';
-  octx.fillRect(clipX * sx, clipY * sy, cW * sx, cH * sy);
+  // Layer 2: un-mirrored camera
+  octx.drawImage(videoSnap, clipXpx, clipYpx);
 
-  // Full UI layer on top — drawn 1:1, no stretching
+  // Layer 3: html2canvas UI chrome (nav, footer, bars, card, controls)
+  //   The clip area should be transparent here — camera shows through.
   if (uiLayer) {
     octx.drawImage(uiLayer, 0, 0);
-  } else {
-    // Fallback: draw strokes manually
-    octx.drawImage(drawCanvas, clipX * sx, clipY * sy, cW * sx, cH * sy);
+  }
+
+  // Layer 4: strokes drawn LAST so they sit on top of everything —
+  //   this guarantees html2canvas rendering quirks can never bury them.
+  if (strokesSnap.width > 0 && strokesSnap.height > 0) {
+    octx.drawImage(strokesSnap, clipXpx, clipYpx, cWpx, cHpx);
   }
 
   const a = document.createElement('a');
-  a.download = 'naman-nanda.png';
+  a.download = 'naman-nanda-camera.png';
   a.href = out.toDataURL('image/png');
   a.click();
 }
-
-// ════════════════════════════════════════════════════════
-//  MODE TOGGLE — Canvas ↔ Emoji Collage
-// ════════════════════════════════════════════════════════
-let currentMode = 'canvas';
-
-function setMode(mode) {
-  if (mode === currentMode) return;
-  currentMode = mode;
-
-  document.getElementById('tab-canvas').classList.toggle('active', mode === 'canvas');
-  document.getElementById('tab-emoji').classList.toggle('active', mode === 'emoji');
-
-  if (mode === 'emoji') {
-    clip.classList.add('emoji-mode');
-    drawCanvas.style.pointerEvents = 'none';
-  } else {
-    clip.classList.remove('emoji-mode');
-    drawCanvas.style.pointerEvents = 'none'; // always none — drawing uses clip events
-    updateCursor();
-  }
-}
-
-// layout() is called deferred via rAF above — it calls drawColorBar() which
-// also picks the initial color. Nothing else needed here.
 </script>
 </body>
 </html>
