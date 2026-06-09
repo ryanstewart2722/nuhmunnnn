@@ -916,42 +916,56 @@ async function captureDrawing() {
     vc.fillRect(0, 0, cWpx, cHpx);
   }
 
-  // Step 2 — html2canvas for UI chrome only.
-  //   In the clone: remove bg-video AND wipe draw-canvas so the clip area is
-  //   fully transparent.  Card, controls, nav, footer etc. still render opaquely.
-  //   We draw the camera and strokes manually in Step 3 before applying this layer.
-  let uiLayer = null;
+  // Step 2 — three html2canvas calls in parallel:
+  //   a) Full body with clip transparent → nav, footer, controls chrome
+  //   b) about-card only → card text/borders on top of glass sim
+  //   c) color-bar-wrap only → color bar on top of glass sim
+  const colorBarWrap = document.getElementById('color-bar-wrap');
+  let uiLayer = null, cardLayer = null, barLayer = null;
   try {
-    uiLayer = await Promise.race([
-      html2canvas(document.body, {
-        useCORS:         true,
-        allowTaint:      false,
-        scale:           dpr,
-        logging:         false,
-        backgroundColor: null,
-        windowWidth:     fullW,
-        windowHeight:    fullH,
-        scrollX:         0,
-        scrollY:         0,
-        onclone(doc) {
-          doc.documentElement.style.background = 'transparent';
-          doc.body.style.background = 'transparent';
-          const c = doc.getElementById('clip');
-          if (c) c.style.background = 'transparent';
-          // Remove video so html2canvas never sees it
-          const v = doc.getElementById('bg-video');
-          if (v) v.remove();
-          // Blank the draw-canvas in the clone — strokes are drawn manually below
-          const dc = doc.getElementById('draw-canvas');
-          if (dc) {
-            try { dc.getContext('2d').clearRect(0, 0, dc.width, dc.height); } catch (_) {}
-          }
-        },
-      }),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000)),
+    [uiLayer, cardLayer, barLayer] = await Promise.all([
+      Promise.race([
+        html2canvas(document.body, {
+          useCORS:         true,
+          allowTaint:      false,
+          scale:           dpr,
+          logging:         false,
+          backgroundColor: null,
+          windowWidth:     fullW,
+          windowHeight:    fullH,
+          scrollX:         0,
+          scrollY:         0,
+          onclone(doc) {
+            doc.documentElement.style.background = 'transparent';
+            doc.body.style.background = 'transparent';
+            const c = doc.getElementById('clip');
+            if (c) {
+              c.style.background = 'transparent';
+              c.style.backgroundColor = 'transparent';
+            }
+            const v = doc.getElementById('bg-video');
+            if (v) v.remove();
+            const dc = doc.getElementById('draw-canvas');
+            if (dc) {
+              try { dc.getContext('2d').clearRect(0, 0, dc.width, dc.height); } catch (_) {}
+            }
+            const lo = doc.getElementById('load-overlay');
+            if (lo) lo.remove();
+          },
+        }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000)),
+      ]),
+      Promise.race([
+        html2canvas(card, { useCORS: true, allowTaint: false, scale: dpr, logging: false, backgroundColor: null }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
+      ]),
+      Promise.race([
+        html2canvas(colorBarWrap, { useCORS: true, allowTaint: false, scale: dpr, logging: false, backgroundColor: null }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
+      ]),
     ]);
   } catch (err) {
-    console.warn('html2canvas failed, using canvas-only fallback:', err);
+    console.warn('html2canvas failed:', err);
   }
 
   // Step 3 — composite in explicit order so nothing overwrites the camera
@@ -967,16 +981,80 @@ async function captureDrawing() {
   // Layer 2: un-mirrored camera
   octx.drawImage(videoSnap, clipXpx, clipYpx);
 
-  // Layer 3: html2canvas UI chrome (nav, footer, bars, card, controls)
-  //   The clip area should be transparent here — camera shows through.
+  // Panel bounds
+  const clipBCR = clip.getBoundingClientRect();
+  const cardBCR = card.getBoundingClientRect();
+  const barBCR  = colorBarWrap.getBoundingClientRect();
+
+  function toPx(bcr) {
+    return {
+      l: clipXpx + Math.round((bcr.left - clipBCR.left) * dpr),
+      t: clipYpx + Math.round((bcr.top  - clipBCR.top)  * dpr),
+      w: Math.round(bcr.width  * dpr),
+      h: Math.round(bcr.height * dpr),
+    };
+  }
+  const cardPx = toPx(cardBCR);
+  const barPx  = toPx(barBCR);
+
+  // Extracts a panel area from the output canvas, blurs it, draws it back
+  function applyGlass(px) {
+    const { l, t, w, h } = px;
+    if (w <= 0 || h <= 0) return;
+    const snap = document.createElement('canvas');
+    snap.width = w; snap.height = h;
+    snap.getContext('2d').drawImage(out, l, t, w, h, 0, 0, w, h);
+    const blurred = document.createElement('canvas');
+    blurred.width = w; blurred.height = h;
+    const bctx = blurred.getContext('2d');
+    bctx.filter = 'blur(12px) saturate(140%)';
+    bctx.drawImage(snap, 0, 0);
+    bctx.filter = 'none';
+    octx.drawImage(blurred, l, t);
+  }
+
+  // Layer 3: html2canvas UI chrome — nav, footer, controls.
+  //   Clip area is transparent (video + draw-canvas removed in onclone).
   if (uiLayer) {
     octx.drawImage(uiLayer, 0, 0);
   }
 
-  // Layer 4: strokes drawn LAST so they sit on top of everything —
-  //   this guarantees html2canvas rendering quirks can never bury them.
+  // Layer 4: glass sim for about-card
+  applyGlass(cardPx);
+
+  // Layer 5: glass sim for color-bar-wrap
+  applyGlass(barPx);
+
+  // Layer 6: card text on top of glass sim
+  if (cardLayer) {
+    octx.save();
+    octx.beginPath();
+    octx.rect(cardPx.l, cardPx.t, cardPx.w, cardPx.h);
+    octx.clip();
+    octx.drawImage(cardLayer, cardPx.l, cardPx.t);
+    octx.restore();
+  }
+
+  // Layer 7: color bar on top of glass sim
+  if (barLayer) {
+    octx.save();
+    octx.beginPath();
+    octx.rect(barPx.l, barPx.t, barPx.w, barPx.h);
+    octx.clip();
+    octx.drawImage(barLayer, barPx.l, barPx.t);
+    octx.restore();
+  }
+
+  // Layer 8: strokes drawn LAST — evenodd excludes both panels.
   if (strokesSnap.width > 0 && strokesSnap.height > 0) {
+    octx.save();
+    octx.beginPath();
+    octx.rect(clipXpx, clipYpx, cWpx, cHpx);
+    octx.rect(cardPx.l, cardPx.t, cardPx.w, cardPx.h);
+    octx.rect(barPx.l,  barPx.t,  barPx.w,  barPx.h);
+    octx.clip('evenodd');
     octx.drawImage(strokesSnap, clipXpx, clipYpx, cWpx, cHpx);
+    octx.restore();
   }
 
   const a = document.createElement('a');

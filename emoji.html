@@ -511,6 +511,7 @@ body {
         <span class="panel-cat" data-cat="Activities">Activities</span>
         <span class="panel-cat" data-cat="Objects">Objects</span>
         <span class="panel-cat" data-cat="Symbols">Symbols</span>
+        <span class="panel-cat" data-cat="Flags">Flags</span>
       </div>
       <div id="emoji-grid-wrap">
         <div id="emoji-grid"></div>
@@ -560,11 +561,9 @@ function randomPastel() {
 const loadOverlay = document.getElementById('load-overlay');
 loadOverlay.style.background = randomPastel();
 function dismissOverlay() {
-  requestAnimationFrame(() => {           // let layout paint first
-    loadOverlay.style.opacity = '0';
-    loadOverlay.addEventListener('transitionend', () => loadOverlay.remove(), { once: true });
-    setTimeout(() => { if (loadOverlay.parentNode) loadOverlay.remove(); }, 900);
-  });
+  loadOverlay.style.opacity = '0';
+  loadOverlay.addEventListener('transitionend', () => loadOverlay.remove(), { once: true });
+  setTimeout(() => { if (loadOverlay.parentNode) loadOverlay.remove(); }, 900);
 }
 
 function clipW() { return clip.offsetWidth  || (window.innerWidth  - 30); }
@@ -687,6 +686,23 @@ async function requestCamera() {
 function T(e) {
   return [e, e+'\u{1F3FB}', e+'\u{1F3FC}', e+'\u{1F3FD}', e+'\u{1F3FE}', e+'\u{1F3FF}'];
 }
+// Helper: same as T() but strips VS16 (U+FE0F) before inserting tone modifier
+// needed for sport/activity emojis like 🏋️ where tone goes before the variation selector
+function TS(e) {
+  const b = e.replace(/️/, '');
+  return [e, b+'\u{1F3FB}', b+'\u{1F3FC}', b+'\u{1F3FD}', b+'\u{1F3FE}', b+'\u{1F3FF}'];
+}
+// Helper: gender-only ZWJ variants (no skin tone), VS16-safe
+function TGS(e) {
+  const b = e.replace(/️/, '');
+  const result = [e];
+  for (const t of ['\u{1F3FB}','\u{1F3FC}','\u{1F3FD}','\u{1F3FE}','\u{1F3FF}']) result.push(b+t);
+  for (const g of ['‍♂️', '‍♀️']) {
+    result.push(e+g);
+    for (const t of ['\u{1F3FB}','\u{1F3FC}','\u{1F3FD}','\u{1F3FE}','\u{1F3FF}']) result.push(b+t+g);
+  }
+  return result;
+}
 // Helper: base + male + female ZWJ variants
 function G(e) {
   return [e, e+'‍♂️', e+'‍♀️'];
@@ -706,7 +722,7 @@ const EMOJI_CATS = {
     '😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','🫠','😉','😊','😇',
     '🥰','😍','🤩','😘','😗','☺️','😚','😙','🥲','😋','😛','😜','🤪','😝',
     '🤑','🤗','🤭','🫢','🫣','🤫','🤔','🫡','🤐','🤨','😐','😑','😶','🫥',
-    '😏','😒','🙄','😬','🤥','🫨','🙂‍↕️','🙂‍↔️','😌','😔','😪','🤤','😴',
+    '😏','😒','🙄','😬','🤥','🫨','🙂‍↕️','🙂‍↔️','🫩','😌','😔','😪','🤤','😴',
     '😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','😵‍💫','🤯','🤠',
     '🥳','🥸','😎','🤓','🧐','😕','🫤','😟','🙁','☹️','😮','😯','😲','😳',
     '🥺','🥹','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓',
@@ -723,7 +739,6 @@ const EMOJI_CATS = {
     ...T('👈'),...T('👉'),...T('👆'),...T('🖕'),...T('👇'),...T('☝️'),...T('🫵'),
     ...T('👍'),...T('👎'),
     ...T('✊'),...T('👊'),...T('🤛'),...T('🤜'),
-    ...T('🫱'),...T('🫲'),
     '🤝',...T('🙏'),...T('👏'),...T('🙌'),...T('🫶'),...T('👐'),...T('🤲'),
     ...T('✍️'),...T('💅'),...T('🤳'),
     // ── Body parts ──
@@ -768,91 +783,233 @@ const EMOJI_CATS = {
     ...TG('🏃'),...T('💃'),...T('🕺'),'🕴️',
     '👯','👯‍♂️','👯‍♀️',
     ...TG('🧖'),...TG('🧗'),
+    // ── Profession ZWJ sequences (man+woman, all skin tones) ──
+    // Format: person + skin_tone + ZWJ + tool
+    ...['👨','👩'].flatMap(p => ['','🏻','🏼','🏽','🏾','🏿'].flatMap(t =>
+      ['⚕️','🎓','🏫','⚖️','🌾','🍳','🔧','🏭','💼','🔬','🎨','✈️','🚀','🚒'].map(j =>
+        p+t+'‍'+j
+      )
+    )),
+    ...['🏻','🏼','🏽','🏾','🏿'].flatMap(t => ['⚕️','🎓','🏫','⚖️','🌾','🍳','🔧','🏭','💼','🔬','🎨','✈️','🚀','🚒'].map(j => '🧑'+t+'‍'+j)),
     // ── Couples / family ──
     '👫','👬','👭','💏','💑','👪',
     '👨‍👩‍👦','👨‍👩‍👧','👨‍👩‍👧‍👦','👨‍👨‍👦','👩‍👩‍👧',
     '👤','👥','🫂','👣',
   ],
   Animals: [
+    // ── Mammals ──
     '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐻‍❄️','🐨','🐯','🦁','🐮','🐷',
-    '🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐦‍🔥','🐦‍⬛','🐤','🐣','🐥',
-    '🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🦌','🐎','🫎',
-    '🐝','🪱','🐛','🦋','🐌','🐞','🐜','🪲','🦟','🦗','🪳','🕷️','🦂',
-    '🐢','🐍','🦎','🦕','🦖','🐙','🦑','🦐','🦞','🦀',
-    '🐡','🐠','🐟','🐬','🐳','🐋','🦈',
-    '🐊','🐅','🐆','🦓','🦍','🦧','🦣','🐘','🦛','🦏',
-    '🐪','🐫','🦒','🦘','🦬','🐃','🐂','🐄','🫏',
-    '🐖','🐏','🐑','🦙','🐐','🦃','🦤','🦚','🦜','🦢','🕊️',
-    '🐇','🦝','🦨','🦡','🦫','🦦','🦥','🐁','🐀','🐿️','🦔',
-    '🐾','🐉','🐲',
-    '🌵','🎄','🌲','🌳','🌴','🪵','🌱','🌿','☘️','🍀','🎍','🪴','🎋','🍃',
+    '🐗','🐴','🦄','🦌','🫎','🐎','🐂','🐃','🐄','🐏','🐑','🦙','🐐','🦘',
+    '🦬','🐪','🐫','🦒','🦣','🐘','🦛','🦏','🐁','🐀','🐿️','🦔',
+    '🐇','🦝','🦨','🦡','🦫','🦦','🦥','🧸',
+    '🐕','🐕‍🦺','🐩','🐈','🐈‍⬛','🐾',
+    '🦭',
+    // ── Birds ──
+    '🐓','🐔','🐧','🐦','🐦‍🔥','🐦‍⬛','🐤','🐣','🐥',
+    '🦆','🦅','🦉','🦇','🐺','🦃','🦤','🦚','🦜','🦢','🦩','🕊️',
+    '🪿',
+    // ── Reptiles & amphibians ──
+    '🐸','🐊','🐢','🐍','🦎','🦕','🦖',
+    // ── Sea life ──
+    '🐙','🦑','🦐','🦞','🦀','🦪','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊',
+    '🪼',
+    // ── Bugs ──
+    '🐝','🪱','🐛','🦋','🐌','🐞','🐜','🪲','🦟','🦗','🪳','🕷️','🦂','🦠',
+    // ── Primates ──
+    '🐵','🙈','🙉','🙊','🐒','🦍','🦧',
+    // ── Fantasy ──
+    '🐉','🐲',
+    // ── Plants & nature ──
+    '🌵','🎄','🌲','🌳','🌴','🪵','🪾','🌱','🌿','☘️','🍀','🎍','🪴','🎋','🍃',
     '🍂','🍁','🪺','🪹','🍄','🍄‍🟫','🌾','💐','🌷','🌹','🥀','🪷','🌺','🌸',
-    '🌼','🌻','🌞','🌝','🌛','🌜','🌚','🌕','🌙','🌟','⭐','🌈','☀️','⛅','☁️',
+    '🌼','🌻','🪻','🌱','🪸',
+    // ── Sky & weather ──
+    '🌞','🌝','🌛','🌜','🌚','🌕','🌖','🌗','🌘','🌑','🌒','🌓','🌔','🌙',
+    '🌟','⭐','🌠','💫','✨','⚡','🌈','☀️','🌤️','⛅','🌥️','☁️','🌦️','🌧️',
+    '⛈️','🌩️','🌨️','❄️','🌬️','💨','🌀','🌫️','🌊','💧','💦','☔','⛱️','🌡️',
+    '🌪️','🌈',
   ],
   Food: [
+    // ── Fruits ──
     '🍎','🍐','🍊','🍋','🍋‍🟩','🍌','🍉','🍇','🍓','🫐','🍈','🍑','🥭','🍍','🥥',
-    '🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🫑','🧄','🧅','🥔','🍠','🫚',
-    '🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗',
-    '🍖','🌭','🍔','🍟','🍕','🫓','🥙','🧆','🌮','🌯','🫔','🥗','🥘','🫕',
-    '🥫','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🦪','🍤','🍙','🍘','🍥','🥮',
-    '🍢','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🫘',
-    '🍯','🧃','🥤','🧋','☕','🫖','🍵','🧉','🍺','🍻','🥂','🍷','🥃','🍸',
-    '🍹','🍾','🧊','🥄','🍴','🍽️','🥢','🧂',
+    '🥝','🍅','🫒',
+    // ── Vegetables ──
+    '🍆','🥑','🥦','🥬','🥒','🌶️','🫑','🧄','🧅','🥔','🍠','🌽','🥕','🫛',
+    // ── Pantry ──
+    '🫘','🌰','🥜','🫚','🧈','🧂','🍯','🫙',
+    // ── Bread & pastry ──
+    '🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🥞','🧇',
+    // ── Meat ──
+    '🥓','🥩','🍗','🍖','🥣',
+    // ── Fast food & meals ──
+    '🌭','🍔','🍟','🍕','🫓','🥙','🧆','🌮','🌯','🫔','🥗','🥘','🫕','🥫',
+    // ── Asian food ──
+    '🍝','🍜','🍲','🍛','🍣','🍱','🥟','🦪','🍤','🍙','🍘','🍥','🥮','🍢',
+    '🍡','🍧','🍨','🍦','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪',
+    // ── Drinks ──
+    '🧃','🥤','🧋','☕','🫖','🍵','🧉','🍺','🍻','🥂','🍷','🥃','🍸','🍹',
+    '🍾','🧊',
+    // ── Utensils ──
+    '🥄','🍴','🍽️','🥢','🔪',
   ],
   Travel: [
+    // ── Road vehicles ──
     '🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🛻','🚚','🚛','🚜',
-    '🏍️','🛵','🛺','🚲','🛴','🛹','🛼','🛞','⛽','🚨','🚥','🚦','🛑','🚧',
-    '⚓','🪝','⛵','🛶','🚤','🛳️','⛴️','🛥️','🚢','✈️','🛩️','🛫','🛬','🪂',
-    '💺','🚁','🚀','🛸','🪐','🌍','🌎','🌏','🗺️','🧭','🏔️','⛰️','🌋','🗻',
-    '🏕️','🏖️','🏗️','🏘️','🏙️','🏚️','🏛️','🏟️','🏠','🏡','🏢','🏣','🏤','🏥',
+    '🚍','🏍️','🛵','🛺','🚲','🛴','🛹','🛼','🛞','🛡️',
+    // ── Road infrastructure ──
+    '⛽','🚨','🚥','🚦','🛑','🚧','🛤️','🛣️',
+    // ── Water transport ──
+    '⚓','🪝','⛵','🛶','🚤','🛳️','⛴️','🛥️','🚢',
+    // ── Air transport ──
+    '✈️','🛩️','🛫','🛬','🪂','💺','🚁','🚀','🛸','🛰️',
+    // ── Space & sky ──
+    '🪐','🌍','🌎','🌏','🗺️','🧭',
+    // ── Terrain ──
+    '🏔️','⛰️','🌋','🗻','🏕️','🏖️','🪨','🏜️','🏝️','🏞️',
+    // ── Buildings ──
+    '🏗️','🏘️','🏙️','🏚️','🏛️','🏟️','🏠','🏡','🏢','🏣','🏤','🏥',
     '🏦','🏨','🏩','🏪','🏫','🏬','🏭','🏯','🏰','💒','🗼','🗽','⛪','🕌',
-    '🛕','🕍','⛩️','🕋','⛲','⛺','🌁','🌃','🌄','🌅','🌆','🌇','🌉',
-    '🎠','🛝','🎡','🎢','🚂','🚃','🚄','🚅','🚆','🚇','🚈','🚉','🚊','🚝','🚞',
+    '🛕','🕍','⛩️','🕋','⛲','⛺','🛖','🌁','🌃','🌄','🌅','🌆','🌇','🌉','🌌',
+    // ── Train & rail ──
+    '🚂','🚃','🚄','🚅','🚆','🚇','🚈','🚉','🚊','🚝','🚞','🚋','🚟','🚠','🚡',
+    // ── Amusements ──
+    '🎠','🛝','🎡','🎢',
   ],
   Activities: [
-    '⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🪀','🏓','🏸','🏒',
-    '🥍','🏑','🏏','🪃','🥅','⛳','🪁','🤿','🎣','🎽','🎿','🛷','🥌','🎯',
-    '🎮','🕹️','🎲','♟️','🎭','🎨','🖼️','🎪','🎤','🎧','🎼','🎹','🥁','🪘',
-    '🎷','🎺','🪗','🎸','🪕','🎻','🪈','🪇','🎬','🎥','📽️','🎞️','📺','📻',
-    '🎙️','🎚️','🎛️','🎁','🎀','🎊','🎉','🎈','🎏','🎐','🎑','🎃','🎄','🎆',
-    '🎇','🧨','✨','🎋','🎍','🎎','🎗️','🎟️','🎫','🤹',
-    '🩰','🏋️','🤼','🤸','🤺','🤾','🏌️','🏄','🚵','🚴','🏊','🤽','🧘','🏇','🏂','🧗',
+    // ── Ball sports ──
+    '⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱',
+    // ── Racket & stick sports ──
+    '🏓','🏸','🏒','🥍','🏑','🏏','🪃',
+    // ── Target sports ──
+    '🥅','⛳','🪁','🎯','🎣','🤿',
+    // ── Winter sports ──
+    '🎿','⛷️','🏂','🛷','🥌',
+    // ── Athletics (with skin tones) ──
+    '🎽',...TGS('🏋️'),...G('🤼'),...TGS('🤸'),
+    '🤺',...TGS('🤾'),...TGS('🏌️'),
+    ...TGS('🏄'),...TGS('🚵'),...TGS('🚴'),
+    ...TGS('🏊'),...TGS('🤽'),
+    ...TG('🧘'),...T('🏇'),...TGS('🧗'),
+    ...TGS('🏋️'),...TGS('⛷️'),
+    '🪀','🏆','🥇','🥈','🥉','🏅','🎖️',
+    // ── Arts & entertainment ──
+    '🎮','🕹️','🎲','♟️','🎭','🎨','🖼️','🎪','🤹','🎰',
+    // ── Music ──
+    '🎤','🎧','🎼','🎹','🥁','🪘','🎷','🎺','🪗','🎸','🪕','🎻','🪈','🪇',
+    // ── Media ──
+    '🎬','🎥','📽️','🎞️','📺','📻','🎙️','🎚️','🎛️',
+    // ── Celebration ──
+    '🎁','🎀','🎊','🎉','🎈','🎏','🎐','🎑','🎃','🎄','🎆','🎇','🧨','✨',
+    '🎋','🎍','🎎','🎗️','🎟️','🎫',
+    // ── Dance ──
+    '🩰','🕴️',
   ],
   Objects: [
-    '👓','🕶️','🥽','🌂','☂️','🧵','🪡','🧶','🪢','👒','🎩','🪖','⛑️','📿',
-    '💄','💍','💎','📱','📲','☎️','📞','📟','📠','🔋','🪫','💻','🖥️','🖨️',
-    '⌨️','🖱️','🖲️','💽','💾','💿','📀','🧮','🎥','📷','📸','📹','📼','🔍',
-    '🔎','🕯️','💡','🔦','🏮','🪔','📔','📒','📕','📗','📘','📙','📚','📖',
-    '🔖','🏷️','💰','🪙','💴','💵','💶','💷','💸','💳','✉️','📧','📨','📩',
-    '📤','📥','📦','📫','📪','📬','📭','📮','🗳️','✏️','✒️','🖋️','🖊️','📝',
-    '📁','📂','🗂️','📅','📆','🗒️','🗓️','📇','📈','📉','📊','📋','📌','📍',
-    '📎','🖇️','📏','📐','✂️','🗃️','🗄️','🗑️','🔒','🔓','🔏','🔐','🔑','🗝️',
-    '🔨','🪓','⛏️','⚒️','🛠️','🗡️','⚔️','🔫','🛡️','🪚','🔧','🪛','🔩','⚙️',
-    '🗜️','⚖️','🦯','🔗','⛓️','⛓️‍💥','🪝','🧲','🪜','🧪','🧫','🧬','🔭','🔬',
-    '🩺','💊','🩹','🩼','🩻','🩸',
-    '🎒','👜','👝','🛍️','🎽','🩱','👙','👗','👘','🥻','🩴',
-    '👟','👠','👡','👢','👞','👒','🎩','🪖','⛑️','🧢','👛','👓',
-    '🪭','🪮','🪬','🧿','🪄','🪩','🪅','🎀',
+    // ── Clothing & accessories ──
+    '👓','🕶️','🥽','👔','👕','👖','🧣','🧤','🧥','🧦','👗','👘','🥻','🩱',
+    '👙','🩲','🩳','👚','👛','👜','👝','🎒','🛍️','🌂','☂️','☔',
+    '👒','🎩','🪖','⛑️','🧢','🪭','💍','💎','👑',
+    '👟','👠','👡','👢','👞','🥿','🩴',
+    // ── Personal care ──
+    '💄','💋','🪥','🪒','🧴','🧷','🧹','🧺','🧻','🧼','🪣','🪮','🧽','🚿','🛁',
+    '🪞','🪟','🛋️','🛏️','🚪','🪑',
+    // ── Household ──
+    '🔑','🗝️','🔨','🪓','⛏️','⚒️','🛠️','🪚','🔧','🪛','🔩','⚙️','🗜️',
+    '🧲','🪜','🪝','⛓️','⛓️‍💥','🔗','⚖️','🦯','🔒','🔓','🔏','🔐',
+    '🧯','🛒','🪤','🧸','🪆','🏺','🗿','🪄','🧿','🪅','🪩',
+    // ── Tech ──
+    '📱','📲','☎️','📞','📟','📠','🔋','🪫','🔌','💻','🖥️','🖨️',
+    '⌨️','🖱️','🖲️','💽','💾','💿','📀','🧮',
+    // ── Photo & video ──
+    '🎥','📷','📸','📹','📼','🔍','🔎',
+    // ── Light & time ──
+    '🕯️','💡','🔦','🏮','🪔','⌚','⏰','⏱️','⏲️','⏳','⌛','📡',
+    // ── Books & writing ──
+    '📔','📒','📕','📗','📘','📙','📚','📖','🔖','🏷️',
+    '✏️','✒️','🖋️','🖊️','📝','📁','📂','🗂️',
+    // ── Calendar & charts ──
+    '📅','📆','🗒️','🗓️','📇','📈','📉','📊','📋','📌','📍',
+    '📎','🖇️','📏','📐','✂️','🗃️','🗄️','🗑️',
+    // ── Mail ──
+    '✉️','📧','📨','📩','📤','📥','📦','📫','📪','📬','📭','📮','🗳️',
+    // ── Money ──
+    '💰','🪙','💴','💵','💶','💷','💸','💳',
+    // ── Medical ──
+    '🩺','💊','🩹','🩼','🩻','🩸','🧬','🧫','🧪','🔭','🔬',
+    // ── Weapons ──
+    '🗡️','⚔️','🔫','🛡️','🪃','🏹',
+    // ── Misc ──
+    '📿','🪬','🎀','🧵','🪡','🧶','🪢',
   ],
   Symbols: [
+    // ── Hearts ──
     '❤️','🩷','🧡','💛','🩵','💚','💙','💜','🖤','🩶','🤍','🤎',
-    '💔','❤️‍🔥','❤️‍🩹','💕','💞','💓','💗','💖','💘','💝','💟',
-    '☮️','✝️','☪️','🕉️','✡️','🔯','🕎','☯️','☦️','🛐',
+    '💔','❤️‍🔥','❤️‍🩹','💕','💞','💓','💗','💖','💘','💝','💟','♥️',
+    // ── Religion & culture ──
+    '☮️','✝️','☪️','🕉️','✡️','🔯','🕎','☯️','☦️','🛐','🔱','⚜️',
+    // ── Zodiac ──
     '⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓',
+    // ── Warning & prohibition ──
     '❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞',
-    '📵','🚭','❗','❕','❓','❔','‼️','⁉️','🔅','🔆','〽️','⚠️','🚸','🔱',
-    '⚜️','🔰','♻️','✅','🌐','💠','Ⓜ️','🌀','💤','🏧','🚾','♿','🅿️','🛗',
+    '📵','🚭','⚠️','🚸',
+    // ── Info & service ──
+    '❗','❕','❓','❔','‼️','⁉️','🔅','🔆','〽️','🔰','♻️','✅',
+    '🌐','💠','Ⓜ️','🌀','💤','🏧','🚾','♿','🅿️','🛗',
     '🚹','🚺','🚼','⚧️','🏳️‍⚧️','🏳️‍🌈','🚻','🚮','🎦','📶','🈁','ℹ️',
-    '🔤','🔡','🔠','🆖','🆗','🆙','🆒','🆕','🆓',
+    // ── Letters & numbers ──
+    '🔤','🔡','🔠','🆖','🆗','🆙','🆒','🆕','🆓','🆚','🆔','🆑','🆘','🅰️','🅱️','🆎',
     '0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟','🔢','#️⃣','*️⃣',
+    '🈶','🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲',
+    '🅰️','🅱️','🆎','🆑','🅾️',
+    // ── Playback controls ──
     '⏏️','▶️','⏸️','⏹️','⏺️','⏭️','⏮️','⏩','⏪','⏫','⏬','◀️','🔼','🔽',
+    // ── Arrows ──
     '➡️','⬅️','⬆️','⬇️','↗️','↘️','↙️','↖️','↕️','↔️','↪️','↩️','⤴️','⤵️',
-    '🔀','🔁','🔂','🔄','🔃','➕','➖','➗','✖️','♾️','💲','💱','™️','©️','®️',
-    '〰️','➰','➿','✔️','☑️','🔘',
+    '🔀','🔁','🔂','🔄','🔃',
+    // ── Math & currency ──
+    '➕','➖','➗','✖️','♾️','💲','💱','™️','©️','®️',
+    // ── Misc symbols ──
+    '〰️','➰','➿','✔️','☑️','🔘','🔛','🔜','🔝','🔙','🔚',
+    // ── Geometric ──
     '🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤',
     '🔺','🔻','🔸','🔹','🔶','🔷','🔳','🔲','▪️','▫️','◾','◽','◼️','◻️',
     '🟥','🟧','🟨','🟩','🟦','🟪','⬛','⬜','🟫',
-  ]
+    // ── Other ──
+    '🔉','🔊','🔇','🔈','📢','📣','🔔','🔕','🎵','🎶','💬','💭','🗯️','💤','♻️',
+  ],
+  Flags: [
+    // ── Special flags ──
+    '🏁','🚩','🎌','🏴','🏳️','🏳️‍🌈','🏳️‍⚧️','🏴‍☠️',
+    // ── Subdivision flags ──
+    '🏴󠁧󠁢󠁥󠁮󠁧󠁿','🏴󠁧󠁢󠁳󠁣󠁴󠁿','🏴󠁧󠁢󠁷󠁬󠁳󠁿',
+    // ── Country flags ──
+    '🇦🇨','🇦🇩','🇦🇪','🇦🇫','🇦🇬','🇦🇮','🇦🇱','🇦🇲','🇦🇴','🇦🇶','🇦🇷','🇦🇸','🇦🇹','🇦🇺','🇦🇼','🇦🇽','🇦🇿',
+    '🇧🇦','🇧🇧','🇧🇩','🇧🇪','🇧🇫','🇧🇬','🇧🇭','🇧🇮','🇧🇯','🇧🇱','🇧🇲','🇧🇳','🇧🇴','🇧🇶','🇧🇷','🇧🇸','🇧🇹','🇧🇻','🇧🇼','🇧🇾','🇧🇿',
+    '🇨🇦','🇨🇨','🇨🇩','🇨🇫','🇨🇬','🇨🇭','🇨🇮','🇨🇰','🇨🇱','🇨🇲','🇨🇳','🇨🇴','🇨🇵','🇨🇷','🇨🇺','🇨🇻','🇨🇼','🇨🇽','🇨🇾','🇨🇿',
+    '🇩🇪','🇩🇬','🇩🇯','🇩🇰','🇩🇲','🇩🇴','🇩🇿',
+    '🇪🇦','🇪🇨','🇪🇪','🇪🇬','🇪🇭','🇪🇷','🇪🇸','🇪🇹','🇪🇺',
+    '🇫🇮','🇫🇯','🇫🇰','🇫🇲','🇫🇴','🇫🇷',
+    '🇬🇦','🇬🇧','🇬🇩','🇬🇪','🇬🇫','🇬🇬','🇬🇭','🇬🇮','🇬🇱','🇬🇲','🇬🇳','🇬🇵','🇬🇶','🇬🇷','🇬🇸','🇬🇹','🇬🇺','🇬🇼','🇬🇾',
+    '🇭🇰','🇭🇲','🇭🇳','🇭🇷','🇭🇹','🇭🇺',
+    '🇮🇨','🇮🇩','🇮🇪','🇮🇱','🇮🇲','🇮🇳','🇮🇴','🇮🇶','🇮🇷','🇮🇸','🇮🇹',
+    '🇯🇪','🇯🇲','🇯🇴','🇯🇵',
+    '🇰🇪','🇰🇬','🇰🇭','🇰🇮','🇰🇲','🇰🇳','🇰🇵','🇰🇷','🇰🇼','🇰🇾','🇰🇿',
+    '🇱🇦','🇱🇧','🇱🇨','🇱🇮','🇱🇰','🇱🇷','🇱🇸','🇱🇹','🇱🇺','🇱🇻','🇱🇾',
+    '🇲🇦','🇲🇨','🇲🇩','🇲🇪','🇲🇫','🇲🇬','🇲🇭','🇲🇰','🇲🇱','🇲🇲','🇲🇳','🇲🇴','🇲🇵','🇲🇶','🇲🇷','🇲🇸','🇲🇹','🇲🇺','🇲🇻','🇲🇼','🇲🇽','🇲🇾','🇲🇿',
+    '🇳🇦','🇳🇨','🇳🇪','🇳🇫','🇳🇬','🇳🇮','🇳🇱','🇳🇴','🇳🇵','🇳🇷','🇳🇺','🇳🇿',
+    '🇴🇲',
+    '🇵🇦','🇵🇪','🇵🇫','🇵🇬','🇵🇭','🇵🇰','🇵🇱','🇵🇲','🇵🇳','🇵🇷','🇵🇸','🇵🇹','🇵🇼','🇵🇾',
+    '🇶🇦',
+    '🇷🇪','🇷🇴','🇷🇸','🇷🇺','🇷🇼',
+    '🇸🇦','🇸🇧','🇸🇨','🇸🇩','🇸🇪','🇸🇬','🇸🇭','🇸🇮','🇸🇯','🇸🇰','🇸🇱','🇸🇲','🇸🇳','🇸🇴','🇸🇷','🇸🇸','🇸🇹','🇸🇻','🇸🇽','🇸🇾','🇸🇿',
+    '🇹🇦','🇹🇨','🇹🇩','🇹🇫','🇹🇬','🇹🇭','🇹🇯','🇹🇰','🇹🇱','🇹🇲','🇹🇳','🇹🇴','🇹🇷','🇹🇹','🇹🇻','🇹🇼','🇹🇿',
+    '🇺🇦','🇺🇬','🇺🇲','🇺🇳','🇺🇸','🇺🇾','🇺🇿',
+    '🇻🇦','🇻🇨','🇻🇪','🇻🇬','🇻🇮','🇻🇳','🇻🇺',
+    '🇼🇫','🇼🇸',
+    '🇽🇰',
+    '🇾🇪','🇾🇹',
+    '🇿🇦','🇿🇲','🇿🇼',
+  ],
 };
 
 let currentCat = 'All';
@@ -982,30 +1139,18 @@ function updateTransform(data) {
   data.el.style.zIndex    = data.z;
   data.el.style.left      = data.x + 'px';
   data.el.style.top       = data.y + 'px';
+  // Use font-size instead of CSS scale() — browser renders the glyph at the
+  // actual size needed so large emojis stay crisp rather than pixelating.
+  data.el.style.fontSize  = (64 * data.scale) + 'px';
   const flip = data.flipped ? ' scaleX(-1)' : '';
-  data.el.style.transform = `translate(-50%,-50%) rotate(${data.rotation}deg) scale(${data.scale})${flip}`;
+  data.el.style.transform = `translate(-50%,-50%) rotate(${data.rotation}deg)${flip}`;
 
-  // Counter-scale handles so they stay a fixed visual size and distance from
-  // the emoji regardless of how much the emoji has been scaled.
-  // The parent's scale(S) would push a child at top:-44px to -44*S visually;
-  // setting top:-44/S cancels that out: (-44/S)*S = -44 visual px always.
-  const cs = 1 / data.scale;
+  // Handles use their CSS default positions — no counter-scaling needed since
+  // the parent no longer applies a CSS scale() transform.
   const rH = data.el.querySelector('.emoji-rotate-handle');
   const sH = data.el.querySelector('.emoji-scale-handle');
-  if (rH) {
-    // Keep top at constant visual distance (-44px from emoji top) by dividing
-    // by parent scale; size grows naturally with emoji so it stays easy to click.
-    rH.style.top       = (-44 * cs) + 'px';
-    rH.style.transform = 'translateX(-50%)';
-  }
-  if (sH) {
-    // Same principle: constant 24px visual offset outside the bottom-right corner.
-    // No size counter-scale — handle grows with emoji, always easy to find.
-    sH.style.right           = (-24 * cs) + 'px';
-    sH.style.bottom          = (-24 * cs) + 'px';
-    sH.style.transformOrigin = '';
-    sH.style.transform       = '';
-  }
+  if (rH) { rH.style.top = ''; rH.style.transform = 'translateX(-50%)'; }
+  if (sH) { sH.style.right = ''; sH.style.bottom = ''; }
 }
 
 function selectEmoji(data) {
@@ -1271,55 +1416,166 @@ async function captureCollage() {
   selectEmoji(null);
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-  const fullW = window.innerWidth;
-  const fullH = window.innerHeight;
-  const clipX = 15, clipY = 28;
-  const cW    = fullW - 30;
-  const cH    = fullH - 56;
+  const dpr     = window.devicePixelRatio || 1;
+  const fullW   = window.innerWidth;
+  const fullH   = window.innerHeight;
+  const clipX   = clip.offsetLeft  || 15;
+  const clipY   = clip.offsetTop   || 28;
+  const cW      = clip.offsetWidth  || (fullW - 30);
+  const cH      = clip.offsetHeight || (fullH - 56);
+  const outW    = Math.round(fullW * dpr);
+  const outH    = Math.round(fullH * dpr);
+  const cWpx    = Math.round(cW   * dpr);
+  const cHpx    = Math.round(cH   * dpr);
+  const clipXpx = Math.round(clipX * dpr);
+  const clipYpx = Math.round(clipY * dpr);
 
-  let uiLayer = null;
+  // Compute panel bounds before async work
+  const clipBCR  = clip.getBoundingClientRect();
+  const cardBCR  = card.getBoundingClientRect();
+  const panelBCR = emojiPanel.getBoundingClientRect();
+
+  function toPx(bcr) {
+    return {
+      l: clipXpx + Math.round((bcr.left - clipBCR.left) * dpr),
+      t: clipYpx + Math.round((bcr.top  - clipBCR.top)  * dpr),
+      w: Math.round(bcr.width  * dpr),
+      h: Math.round(bcr.height * dpr),
+    };
+  }
+  const cardPx  = toPx(cardBCR);
+  const panelPx = toPx(panelBCR);
+
+  // Three html2canvas calls in parallel:
+  //   a) Body with both glass panels hidden → emojis + nav/footer/controls only
+  //   b) about-card only → card text for Layer 6
+  //   c) emoji-panel only → panel text for Layer 7
+  let uiLayer = null, cardLayer = null, panelLayer = null;
   try {
-    const race = Promise.race([
-      html2canvas(document.body, {
-        useCORS:         true,
-        allowTaint:      false,
-        scale:           1,
-        logging:         false,
-        backgroundColor: null,
-        onclone(doc) {
-          doc.body.style.background = 'transparent';
-          const c = doc.getElementById('clip');
-          if (c) c.style.background = 'transparent';
-        },
-      }),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000)),
+    [uiLayer, cardLayer, panelLayer] = await Promise.all([
+      Promise.race([
+        html2canvas(document.body, {
+          useCORS: true, allowTaint: false, scale: dpr, logging: false,
+          backgroundColor: null, windowWidth: fullW, windowHeight: fullH,
+          scrollX: 0, scrollY: 0,
+          onclone(doc) {
+            doc.documentElement.style.background = 'transparent';
+            doc.body.style.background = 'transparent';
+            const c = doc.getElementById('clip');
+            if (c) { c.style.background = 'transparent'; c.style.backgroundColor = 'transparent'; }
+            // Hide glass panels — drawn separately via html2canvas
+            const ac = doc.getElementById('about-card');
+            if (ac) ac.style.visibility = 'hidden';
+            const ep = doc.getElementById('emoji-panel');
+            if (ep) ep.style.visibility = 'hidden';
+            // Hide placed emojis — drawn directly to canvas for crisp rendering
+            doc.querySelectorAll('.placed-emoji').forEach(e => e.style.visibility = 'hidden');
+            const lo = doc.getElementById('load-overlay');
+            if (lo) lo.remove();
+          },
+        }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000)),
+      ]),
+      Promise.race([
+        html2canvas(card, { useCORS: true, allowTaint: false, scale: dpr, logging: false, backgroundColor: null }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
+      ]),
+      Promise.race([
+        html2canvas(emojiPanel, { useCORS: true, allowTaint: false, scale: dpr, logging: false, backgroundColor: null }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
+      ]),
     ]);
-    uiLayer = await race;
   } catch (err) {
-    console.warn('html2canvas failed, using clip-only fallback:', err);
+    console.warn('html2canvas failed:', err);
   }
 
-  const rW   = (uiLayer && uiLayer.width  > 0) ? uiLayer.width  : fullW;
-  const rH   = (uiLayer && uiLayer.height > 0) ? uiLayer.height : fullH;
-  const sx   = rW / fullW;
-  const sy   = rH / fullH;
-
   const out  = document.createElement('canvas');
-  out.width  = rW;
-  out.height = rH;
+  out.width  = outW;
+  out.height = outH;
   const octx = out.getContext('2d');
 
-  // Grey frame (nav, footer, side strips)
+  // Layer 1: grey frame
   octx.fillStyle = '#D9D9D9';
-  octx.fillRect(0, 0, rW, rH);
+  octx.fillRect(0, 0, outW, outH);
 
-  // White clip background
+  // Layer 2: white clip background
   octx.fillStyle = '#ffffff';
-  octx.fillRect(clipX * sx, clipY * sy, cW * sx, cH * sy);
+  octx.fillRect(clipXpx, clipYpx, cWpx, cHpx);
 
-  // Full UI layer on top — drawn 1:1, no stretching
+  // Layer 3: nav/footer/controls (glass panels + placed emojis hidden in html2canvas)
   if (uiLayer) {
     octx.drawImage(uiLayer, 0, 0);
+  }
+
+  // Layer 4: placed emojis drawn directly via canvas fillText — crisp at any scale
+  {
+    const stageBCR  = stage.getBoundingClientRect();
+    const stageOffX = clipXpx + Math.round((stageBCR.left - clipBCR.left) * dpr);
+    const stageOffY = clipYpx + Math.round((stageBCR.top  - clipBCR.top)  * dpr);
+    const sorted    = [...placedEmojis].sort((a, b) => a.z - b.z);
+    for (const d of sorted) {
+      const cx = stageOffX + d.x * dpr;
+      const cy = stageOffY + d.y * dpr;
+      const fs = Math.round(64 * d.scale * dpr);
+      octx.save();
+      octx.translate(cx, cy);
+      octx.rotate(d.rotation * Math.PI / 180);
+      if (d.flipped) octx.scale(-1, 1);
+      octx.font = fs + 'px serif';
+      octx.textAlign  = 'center';
+      octx.textBaseline = 'middle';
+      octx.fillText(d.char, 0, 0);
+      octx.restore();
+    }
+  }
+
+  // Glass sim helper: extracts the panel area from the current output canvas,
+  // blurs it, and draws it back. This gives a true frosted-glass effect based
+  // on whatever emoji content is actually under each panel.
+  function applyGlass(px) {
+    const { l, t, w, h } = px;
+    if (w <= 0 || h <= 0) return;
+
+    // Snapshot what's currently drawn in the panel area
+    const snap = document.createElement('canvas');
+    snap.width = w; snap.height = h;
+    snap.getContext('2d').drawImage(out, l, t, w, h, 0, 0, w, h);
+
+    // Blur + saturate in a second canvas
+    const blurred = document.createElement('canvas');
+    blurred.width = w; blurred.height = h;
+    const bctx = blurred.getContext('2d');
+    bctx.filter = 'blur(12px) saturate(140%)';
+    bctx.drawImage(snap, 0, 0);
+    bctx.filter = 'none';
+
+    octx.drawImage(blurred, l, t);
+  }
+
+  // Layer 4: glass sim for about-card
+  applyGlass(cardPx);
+
+  // Layer 5: glass sim for emoji-panel
+  applyGlass(panelPx);
+
+  // Layer 6: card text/borders on top of glass sim (clipped to card bounds)
+  if (cardLayer) {
+    octx.save();
+    octx.beginPath();
+    octx.rect(cardPx.l, cardPx.t, cardPx.w, cardPx.h);
+    octx.clip();
+    octx.drawImage(cardLayer, cardPx.l, cardPx.t);
+    octx.restore();
+  }
+
+  // Layer 7: emoji-panel text/UI on top of glass sim (clipped to panel bounds)
+  if (panelLayer) {
+    octx.save();
+    octx.beginPath();
+    octx.rect(panelPx.l, panelPx.t, panelPx.w, panelPx.h);
+    octx.clip();
+    octx.drawImage(panelLayer, panelPx.l, panelPx.t);
+    octx.restore();
   }
 
   const a = document.createElement('a');
