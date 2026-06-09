@@ -15,12 +15,6 @@
   border: 0 none; outline: 0 none;
   -webkit-tap-highlight-color: transparent;
 }
-
-/*
-  No position:fixed anywhere — fixed elements force GPU compositing layers
-  which produce tile-seam artifacts on Retina displays in Safari.
-  Everything is position:absolute within a body that fills the viewport.
-*/
 html {
   width: 100%; height: 100%;
   background: #D9D9D9;
@@ -31,11 +25,10 @@ body {
   top: 0; left: 0; right: 0; bottom: 0;
   background: #D9D9D9;
   overflow: hidden;
-  cursor: none;
   font-family: 'ABCDiatype', Arial, sans-serif;
 }
 
-/* Frame — all 4 strips always fixed */
+/* ── Frame ── */
 #bl { position: fixed; top: 0; left: 0; bottom: 0; width: 15px; background: #D9D9D9; z-index: 950; pointer-events: none; }
 #br { position: fixed; top: 0; right: 0; bottom: 0; width: 15px; background: #D9D9D9; z-index: 950; pointer-events: none; }
 #nav {
@@ -43,11 +36,15 @@ body {
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 15px; background: #D9D9D9; z-index: 200; cursor: auto;
 }
-#nav a { font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a; text-decoration: none; }
+#nav a, #nav span {
+  font-family: 'ABCDiatype', Arial, sans-serif;
+  font-size: 10px; color: #1a1a1a; text-decoration: none;
+}
 #nav a:hover { opacity: 0.5; }
 #nav-center {
   position: absolute; left: 50%; transform: translateX(-50%);
   font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a;
+  pointer-events: none;
 }
 #footer {
   position: fixed; bottom: 0; left: 0; right: 0; height: 28px;
@@ -56,853 +53,158 @@ body {
   font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a;
 }
 
-/* Scroll area — absolute, clips the canvas */
+/* ── Clip area ── */
 #clip {
   position: absolute;
   top: 28px; bottom: 28px; left: 15px; right: 15px;
   overflow: hidden;
-  background: #ffffff;
+  cursor: none;
 }
 
-/* Canvas — absolute within clip, moved by left/top (no transform, no GPU layer) */
-#canvas {
+/* ── Image layers — two for blur crossfade ── */
+.img-layer {
   position: absolute;
-  background: #ffffff;
-  transition: left 0.55s cubic-bezier(0.77,0,0.175,1),
-              top  0.55s cubic-bezier(0.77,0,0.175,1);
-}
-#canvas.instant { transition: none; }
-
-/*
-  Cards: transparent background. They are absolutely positioned blocks.
-  A transparent card has NO element boundary visible — the white canvas
-  background shows through uniformly. Zero compositing artifacts.
-*/
-.card {
-  position: absolute;
-  background: transparent;
-}
-
-/* Link overlay */
-.card-link {
-  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-  z-index: 10; display: none; cursor: none;
-}
-.card-link.active { display: block; cursor: pointer; }
-
-/*
-  Image: CSS background-image.
-  background-size is expanded by 4px (2px per side) so that any
-  sub-pixel interpolation artifacts at the scaled image edges are
-  pushed outside the element bounds and clipped by overflow:hidden.
-  overflow:hidden here is safe — no absolutely-positioned or moving
-  children inside, so no GPU compositing layer is created.
-*/
-.card-img {
-  position: absolute;
-  top: 0; left: 0;
-  overflow: hidden;
-  background-size: calc(100% + 4px) calc(100% + 4px);
-  background-repeat: no-repeat;
+  inset: 0;
+  background-size: cover;
   background-position: center;
-  background-color: transparent;
+  background-repeat: no-repeat;
+  opacity: 0;
+  filter: blur(6px);
+  transition: opacity 0.28s ease, filter 0.28s ease;
+  will-change: opacity, filter;
+}
+.img-layer.visible {
+  opacity: 1;
+  filter: blur(0px);
 }
 
-/* 1px black rule — positioned absolutely below image */
-.card-rule {
+/* ── Inner shadow (Figma: inset 0 0 10px 4px rgba(0,0,0,.15)) ── */
+#inner-shadow {
   position: absolute;
-  left: 0; right: 0;
-  height: 1px;
-  background: #000;
+  inset: 0;
+  box-shadow: inset 0 0 10px 4px rgba(0,0,0,0.15);
+  pointer-events: none;
+  z-index: 3;
 }
 
-/* Meta text */
-.card-meta {
-  position: absolute;
-  left: 0; right: 0;
-  display: flex; align-items: baseline;
-  font-family: 'ABCDiatype', Arial, sans-serif;
-  font-size: 10px; color: #1a1a1a;
-  line-height: 1; white-space: nowrap;
-  padding-top: 5px;
-  background: transparent;
-}
-.card-meta .m-name   { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
-.card-meta .m-year   { flex: 0 0 auto; margin-right: 14px; }
-.card-meta .m-client { flex: 0 0 auto; }
-
-/* Cursors */
-#cursor-wrap {
-  position: absolute; pointer-events: none; z-index: 999;
-  transform: translate(-50%,-50%); display: none;
-  width: 28px; height: 28px;
-}
-#cursor-wrap svg { width: 28px; height: 28px; display: block; }
-/* ── Minimap ── */
-#minimap {
-  position: absolute;
-  bottom: 38px;
-  left: 25px;
-  z-index: 300;
-  cursor: auto;
-  width: 290px;
-  padding: 16px;
-  background: rgba(0,0,0,0.05);
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-  border: 0.5px solid rgba(0,0,0,0.1);
-}
-.mm-rule {
-  height: 1px;
-  background: #000;
-  margin-bottom: 1px;
-}
-.mm-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.mm-title {
+/* ── Custom cursor ── */
+#cursor {
+  position: fixed;
+  pointer-events: none;
+  z-index: 190;
   font-family: 'ABCDiatype', Arial, sans-serif;
   font-size: 10px;
-  color: #000;
-  line-height: normal;
-  white-space: nowrap;
-}
-.mm-close {
-  font-family: 'ABCDiatype', Arial, sans-serif;
-  font-size: 10px;
-  color: #000;
-  cursor: pointer;
-  display: inline-block;
-  transform: rotate(45deg);
   line-height: 1;
-  transition: opacity 0.15s ease;
-}
-.mm-close:hover { opacity: 0.45; }
-/* 2-D panning dot grid — perspective enables spherical drag tilt */
-#mm-window {
-  margin-top: 9px;
-  height: 126px;
-  overflow: hidden;
-  position: relative;
-  cursor: grab;
-  perspective: 380px;
+  color: #ffffff;
+  mix-blend-mode: exclusion;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  display: none;
   user-select: none;
   -webkit-user-select: none;
 }
-#mm-window.dragging { cursor: grabbing; }
-#mm-inner {
-  position: absolute;
-  top: 0; left: 0;
-  width: 320px;  /* 5 × 8 + 4 × 70 = 320 px */
-  height: 200px; /* 5 × 8 + 4 × 40 = 200 px */
-  will-change: transform;
-}
-.mm-dot {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  border-radius: 1.5px;
-  background: rgba(0,0,0,0.14);
-  cursor: pointer;
-  transition: background 0.12s ease;
-}
-.mm-dot:hover  { background: rgba(0,0,0,0.28); }
-.mm-dot.active { background: rgba(0,0,0,0.58); }
-
-/* ── View toggle (bottom-left of footer) ── */
-#view-toggle {
-  position: absolute;
-  left: 10px; top: 50%; transform: translateY(-50%);
-  display: flex; gap: 10px; align-items: center;
-}
-.vt-label {
-  font-family: 'ABCDiatype', Arial, sans-serif;
-  font-size: 10px; color: rgba(0,0,0,0.25);
-  cursor: pointer; user-select: none; -webkit-user-select: none;
-  transition: color 0.15s ease;
-}
-.vt-label.active { color: #000; }
-.vt-label:hover  { opacity: 0.7; }
-
-/* ── Project view overlay ── */
-#pv-overlay {
-  position: absolute; inset: 0;
-  background: rgba(255,255,255,0.30);
-  backdrop-filter: blur(28px) saturate(150%);
-  -webkit-backdrop-filter: blur(28px) saturate(150%);
-  display: none;
-  align-items: center; justify-content: center;
-  z-index: 400; overflow: hidden;
-  cursor: auto;
-}
-#pv-overlay.visible { display: flex; }
-#pv-strip {
-  display: flex; align-items: center;
-  flex-wrap: nowrap;
-}
-.pv-item {
-  flex-shrink: 0;
-  display: block;
-  position: relative;
-  overflow: visible;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-color: transparent;
-  cursor: pointer;
-  text-decoration: none;
-  transition: opacity 0.2s ease;
-}
-/* Fade all siblings when strip is hovered; full opacity on the hovered one */
-#pv-strip:hover .pv-item         { opacity: 0.5; }
-#pv-strip:hover .pv-item:hover   { opacity: 1; }
-
-/* Label: name + rule + year — hidden until hover */
-.pv-label {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0; right: 0;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-}
-.pv-item:hover .pv-label { opacity: 1; }
-.pv-l-rule {
-  width: 100%;
-  height: 1px;
-  background: #000;
-  margin-bottom: 5px;
-}
-.pv-l-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-family: 'ABCDiatype', Arial, sans-serif;
-  font-size: 10px;
-  color: #000;
-  white-space: nowrap;
-  line-height: 1;
-}
-
-/* ── Mobile: simple single-column scroll ── */
-#mobile-layout { display: none; }
-
-@media (max-width: 768px) {
-  html, body {
-    width: 100%; height: 100%;
-    overflow: hidden;
-    cursor: auto;
-  }
-
-  body {
-    position: relative;
-    top: auto; left: auto; right: auto; bottom: auto;
-    background: #D9D9D9;
-    padding: 28px 0;
-  }
-
-  #nav    { position: fixed; top: 0; left: 0; right: 0; z-index: 200; }
-  #footer { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; }
-  /* #bl and #br stay visible on all screen sizes */
-
-  #nav a, #nav-center { cursor: auto; }
-  #clip, #cursor-wrap, #cursor-dot, #minimap { display: none !important; }
-
-  #mobile-layout {
-    display: block;
-    background: #ffffff;
-    height: calc(100vh - 56px);
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    margin: 0 15px;
-    padding: 0 10px;
-  }
-  #mobile-layout::-webkit-scrollbar { display: none; }
-
-  .m-card { width: 100%; display: block; background: transparent; text-decoration: none; color: inherit; }
-
-  .m-card-img {
-    width: 100%;
-    aspect-ratio: 1043 / 1399;
-    overflow: hidden;
-    background-color: #ffffff;
-    background-size: calc(100% + 4px) calc(100% + 4px);
-    background-position: center;
-    background-repeat: no-repeat;
-    display: block;
-  }
-
-  .m-card-rule { width: 100%; height: 1px; background: #000; display: block; }
-
-  .m-card-meta {
-    display: flex; align-items: baseline;
-    font-family: 'ABCDiatype', Arial, sans-serif;
-    font-size: 10px; color: #1a1a1a;
-    line-height: 1; white-space: nowrap;
-    padding: 5px 0 32px;
-  }
-  .m-card-meta .m-name   { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
-  .m-card-meta .m-year   { flex: 0 0 auto; margin-right: 14px; }
-  .m-card-meta .m-client { flex: 0 0 auto; }
-}
-
 </style>
 </head>
 <body>
+
 <div id="bl"></div>
 <div id="br"></div>
+
 <nav id="nav">
-  <a href="index.html">Work</a>
-  <a id="nav-center" href="index.html">Naman Nanda</a>
+  <a href="products.html">Work</a>
+  <span id="nav-center">Naman Nanda</span>
   <a href="about.html">About</a>
 </nav>
+
+<footer id="footer">© 2026 All Rights Reserved</footer>
+
 <div id="clip">
-  <div id="canvas"></div>
-  <div id="pv-overlay">
-    <div id="pv-strip"></div>
-  </div>
+  <div class="img-layer" id="layer-a"></div>
+  <div class="img-layer" id="layer-b"></div>
+  <div id="inner-shadow"></div>
 </div>
-<div id="minimap">
-  <div class="mm-rule"></div>
-  <div class="mm-header">
-    <span class="mm-title">Minimap</span>
-    <span class="mm-close" id="mm-close">+</span>
-  </div>
-  <div id="mm-window">
-    <div id="mm-inner"></div>
-  </div>
-</div>
-<div id="mobile-layout"></div>
-<div id="footer">
-  <div id="view-toggle">
-    <span class="vt-label active" id="vt-product">Product</span>
-    <span class="vt-label"        id="vt-project">Project</span>
-  </div>
-  © 2026 All Rights Reserved
-</div>
-<div id="cursor-wrap">
-  <svg id="cursor-svg" width="28" height="28" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <mask id="cmask" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="30" height="30">
-      <rect width="30" height="30" fill="#D9D9D9"/>
-    </mask>
-    <g mask="url(#cmask)">
-      <path d="M9.21625 15.9375L16.3366 23.0578L15 24.375L5.625 15L15 5.625L16.3366 6.94219L9.21625 14.0625H24.375V15.9375H9.21625Z" fill="#1C1B1F"/>
-    </g>
-  </svg>
-</div>
-<div id="cursor-dot"></div>
+
+<div id="cursor"></div>
 
 <script>
-const COLS=5, ROWS=5, GAP=50, IMG_RATIO=1.341, META_H=20;
-const projects=[
-  {name:'Metal & Strainer',        year:'2023',client:'Made In',          img:'./images/product-1.png'},
-  {name:'Metal & Strainer II',     year:'2023',client:'Made In',          img:'./images/product-2.png'},
-  {name:'Metal & Silicon Spatula', year:'2023',client:'Pax Technologies', img:'./images/product-3.png'},
-  {name:'Metal Whisk',             year:'2023',client:'Made In',          img:'./images/product-4.png'},
-  {name:'Pax Accessories',         year:'2023',client:'Pax Technologies', img:'./images/product-5.png'},
-  {name:'Flausy Showerhead',       year:'2023',client:'Canopy',           img:'./images/product-6.png'},
-  {name:'Metal & Silicon Tongs',   year:'2023',client:'Made In',          img:'./images/product-7.png'},
-  {name:'Portable Speaker',        year:'2022',client:'Pax Technologies', img:'./images/product-8.png'},
+const SECTIONS = [
+  { file: 'Home_1_Saintly Tushy.png',          label: 'Saintly Tushy' },
+  { file: 'Home_2_Canopy Diffuser.png',         label: 'Canopy Diffuser' },
+  { file: 'Home_3_Flaus Electric Flosser.png',  label: 'Flaus Electric Flosser' },
+  { file: 'Home_4_Sanctuary by Canopy.png',     label: 'Sanctuary by Canopy' },
+  { file: 'Home_5_Pax Grinder.png',             label: 'Pax Grinder' },
+  { file: 'Home_6_Bloom by Canopy.png',         label: 'Bloom by Canopy' },
+  { file: 'Home_7_Arber Packaging.png',         label: 'Arber Packaging' },
+  { file: 'Home_8_Pax Smoking Kit.png',         label: 'Pax Smoking Kit' },
+  { file: 'Home_9_Canopy Water Filter.png',     label: 'Canopy Water Filter' },
 ];
-const pvProjects=[
-  {name:'Flaus Flosser',   year:'2023', img:'./images/01 - flaus.png',   url:'flaus-project.html'},
-  {name:'Grinder',         year:'2023', img:'./images/02 - grinder.png', url:'pax-project.html'},
-  {name:'Metal Spoon',     year:'2023', img:'./images/03 - spoon.png',   url:'flaus-project.html'},
-  {name:'Showerhead',      year:'2023', img:'./images/04 - canopy.png',  url:'flaus-project.html'},
-  {name:'Metal Whisk',     year:'2023', img:'./images/05 - wisk.png',    url:'flaus-project.html'},
-  {name:'Tushy',           year:'2023', img:'./images/06 - tushy.png',   url:'flaus-project.html'},
-  {name:'Pax Accessories', year:'2023', img:'./images/07 - pax.png',     url:'pax-project.html'},
-];
-// 8 directions: rotation for the SVG arrow (which points LEFT at 0°)
-// dr = row delta (-1=up, 0=none, 1=down), dc = col delta
-const DIRS = {
-  'left':       { rot: 0,   dr: 0,  dc: -1 },
-  'up-left':    { rot: 45,  dr: -1, dc: -1 },
-  'up':         { rot: 90,  dr: -1, dc: 0  },
-  'up-right':   { rot: 135, dr: -1, dc: 1  },
-  'right':      { rot: 180, dr: 0,  dc: 1  },
-  'down-right': { rot: 225, dr: 1,  dc: 1  },
-  'down':       { rot: 270, dr: 1,  dc: 0  },
-  'down-left':  { rot: 315, dr: 1,  dc: -1 },
-};
+const BASE         = 'images/Home images/';
+const DEFAULT_ZONE = 4; // Pax Grinder
 
-const clip       = document.getElementById('clip');
-const canvas     = document.getElementById('canvas');
-const cursorWrap = document.getElementById('cursor-wrap');
-const cursorDot  = document.getElementById('cursor-dot');
-const cursorSvg  = document.getElementById('cursor-svg');
+// Preload all images so zone transitions are instant
+SECTIONS.forEach(s => { const img = new Image(); img.src = BASE + s.file; });
 
-let VW,VH,cardW,imgH,cardH;
-let focusCol=1, focusRow=2, hoverDir=null;
+const clip         = document.getElementById('clip');
+const layerA       = document.getElementById('layer-a');
+const layerB       = document.getElementById('layer-b');
+const cursorEl     = document.getElementById('cursor');
 
-function measure(){
-  VW = clip.clientWidth;
-  VH = clip.clientHeight;
-  cardW = Math.floor((VW - 60*2 - GAP*4) / 3);
-  imgH  = Math.round(cardW * IMG_RATIO);
-  cardH = imgH + 1 + META_H;
+let activeLayer    = layerA;
+let inactiveLayer  = layerB;
+let currentZone    = DEFAULT_ZONE;
+
+function setLayer(layer, idx) {
+  layer.style.backgroundImage = `url("${BASE}${SECTIONS[idx].file}")`;
 }
 
-function buildGrid(){
-  canvas.innerHTML = '';
-  canvas.style.width  = (COLS*cardW + (COLS-1)*GAP) + 'px';
-  canvas.style.height = (ROWS*cardH + (ROWS-1)*GAP) + 'px';
+// Boot with default — show immediately, no opening blur-in
+setLayer(layerA, DEFAULT_ZONE);
+layerA.style.transition = 'none';
+layerA.classList.add('visible');
+requestAnimationFrame(() => requestAnimationFrame(() => {
+  layerA.style.transition = '';
+}));
 
-  for(let i=0; i<COLS*ROWS; i++){
-    const p   = projects[i % projects.length];
-    const col = i % COLS;
-    const row = Math.floor(i / COLS);
-    const L   = col*(cardW+GAP);
-    const T   = row*(cardH+GAP);
+cursorEl.textContent = SECTIONS[DEFAULT_ZONE].label;
 
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.style.cssText = 'left:'+L+'px;top:'+T+'px;width:'+cardW+'px;height:'+cardH+'px;';
+function crossfadeTo(idx) {
+  if (idx === currentZone) return;
+  currentZone = idx;
 
-    // Link overlay — Pax products go to pax page, others to project page
-    const link = document.createElement('a');
-    link.className = 'card-link';
-    link.href = (p.client && p.client.includes('Pax')) ? 'pax-project.html' : 'flaus-project.html';
-    link.id='cl'+i;
-    card.appendChild(link);
+  setLayer(inactiveLayer, idx);
+  inactiveLayer.getBoundingClientRect(); // force reflow to register start state
+  inactiveLayer.classList.add('visible');
+  activeLayer.classList.remove('visible');
 
-    // Image via CSS background-image — no img element, no element boundary
-    const imgDiv = document.createElement('div');
-    imgDiv.className = 'card-img';
-    imgDiv.style.cssText = 'width:'+cardW+'px;height:'+imgH+'px;background-image:url('+JSON.stringify(p.img)+');';
-    card.appendChild(imgDiv);
+  const tmp     = activeLayer;
+  activeLayer   = inactiveLayer;
+  inactiveLayer = tmp;
 
-    // 1px rule below image
-    const rule = document.createElement('div');
-    rule.className = 'card-rule';
-    rule.style.top = imgH+'px';
-    card.appendChild(rule);
-
-    // Meta text below rule
-    const meta = document.createElement('div');
-    meta.className = 'card-meta';
-    meta.style.top = (imgH+1)+'px';
-    meta.style.height = META_H+'px';
-    meta.innerHTML = '<span class="m-name">'+p.name+'</span><span class="m-year">'+p.year+'</span><span class="m-client">'+p.client+'</span>';
-    card.appendChild(meta);
-
-    canvas.appendChild(card);
-  }
-  updateLink();
+  cursorEl.textContent = SECTIONS[idx].label;
 }
 
-function updateLink(){
-  document.querySelectorAll('.card-link').forEach(l=>l.classList.remove('active'));
-  const l=document.getElementById('cl'+(focusRow*COLS+focusCol));
-  if(l)l.classList.add('active');
+function zoneAt(cx, cy) {
+  const r   = clip.getBoundingClientRect();
+  const col = Math.min(2, Math.floor(((cx - r.left) / r.width)  * 3));
+  const row = Math.min(2, Math.floor(((cy - r.top)  / r.height) * 3));
+  return row * 3 + col;
 }
 
-function getPos(){
-  const xC = focusCol*(cardW+GAP) + cardW/2;
-  const tx  = Math.round(VW/2 - xC);
-  const ty  = Math.round(VH/2 - (focusRow*(cardH+GAP) + imgH/2));
-  return{tx,ty};
-}
+document.addEventListener('mousemove', (e) => {
+  const r      = clip.getBoundingClientRect();
+  const inClip = e.clientX >= r.left && e.clientX <= r.right &&
+                  e.clientY >= r.top  && e.clientY <= r.bottom;
 
-function applyPos(animated){
-  const{tx,ty}=getPos();
-  canvas.classList.toggle('instant', !animated);
-  if(!animated) canvas.offsetHeight; // flush
-  canvas.style.left = tx+'px';
-  canvas.style.top  = ty+'px';
-}
-
-function navTo(dir){
-  if (!dir) return;
-  const {dr, dc} = DIRS[dir];
-  // Each axis moves independently — handles partial diagonal (one axis blocked)
-  if (dr < 0 && focusRow > 0)      focusRow--;
-  if (dr > 0 && focusRow < ROWS-1) focusRow++;
-  if (dc < 0 && focusCol > 0)      focusCol--;
-  if (dc > 0 && focusCol < COLS-1) focusCol++;
-  applyPos(true); updateLink(); updateMinimap();
-}
-
-// Returns 1=fully open, 0.5=diagonal partially blocked, 0=fully blocked
-function navOpacity(dir){
-  const {dr, dc} = DIRS[dir];
-  const rowOk = (dr === 0) || (dr < 0 ? focusRow > 0 : focusRow < ROWS-1);
-  const colOk = (dc === 0) || (dc < 0 ? focusCol > 0 : focusCol < COLS-1);
-  if (rowOk && colOk) return 1;
-  if (dr !== 0 && dc !== 0 && (rowOk || colOk)) return 0.5; // diagonal, one axis free
-  return 0; // fully blocked
-}
-
-// True if cursor is physically near the viewport edge for this direction
-function nearScreenEdge(mx, my, dir){
-  const r = clip.getBoundingClientRect();
-  const {dr, dc} = DIRS[dir];
-  const T = 0.12;
-  if (dr < 0 && (my - r.top)    < r.height * T) return true;
-  if (dr > 0 && (r.bottom - my) < r.height * T) return true;
-  if (dc < 0 && (mx - r.left)   < r.width  * T) return true;
-  if (dc > 0 && (r.right - mx)  < r.width  * T) return true;
-  return false;
-}
-
-function getZone(mx, my){
-  const r  = clip.getBoundingClientRect();
-  const dx = mx - (r.left + r.width  / 2);
-  const dy = my - (r.top  + r.height / 2);
-  if (Math.sqrt(dx*dx + dy*dy) < Math.min(r.width, r.height) * 0.18) return null;
-  const a = Math.atan2(dy, dx) * 180 / Math.PI;
-  // right/left = 30° zones, up/down = 80° zones, diagonals = 35° zones
-  if (a > -15  && a <= 15)   return 'right';
-  if (a > 15   && a <= 50)   return 'down-right';
-  if (a > 50   && a <= 130)  return 'down';
-  if (a > 130  && a <= 165)  return 'down-left';
-  if (a > 165  || a <= -165) return 'left';
-  if (a > -165 && a <= -130) return 'up-left';
-  if (a > -130 && a <= -50)  return 'up';
-  return 'up-right'; // -50 to -15
-}
-
-// ── View mode ────────────────────────────────────────────
-let pvMode = false;
-
-function buildProjectView() {
-  const strip = document.getElementById('pv-strip');
-  if (!strip) return;
-  strip.innerHTML = '';
-  pvProjects.forEach(p => {
-    const a = document.createElement('a');
-    a.href = p.url || 'flaus-project.html';
-    a.className = 'pv-item';
-    a.style.backgroundImage = 'url(' + JSON.stringify(p.img) + ')';
-
-    // Hover label: name + rule + year
-    const label = document.createElement('div');
-    label.className = 'pv-label';
-    label.innerHTML =
-      '<div class="pv-l-rule"></div>' +
-      '<div class="pv-l-meta">' +
-        '<span class="pv-l-name">' + p.name + '</span>' +
-        '<span class="pv-l-year">' + p.year + '</span>' +
-      '</div>';
-    a.appendChild(label);
-    strip.appendChild(a);
-  });
-  layoutPv();
-}
-
-function layoutPv() {
-  const strip = document.getElementById('pv-strip');
-  if (!strip) return;
-  // Scale from Figma: images 182px tall in 903px clip height, gap 19px in 1440px width
-  const pvH = Math.round(VH * 182 / 903);
-  const pvW = Math.round(pvH / IMG_RATIO);
-  const pvGap = Math.round(VW * 19 / 1440);
-  strip.style.gap = pvGap + 'px';
-  strip.querySelectorAll('.pv-item').forEach(el => {
-    el.style.width  = pvW  + 'px';
-    el.style.height = pvH  + 'px';
-  });
-}
-
-function setPvMode(on) {
-  pvMode = on;
-  const overlay = document.getElementById('pv-overlay');
-  if (overlay) overlay.classList.toggle('visible', on);
-  document.getElementById('vt-product').classList.toggle('active', !on);
-  document.getElementById('vt-project').classList.toggle('active',  on);
-  // Cursor: restore none on canvas, let overlay/items use their own CSS cursors
-  document.body.style.cursor = on ? '' : 'none';
-  cursorWrap.style.display = 'none';
-  cursorDot.style.display  = 'none';
-}
-
-document.addEventListener('mousemove', e => {
-  if (pvMode) return; // overlay has its own cursor behaviour
-  const r = clip.getBoundingClientRect();
-  const ins = e.clientX>=r.left && e.clientX<=r.right && e.clientY>=r.top && e.clientY<=r.bottom;
-  if (!ins) {
-    cursorWrap.style.display='none'; cursorDot.style.display='none';
-    // Restore cursor when hovering minimap (lives outside #clip)
-    if (e.target.closest && e.target.closest('#minimap')) document.body.style.cursor='auto';
-    return;
-  }
-
-  // Minimap handles its own cursor — don't show directional cursor over it
-  if (e.target.closest && e.target.closest('#minimap')) {
-    cursorWrap.style.display = 'none';
-    cursorDot.style.display  = 'none';
-    document.body.style.cursor = 'auto';
-    hoverDir = null;
-    return;
-  }
-
-  const z   = getZone(e.clientX, e.clientY);
-  hoverDir  = z;
-
-  if (z === null) {
-    cursorWrap.style.display = 'none';
-    cursorDot.style.display = 'none';
-    document.body.style.cursor = 'pointer';
-    return;
-  }
-  document.body.style.cursor = 'none';
-
-  const op = navOpacity(z);
-
-  if (op === 0) {
-    // Fully blocked: only show greyed arrow if cursor is forced to that screen edge
-    if (nearScreenEdge(e.clientX, e.clientY, z)) {
-      cursorDot.style.display = 'none';
-      cursorWrap.style.left = e.clientX+'px'; cursorWrap.style.top = e.clientY+'px';
-      cursorSvg.style.transform = 'rotate('+DIRS[z].rot+'deg)';
-      cursorWrap.style.opacity = '0.15';
-      cursorWrap.style.display = 'block';
-    } else {
-      // Not at screen edge and can't go that way — show dot, no navigation
-      cursorWrap.style.display = 'none';
-      cursorDot.style.left = e.clientX+'px'; cursorDot.style.top = e.clientY+'px';
-      cursorDot.style.display = 'block';
-      hoverDir = null;
-    }
-    return;
-  }
-
-  // Navigable (fully or partially)
-  cursorDot.style.display = 'none';
-  cursorWrap.style.left = e.clientX+'px'; cursorWrap.style.top = e.clientY+'px';
-  cursorSvg.style.transform = 'rotate('+DIRS[z].rot+'deg)';
-  cursorWrap.style.opacity = op === 1 ? '1' : '0.5';
-  cursorWrap.style.display = 'block';
-});
-
-clip.addEventListener('click', e => {
-  if (pvMode) return;
-  if (e.target.closest && e.target.closest('#minimap')) return; // handled by minimap
-  if(hoverDir===null){const l=document.getElementById('cl'+(focusRow*COLS+focusCol));if(l)window.location.href=l.href;}
-  else navTo(hoverDir);
-});
-
-document.addEventListener('mouseleave',()=>{cursorWrap.style.display='none';cursorDot.style.display='none';document.body.style.cursor='none';});
-document.addEventListener('keydown',e=>{
-  const m={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down'};
-  if(m[e.key]) { navTo(m[e.key]); updateMinimap(); }
-  if(e.key==='Enter'){const l=document.getElementById('cl'+(focusRow*COLS+focusCol));if(l)window.location.href=l.href;}
-});
-
-// ── Trackpad swipe navigation ─────────────────────────────
-// Accumulate wheel delta; fire once per swipe then cool down
-// to match the 0.55s CSS canvas transition.
-let swipeLocked = false;
-let swipeAccX = 0, swipeAccY = 0;
-const SWIPE_THRESHOLD = 40;
-
-clip.addEventListener('wheel', e => {
-  e.preventDefault(); // block scroll — navigate via arrows or minimap only
-}, { passive: false });
-
-// ════════════════════════════════════════════
-//  MINIMAP — 2-D panning dot grid
-//  Card 290 px · content 258 px
-//  Dot 10 px · col period 78 px · row period 48 px
-//  Window 258×92 px · inner 322×202 px
-// ════════════════════════════════════════════
-const MM_DOT   = 8;
-const MM_COL_P = 78;    // 8 + 70 gap
-const MM_ROW_P = 48;    // 8 + 40 gap
-const MM_WIN_W = 258;
-const MM_WIN_H = 126;
-const MM_INN_W = COLS * MM_DOT + (COLS-1) * (MM_COL_P - MM_DOT); // 320 px
-const MM_INN_H = ROWS * MM_DOT + (ROWS-1) * (MM_ROW_P - MM_DOT); // 200 px
-
-// Rendered position (what's actually on screen)
-let mmX = 0, mmY = 0;
-// Spherical tilt (degrees)
-let mmTiltX = 0, mmTiltY = 0;
-// Target position (where we're animating toward)
-let mmTX = 0, mmTY = 0;
-// RAF handle + drag state
-let mmRAF = null, mmMoved = false;
-
-// ── apply combined transform ─────────────────
-function mmApply() {
-  const inner = document.getElementById('mm-inner');
-  if (inner) inner.style.transform =
-    `translate(${mmX.toFixed(1)}px,${mmY.toFixed(1)}px) ` +
-    `rotateX(${mmTiltX.toFixed(2)}deg) rotateY(${mmTiltY.toFixed(2)}deg)`;
-}
-
-// ── lerp animation loop ──────────────────────
-function mmStep() {
-  const LP = 0.068, LT = 0.13;   // slow smooth pos, quicker tilt spring
-  mmX      += (mmTX - mmX)      * LP;
-  mmY      += (mmTY - mmY)      * LP;
-  mmTiltX  += (0 - mmTiltX)     * LT;
-  mmTiltY  += (0 - mmTiltY)     * LT;
-  mmApply();
-  const settled = Math.abs(mmTX - mmX) < 0.06 && Math.abs(mmTY - mmY) < 0.06
-               && Math.abs(mmTiltX) < 0.02    && Math.abs(mmTiltY) < 0.02;
-  if (settled) {
-    mmX = mmTX; mmY = mmTY; mmTiltX = 0; mmTiltY = 0;
-    mmApply(); mmRAF = null;
+  if (inClip) {
+    cursorEl.style.left    = e.clientX + 'px';
+    cursorEl.style.top     = e.clientY + 'px';
+    cursorEl.style.display = 'block';
+    crossfadeTo(zoneAt(e.clientX, e.clientY));
   } else {
-    mmRAF = requestAnimationFrame(mmStep);
+    cursorEl.style.display = 'none';
   }
-}
-
-function mmGoto(tx, ty) {
-  mmTX = tx; mmTY = ty;
-  if (!mmRAF) mmRAF = requestAnimationFrame(mmStep);
-}
-
-// ── build (called once) ──────────────────────
-function buildMinimap() {
-  const win   = document.getElementById('mm-window');
-  const inner = document.getElementById('mm-inner');
-  if (!win || !inner) return;
-
-  inner.innerHTML = '';
-  for (let row = 0; row < ROWS; row++) {
-    for (let col = 0; col < COLS; col++) {
-      const dot = document.createElement('div');
-      dot.className   = 'mm-dot';
-      dot.dataset.row = row;
-      dot.dataset.col = col;
-      dot.style.left  = col * MM_COL_P + 'px';
-      dot.style.top   = row * MM_ROW_P + 'px';
-      inner.appendChild(dot);
-    }
-  }
-
-  // ── click dot → navigate ──
-  inner.addEventListener('click', e => {
-    if (mmMoved) return;
-    const dot = e.target.closest('.mm-dot');
-    if (!dot) return;
-    e.stopPropagation();
-    focusRow = +dot.dataset.row; focusCol = +dot.dataset.col;
-    applyPos(true); updateLink(); updateMinimap();
-  });
-
-  // ── 2-D drag with spherical tilt ──
-  win.addEventListener('mousedown', e => {
-    if (e.target.closest('#mm-close')) return;
-    if (mmRAF) { cancelAnimationFrame(mmRAF); mmRAF = null; }
-    const sx0 = e.clientX, sy0 = e.clientY;
-    const x0  = mmX,       y0  = mmY;
-    let prevCX = e.clientX, prevCY = e.clientY;
-    mmMoved = false;
-    win.classList.add('dragging');
-
-    const onMove = ev => {
-      const dx = ev.clientX - sx0, dy = ev.clientY - sy0;
-      if (Math.abs(dx) + Math.abs(dy) > 2) mmMoved = true;
-      // Velocity for tilt
-      const vx = ev.clientX - prevCX, vy = ev.clientY - prevCY;
-      prevCX = ev.clientX; prevCY = ev.clientY;
-      // Position (free — blank space allowed)
-      mmX = mmTX = x0 + dx;
-      mmY = mmTY = y0 + dy;
-      // Spherical tilt — max ±8°, snappier response
-      const MT = 8;
-      mmTiltY = Math.max(-MT, Math.min(MT, mmTiltY * 0.65 + vx * 0.35));
-      mmTiltX = Math.max(-MT, Math.min(MT, mmTiltX * 0.65 + (-vy) * 0.35));
-      mmApply();
-    };
-
-    const onUp = () => {
-      win.classList.remove('dragging');
-      setTimeout(() => { mmMoved = false; }, 0);
-      // Spring tilt back to flat
-      if (!mmRAF && (Math.abs(mmTiltX) > 0.05 || Math.abs(mmTiltY) > 0.05))
-        mmRAF = requestAnimationFrame(mmStep);
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup',   onUp);
-    };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup',   onUp);
-    e.preventDefault();
-  });
-
-  // ── close collapses window, keeps header ──
-  const closeBtn = document.getElementById('mm-close');
-  if (closeBtn) {
-    closeBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      const hidden = win.style.display === 'none';
-      win.style.display = hidden ? 'block' : 'none';
-      closeBtn.style.transform = hidden ? 'rotate(45deg)' : 'rotate(0deg)';
-    });
-  }
-
-  updateMinimap(false); // instant snap on first build
-}
-
-// ── update: smooth centre on active dot ──────
-function updateMinimap(animate = true) {
-  document.querySelectorAll('.mm-dot').forEach(d =>
-    d.classList.toggle('active', +d.dataset.row === focusRow && +d.dataset.col === focusCol));
-  const tx = -(focusCol * MM_COL_P + MM_DOT / 2 - MM_WIN_W / 2);
-  const ty = -(focusRow * MM_ROW_P + MM_DOT / 2 - MM_WIN_H / 2);
-  if (animate) {
-    mmGoto(tx, ty);
-  } else {
-    mmX = mmTX = tx; mmY = mmTY = ty; mmApply();
-  }
-}
-
-function buildMobileLayout() {
-  const container = document.getElementById('mobile-layout');
-  container.innerHTML = '';
-  projects.forEach(p => {
-    const link = document.createElement('a');
-    link.className = 'm-card';
-    link.href = (p.client && p.client.includes('Pax')) ? 'pax-project.html' : 'flaus-project.html';
-
-    const imgDiv = document.createElement('div');
-    imgDiv.className = 'm-card-img';
-    imgDiv.style.backgroundImage = 'url(' + JSON.stringify(p.img) + ')';
-
-    const rule = document.createElement('div');
-    rule.className = 'm-card-rule';
-
-    const meta = document.createElement('div');
-    meta.className = 'm-card-meta';
-    meta.innerHTML =
-      '<span class="m-name">'   + p.name   + '</span>' +
-      '<span class="m-year">'   + p.year   + '</span>' +
-      '<span class="m-client">' + p.client + '</span>';
-
-    link.appendChild(imgDiv);
-    link.appendChild(rule);
-    link.appendChild(meta);
-    container.appendChild(link);
-  });
-}
-
-let minimapBuilt = false;
-function init(){
-  const isMobile = window.matchMedia('(max-width: 768px)').matches;
-  if (isMobile) { buildMobileLayout(); return; }
-  measure(); buildGrid(); applyPos(false);
-  if (!minimapBuilt) {
-    buildMinimap();
-    buildProjectView();
-    minimapBuilt = true;
-  } else {
-    updateMinimap();
-    layoutPv(); // reflow image sizes on resize
-  }
-}
-window.addEventListener('resize',init);
-init();
-
-// ── View toggle listeners — wired at parse time, independent of viewport ──
-document.getElementById('vt-product').addEventListener('click', () => setPvMode(false));
-document.getElementById('vt-project').addEventListener('click', () => setPvMode(true));
+});
 </script>
+
 </body>
 </html>
