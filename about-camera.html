@@ -1058,9 +1058,18 @@ async function captureDrawing() {
     octx.restore();
   }
 
+  // Flip the final output horizontally to match the mirrored live view
+  const flipped = document.createElement('canvas');
+  flipped.width  = out.width;
+  flipped.height = out.height;
+  const fctx = flipped.getContext('2d');
+  fctx.translate(out.width, 0);
+  fctx.scale(-1, 1);
+  fctx.drawImage(out, 0, 0);
+
   const a = document.createElement('a');
   a.download = 'naman-nanda-camera.png';
-  a.href = out.toDataURL('image/png');
+  a.href = flipped.toDataURL('image/png');
   a.click();
 }
 </script>
