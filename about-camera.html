@@ -904,12 +904,13 @@ async function captureDrawing() {
     try { strokesSnap.getContext('2d').drawImage(drawCanvas, 0, 0); } catch (_) {}
   }
 
-  // Step 1b — snapshot un-mirrored camera at physical-pixel resolution (synchronous)
+  // Step 1b — snapshot mirrored camera at physical-pixel resolution (synchronous)
+  // Must match the live CSS-mirrored view so strokes align with the face.
   const videoSnap = document.createElement('canvas');
   videoSnap.width  = cWpx;
   videoSnap.height = cHpx;
   if (bgVideo.readyState >= 2) {
-    drawVideoCover(videoSnap.getContext('2d'), cWpx, cHpx);
+    drawVideoMirroredCover(videoSnap.getContext('2d'), cWpx, cHpx);
   } else {
     const vc = videoSnap.getContext('2d');
     vc.fillStyle = '#000';
