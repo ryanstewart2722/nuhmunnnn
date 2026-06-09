@@ -61,7 +61,8 @@ body {
   cursor: none;
 }
 
-/* ── Image layers — two for blur crossfade ── */
+/* ── Image layers — two for keyframe crossfade ── */
+/* ── Image layers — soft blur crossfade ── */
 .img-layer {
   position: absolute;
   inset: 0;
@@ -69,8 +70,8 @@ body {
   background-position: center;
   background-repeat: no-repeat;
   opacity: 0;
-  filter: blur(6px);
-  transition: opacity 0.28s ease, filter 0.28s ease;
+  filter: blur(18px);
+  transition: opacity 0.2s ease, filter 0.2s ease;
   will-change: opacity, filter;
 }
 .img-layer.visible {
