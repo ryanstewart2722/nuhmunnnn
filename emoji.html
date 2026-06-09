@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Emoji Collage — Naman Nanda</title>
+<title>About — Emoji Maker — Naman Nanda</title>
 <style>
 @font-face {
   font-family: 'ABCDiatype';
@@ -20,10 +20,9 @@ body {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0;
   background: #D9D9D9; overflow: hidden;
   font-family: 'ABCDiatype', Arial, sans-serif;
-  cursor: default;
 }
 
-/* ── Frame — all 4 strips always fixed ── */
+/* ── Frame strips ── */
 #bl { position: fixed; top: 0; left: 0; bottom: 0; width: 15px; background: #D9D9D9; z-index: 950; pointer-events: none; }
 #br { position: fixed; top: 0; right: 0; bottom: 0; width: 15px; background: #D9D9D9; z-index: 950; pointer-events: none; }
 
@@ -34,11 +33,11 @@ body {
 }
 #nav a { font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a; text-decoration: none; }
 #nav a:hover { opacity: 0.5; }
-#nav span.nav-cur { font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a; }
 #nav-center {
   position: absolute; left: 50%; transform: translateX(-50%);
   font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a;
 }
+#nav-right { font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a; }
 
 #footer {
   position: fixed; bottom: 0; left: 0; right: 0; height: 28px;
@@ -47,18 +46,37 @@ body {
   font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a;
 }
 
-/* ── Content clip ── */
+/* ── Clip ── */
 #clip {
   position: absolute; top: 28px; bottom: 28px; left: 15px; right: 15px;
   overflow: hidden; background: #fff;
   user-select: none; -webkit-user-select: none;
+  cursor: default;
+}
+
+/* ── Emoji stage — fills full clip ── */
+#emoji-stage {
+  position: absolute; inset: 0;
+  z-index: 1;
+}
+
+/* Default comp image — draggable but always behind placed emojis */
+#default-comp {
+  position: absolute;
+  pointer-events: auto;
+  cursor: move;
+  transition: opacity 0.4s ease;
+  z-index: 1;
+  object-fit: fill;
+  user-select: none; -webkit-user-select: none;
+  -webkit-user-drag: none;
 }
 
 /* ── Mode tabs — top-left ── */
 #mode-tabs {
   position: absolute; top: 10px; left: 10px;
   z-index: 300; display: inline-flex; align-items: stretch;
-  border: 0.5px solid rgb(209, 209, 209);
+  border: 1px solid rgb(209, 209, 209);
   background: rgba(236, 236, 236, 0.60);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -76,15 +94,250 @@ body {
   background: rgba(255,255,255,0.72);
   cursor: default;
 }
-.mode-tab:not(.active) {
-  color: rgba(26,26,26,0.40);
+.mode-tab:not(.active) { color: rgba(26,26,26,0.40); }
+.mode-tab:not(.active):hover { color: rgba(26,26,26,0.70); }
+.mode-tab + .mode-tab { border-left: 1px solid rgb(209,209,209); }
+
+/* ── Controls — 10px below mode tabs ── */
+#controls-wrap {
+  position: absolute; top: 41px; left: 10px;
+  z-index: 300; display: flex; flex-direction: row; gap: 10px;
+  align-items: stretch; cursor: auto;
+  user-select: none; -webkit-user-select: none;
 }
-.mode-tab:not(.active):hover {
-  color: rgba(26,26,26,0.70);
+
+/* Shared glass frame */
+.glass-frame {
+  display: inline-flex; align-items: center;
+  border: 1px solid rgb(209, 209, 209);
+  background: rgba(236, 236, 236, 0.60);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  user-select: none; -webkit-user-select: none;
 }
-.mode-tab + .mode-tab {
-  border-left: 0.5px solid rgb(209,209,209);
+
+/* Action buttons */
+#action-controls {
+  display: inline-flex; align-items: stretch;
 }
+#action-controls button {
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a;
+  background: none; cursor: pointer; padding: 4px 9px;
+  transition: opacity 0.2s, color 0.2s;
+  white-space: nowrap; opacity: 0.45;
+}
+#action-controls button + button { border-left: 1px solid rgb(209,209,209); }
+#action-controls button:hover { opacity: 1; color: #000; }
+
+/* Remove Selected — label only, non-interactive */
+#remove-controls {
+  display: inline-flex; align-items: center;
+  padding: 4px 9px; gap: 6px;
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: rgba(26,26,26,0.45);
+  opacity: 1; pointer-events: none; cursor: default;
+}
+.key-cap {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 13px; padding: 0 4px; flex-shrink: 0;
+  background: rgba(236, 236, 236, 0.60);
+  border: 1px solid rgb(209, 209, 209);
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 9px; color: #1a1a1a;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+
+/* ── About card ── */
+#about-card {
+  position: absolute;
+  background: rgba(0,0,0,0.10);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgba(0,0,0,0.12);
+  overflow: hidden; z-index: 200; cursor: auto;
+  transform: translateZ(0);
+}
+#card-scroll { overflow-y: auto; scrollbar-width: none; max-height: inherit; }
+#card-scroll::-webkit-scrollbar { display: none; }
+#card-inner { padding: 20px; }
+
+#sec-bio-head {
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; user-select: none;
+  padding-top: 4px; padding-bottom: 0;
+  border-top: 1px solid #1a1a1a;
+  margin-bottom: 0;
+}
+#sec-bio-title { font-size: 10px; color: #1a1a1a; }
+#card-body {
+  overflow: hidden;
+  max-height: 2000px; opacity: 1;
+  transition: max-height 0.5s cubic-bezier(0.77,0,0.175,1), opacity 0.32s ease;
+}
+#card-body.collapsed { max-height: 0; opacity: 0; }
+
+#sec-bio-body { padding-top: 8px; padding-bottom: 0; }
+.a-bio-p {
+  font-size: 10px; color: #1a1a1a;
+  line-height: 1.55; margin-bottom: 1em; text-indent: 32%;
+}
+.a-bio-p:last-child { margin-bottom: 0; }
+
+.a-section { margin-top: 15px; margin-bottom: 0; }
+.a-sec-head {
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; user-select: none;
+  padding-top: 4px; padding-bottom: 0;
+  border-top: 1px solid #1a1a1a; margin-bottom: 8px;
+}
+.a-sec-title { font-size: 10px; color: #1a1a1a; }
+.rot-x {
+  display: inline-block; font-size: 10px; line-height: 1;
+  transition: transform 0.38s cubic-bezier(0.77,0,0.175,1);
+  transform: rotate(0deg); cursor: pointer;
+}
+.rot-x.closed { transform: rotate(45deg); }
+
+.a-sec-body {
+  overflow: hidden; max-height: 600px; opacity: 1;
+  transition: max-height 0.45s cubic-bezier(0.77,0,0.175,1), opacity 0.3s ease;
+}
+.a-sec-body.collapsed { max-height: 0; opacity: 0; }
+
+.a-table { display: flex; gap: 6px; }
+.a-col-a { flex: 1 1 auto; min-width: 0; }
+.a-col-b { flex: 0 0 auto; }
+.a-table .a-col-a > div,
+.a-table .a-col-b > div { font-size: 10px; color: #1a1a1a; line-height: 1.9; white-space: nowrap; }
+.a-col-a > div { overflow: hidden; text-overflow: ellipsis; }
+.a-email { font-size: 10px; color: #1a1a1a; text-decoration: none; transition: opacity 0.2s; }
+.a-email:hover { opacity: 0.45; }
+
+#cam-wrapper { width: 100%; margin-top: 5px; }
+#cam-placeholder {
+  width: 100%; aspect-ratio: 5/3; background: #888;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+#cam-placeholder span { font-size: 10px; color: #fff; pointer-events: none; }
+#cam-video { width: 100%; aspect-ratio: 5/3; object-fit: cover; display: none; background: #000; }
+
+/* ── Emoji panel — glass container, bottom-left ── */
+#emoji-panel {
+  position: absolute; left: 20px; bottom: 20px;
+  z-index: 250;
+  display: flex; flex-direction: column;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: rgba(0,0,0,0.1);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  cursor: auto; overflow: hidden;
+  padding: 20px;
+  transition: height 0.42s cubic-bezier(0.77,0,0.175,1);
+}
+
+#panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0; flex-shrink: 0;
+  border-top: 1px solid #1a1a1a;
+}
+#panel-header span:first-child { font-size: 10px; color: #1a1a1a; }
+#panel-toggle {
+  font-size: 10px; color: #1a1a1a; cursor: pointer;
+  opacity: 0.5; transition: opacity 0.2s;
+}
+#panel-toggle:hover { opacity: 1; }
+
+#panel-body {
+  display: flex; flex-direction: column; flex: 1; overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.35s ease;
+}
+
+/* Category filter row */
+#panel-cats {
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; flex-shrink: 0;
+  overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap;
+}
+#panel-cats::-webkit-scrollbar { display: none; }
+.panel-cat {
+  font-size: 10px; color: rgba(26,26,26,0.4); cursor: pointer;
+  white-space: nowrap; flex-shrink: 0;
+  transition: color 0.15s;
+}
+.panel-cat + .panel-cat::before {
+  content: ' · '; color: rgba(26,26,26,0.35); margin: 0 1px;
+}
+.panel-cat.active { color: #1a1a1a; }
+.panel-cat:hover { color: rgba(26,26,26,0.7); }
+
+/* Emoji grid with gradient fade */
+#emoji-grid-wrap {
+  position: relative; flex: 1; overflow: hidden; min-height: 0;
+}
+#emoji-grid {
+  width: 100%; height: 100%;
+  overflow-y: auto; overflow-x: hidden;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  align-content: flex-start;
+  padding: 6px 6px 64px 6px; gap: 2px;
+  scrollbar-width: none;
+}
+#emoji-grid::-webkit-scrollbar { display: none; }
+
+/* Scroll-edge fade — mask applied to grid-wrap via JS velocity */
+
+/* Emoji items in picker */
+.emoji-item {
+  font-size: 38px; line-height: 1; padding: 6px;
+  cursor: grab; border-radius: 6px; transition: background 0.1s;
+  user-select: none; -webkit-user-select: none;
+  display: flex; align-items: center; justify-content: center;
+  aspect-ratio: 1;
+}
+.emoji-item:hover { background: rgba(0,0,0,0.06); }
+.emoji-item:active { cursor: grabbing; }
+
+/* ── Placed emoji elements on stage ── */
+.placed-emoji {
+  position: absolute; font-size: 64px; line-height: 1;
+  cursor: move; user-select: none; -webkit-user-select: none;
+  transform-origin: center center;
+}
+.placed-emoji.selected .emoji-rotate-handle,
+.placed-emoji.selected .emoji-scale-handle { display: block; }
+
+.emoji-rotate-handle {
+  display: none; position: absolute;
+  left: 50%; top: -44px; transform: translateX(-50%);
+  width: 80px; height: 44px;
+  background: transparent; border: none;
+  cursor: grab; z-index: 10;
+}
+.emoji-scale-handle {
+  display: none; position: absolute;
+  right: -24px; bottom: -24px;
+  width: 48px; height: 48px;
+  background: transparent; border: none;
+  cursor: nwse-resize; z-index: 10;
+}
+
+/* Floating tooltip — positioned by JS, lives at clip level so never scales */
+#emoji-tooltip {
+  position: absolute; pointer-events: none; z-index: 9999;
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 9px;
+  color: #fff; mix-blend-mode: difference;
+  padding: 2px 5px; white-space: nowrap; display: none;
+  transform: translate(-50%, -100%);
+}
+
+/* Drag ghost */
+#drag-ghost {
+  position: fixed; pointer-events: none;
+  font-size: 32px; line-height: 1; z-index: 9999;
+  transform: translate(-50%, -50%); display: none;
+  transition: font-size 0.12s ease;
+  user-select: none; -webkit-user-select: none;
+}
+#drag-ghost.over-stage { font-size: 64px; }
 </style>
 </head>
 <body>
@@ -95,22 +348,880 @@ body {
 <nav id="nav">
   <a href="index.html">Work</a>
   <span id="nav-center">Naman Nanda</span>
-  <a href="about.html">About</a>
+  <span id="nav-right">About</span>
 </nav>
 
 <footer id="footer">© 2026 All Rights Reserved</footer>
 
 <div id="clip">
 
-  <!-- Mode tabs — top-left -->
+  <!-- Stage — emoji placement area, fills entire clip -->
+  <div id="emoji-stage">
+    <img id="default-comp" src="images/default-emoji-comp.png" alt="">
+  </div>
+
+  <!-- Mode tabs -->
   <div id="mode-tabs">
     <span class="mode-tab" onclick="window.location.href='about.html'">Canvas</span>
     <span class="mode-tab active">Emoji Collage</span>
   </div>
 
-  <!-- Emoji builder content goes here -->
+  <!-- Controls row — 10px below mode tabs -->
+  <div id="controls-wrap">
+    <div id="action-controls" class="glass-frame">
+      <button onclick="captureCollage()">Capture</button>
+      <button onclick="clearCollage()">Clear</button>
+      <button onclick="undoEmoji()">Undo</button>
+      <button onclick="blankCollage()">Blank</button>
+      <button onclick="restoreCollage()">Restore</button>
+    </div>
+    <div id="remove-controls" class="glass-frame">
+      Remove Selected
+      <span class="key-cap">&#215;</span>
+    </div>
+  </div>
+
+  <!-- About card -->
+  <div id="about-card">
+    <div id="card-scroll">
+    <div id="card-inner">
+
+      <div id="sec-bio-head" onclick="togglePanel()">
+        <span id="sec-bio-title">Naman Nanda</span>
+        <span id="sec-bio-x" class="rot-x">&#215;</span>
+      </div>
+
+      <div id="card-body">
+        <div id="sec-bio-body">
+          <p class="a-bio-p">Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Donec odio. Quisque volutpat mattis eros. Nullam malesuada erat ut turpis. Suspendisse urna nibh viverra non semper suscipit posuere a pede. Donec nec justo eget felis facilisis fermentum. Aliquam porttitor mauris sit amet orci. Aenean dignissim pellentesque felis.</p>
+          <p class="a-bio-p">Morbi in sem quis dui placerat ornare. Pellentesque odio nisi euismod in pharetra a ultricies in diam. Sed arcu. Cras consequat.rnare. Pellentesque odio nisi euismod in pharetra a ultricies in diam. Sed arcu. Cras consequat.Morbi in sem qu. Phasellus ultrices nulla quis nibh quisque volutpat erat volutpat.</p>
+        </div>
+
+        <div class="a-section">
+          <div class="a-sec-head" onclick="toggleSec(this)">
+            <span class="a-sec-title">Awards</span>
+            <span class="rot-x">&#215;</span>
+          </div>
+          <div class="a-sec-body">
+            <div class="a-table">
+              <div class="a-col-a">
+                <div>Good Design Award</div><div>Time Best Inventions</div>
+                <div>GQ Design Award</div><div>Fast Companies' World Changing Ideas</div>
+              </div>
+              <div class="a-col-b">
+                <div>2025</div><div>2024</div><div>2023</div><div>2021</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="a-section">
+          <div class="a-sec-head" onclick="toggleSec(this)">
+            <span class="a-sec-title">Contact</span>
+            <span class="rot-x">&#215;</span>
+          </div>
+          <div class="a-sec-body">
+            <a class="a-email" href="mailto:namannanda@icloud.com">namannanda@icloud.com</a>
+          </div>
+        </div>
+
+        <div class="a-section">
+          <div class="a-sec-head" onclick="toggleSec(this)">
+            <span class="a-sec-title">Press</span>
+            <span class="rot-x">&#215;</span>
+          </div>
+          <div class="a-sec-body">
+            <div class="a-table">
+              <div class="a-col-a">
+                <div>Good Design Award</div><div>Time Best Inventions</div>
+                <div>GQ Design Award</div><div>Fast Companies' World Changing Ideas</div>
+              </div>
+              <div class="a-col-b">
+                <div>2025</div><div>2024</div><div>2023</div><div>2021</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="a-section">
+          <div class="a-sec-head" onclick="toggleSec(this)">
+            <span class="a-sec-title">Credits</span>
+            <span class="rot-x">&#215;</span>
+          </div>
+          <div class="a-sec-body">
+            <div class="a-table">
+              <div class="a-col-a">
+                <div>Ryan Stewart</div>
+              </div>
+              <div class="a-col-b">
+                <div>Design + Dev</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="a-section" id="sec-camera" style="margin-bottom:0">
+          <div class="a-sec-head" onclick="toggleSec(this)">
+            <span class="a-sec-title">Camera</span>
+            <span class="rot-x">&#215;</span>
+          </div>
+          <div class="a-sec-body">
+            <div id="cam-wrapper">
+              <div id="cam-placeholder" onclick="requestCamera()">
+                <span>Allow Camera Access</span>
+              </div>
+              <video id="cam-video" autoplay muted playsinline></video>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /#card-body -->
+    </div><!-- /#card-inner -->
+    </div><!-- /#card-scroll -->
+  </div><!-- /#about-card -->
+
+  <!-- Emoji panel — bottom-left, 20px from each grey strip -->
+  <div id="emoji-panel">
+    <div id="panel-header">
+      <span>Emojis</span>
+      <span id="panel-toggle" class="rot-x" onclick="toggleEmojiPanel()">&#215;</span>
+    </div>
+    <div id="panel-body">
+      <div id="panel-cats">
+        <span class="panel-cat active" data-cat="Smileys">Smileys</span>
+        <span class="panel-cat" data-cat="People">People</span>
+        <span class="panel-cat" data-cat="Animals">Animals</span>
+        <span class="panel-cat" data-cat="Food">Food</span>
+        <span class="panel-cat" data-cat="Travel">Travel</span>
+        <span class="panel-cat" data-cat="Activities">Activities</span>
+        <span class="panel-cat" data-cat="Objects">Objects</span>
+        <span class="panel-cat" data-cat="Symbols">Symbols</span>
+      </div>
+      <div id="emoji-grid-wrap">
+        <div id="emoji-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drag ghost -->
+  <div id="drag-ghost"></div>
+
+  <!-- Floating tooltip for rotate/scale handles — at clip level, never inherits emoji scale -->
+  <div id="emoji-tooltip"></div>
 
 </div><!-- /#clip -->
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+// ════════════════════════════════════════════════════════
+//  DESIGN CONSTANTS & LAYOUT
+// ════════════════════════════════════════════════════════
+const D = {
+  W: 1440,
+  card:  { x: 1010, y: 30,  w: 400 },
+  panel: { x: 28,   y: 673, w: 962, h: 200 },
+  comp:  { x: 260,  y: 160, w: 509, h: 457 }
+};
+
+const clip        = document.getElementById('clip');
+const card        = document.getElementById('about-card');
+const stage       = document.getElementById('emoji-stage');
+const defaultComp = document.getElementById('default-comp');
+const emojiPanel  = document.getElementById('emoji-panel');
+const emojiGrid   = document.getElementById('emoji-grid');
+
+function clipW() { return clip.offsetWidth  || (window.innerWidth  - 30); }
+function clipH() { return clip.offsetHeight || (window.innerHeight - 56); }
+
+let panelOpenH = 200;
+let compDeltaX = 0, compDeltaY = 0;
+
+function layout() {
+  const cw = clipW(), ch = clipH();
+  const u  = cw / D.W;
+
+  // About card
+  card.style.top       = Math.round(D.card.y * u) + 'px';
+  card.style.right     = Math.round((D.W - D.card.x - D.card.w) * u) + 'px';
+  card.style.width     = Math.round(D.card.w * u) + 'px';
+  card.style.maxHeight = (ch - Math.round(D.card.y * u) - 20) + 'px';
+
+  // Default comp — scale with viewport, preserve any drag delta
+  const compW = Math.round(D.comp.w * u);
+  const compH = Math.round(D.comp.h * u);
+  const compBaseX = Math.round((D.comp.x - 15) * u);
+  const compBaseY = Math.round((D.comp.y - 28) * u);
+  defaultComp.style.left   = (compBaseX + compDeltaX) + 'px';
+  defaultComp.style.top    = (compBaseY + compDeltaY) + 'px';
+  defaultComp.style.width  = compW + 'px';
+  defaultComp.style.height = compH + 'px';
+
+  // Emoji panel — right edge aligns with gap before about card
+  const panelRight = Math.round((D.W - D.panel.x - D.panel.w) * u);
+  panelOpenH = Math.max(160, Math.round(D.panel.h * u));
+  emojiPanel.style.right = panelRight + 'px';
+  if (!emojiPanel.classList.contains('minimized')) {
+    emojiPanel.style.height = panelOpenH + 'px';
+  }
+}
+
+window.addEventListener('resize', layout);
+requestAnimationFrame(() => requestAnimationFrame(() => layout()));
+
+// ════════════════════════════════════════════════════════
+//  SCROLL-VELOCITY EDGE FADE  (mask-image on grid-wrap)
+// ════════════════════════════════════════════════════════
+const emojiGridWrap = document.getElementById('emoji-grid-wrap');
+let _lastGridST = 0, _gridVel = 0;
+(function gridMaskTick() {
+  const st    = emojiGrid.scrollTop;
+  const delta = Math.abs(st - _lastGridST);
+  _lastGridST = st;
+  _gridVel    = _gridVel * 0.72 + delta * 0.28;
+  // 0–18% fade zone at each edge, growing with scroll speed
+  const pct = Math.min(_gridVel * 0.9, 18).toFixed(1);
+  const p   = parseFloat(pct);
+  if (p > 0.3) {
+    const m = `linear-gradient(to bottom, transparent 0%, black ${pct}%, black ${(100 - p).toFixed(1)}%, transparent 100%)`;
+    emojiGridWrap.style.webkitMaskImage = m;
+    emojiGridWrap.style.maskImage = m;
+  } else {
+    emojiGridWrap.style.webkitMaskImage = '';
+    emojiGridWrap.style.maskImage = '';
+  }
+  requestAnimationFrame(gridMaskTick);
+})();
+
+// ════════════════════════════════════════════════════════
+//  SECTION TOGGLES
+// ════════════════════════════════════════════════════════
+function togglePanel() {
+  const body = document.getElementById('card-body');
+  const icon = document.getElementById('sec-bio-x');
+  body.classList.toggle('collapsed');
+  icon.classList.toggle('closed');
+}
+function toggleSec(head) {
+  const body = head.nextElementSibling;
+  const icon = head.querySelector('.rot-x');
+  body.classList.toggle('collapsed');
+  icon.classList.toggle('closed');
+}
+function toggleEmojiPanel() {
+  const tog    = document.getElementById('panel-toggle');
+  const body   = document.getElementById('panel-body');
+  const header = document.getElementById('panel-header');
+  const isMin  = emojiPanel.classList.toggle('minimized');
+  if (isMin) {
+    body.style.opacity = '0';
+    // 20px panel padding-top + header height + 20px panel padding-bottom
+    emojiPanel.style.height = (20 + header.offsetHeight + 20) + 'px';
+    tog.classList.add('closed');
+  } else {
+    body.style.opacity = '1';
+    emojiPanel.style.height = panelOpenH + 'px';
+    tog.classList.remove('closed');
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  CAMERA
+// ════════════════════════════════════════════════════════
+const video       = document.getElementById('cam-video');
+const placeholder = document.getElementById('cam-placeholder');
+async function requestCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    video.srcObject = stream;
+    video.onloadedmetadata = () => video.play();
+    placeholder.style.display = 'none';
+    video.style.display = 'block';
+  } catch { placeholder.querySelector('span').textContent = 'Camera unavailable'; }
+}
+
+// ════════════════════════════════════════════════════════
+//  EMOJI DATA
+// ════════════════════════════════════════════════════════
+
+// Helper: base emoji + all 5 skin tone variants
+function T(e) {
+  return [e, e+'\u{1F3FB}', e+'\u{1F3FC}', e+'\u{1F3FD}', e+'\u{1F3FE}', e+'\u{1F3FF}'];
+}
+// Helper: base + male + female ZWJ variants
+function G(e) {
+  return [e, e+'‍♂️', e+'‍♀️'];
+}
+// Helper: gender variants each with skin tones
+function TG(e) {
+  const result = [];
+  const tones = ['', '\u{1F3FB}', '\u{1F3FC}', '\u{1F3FD}', '\u{1F3FE}', '\u{1F3FF}'];
+  for (const t of tones) result.push(e+t);
+  for (const g of ['‍♂️', '‍♀️'])
+    for (const t of tones) result.push(e+t+g);
+  return result;
+}
+
+const EMOJI_CATS = {
+  Smileys: [
+    '😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','🫠','😉','😊','😇',
+    '🥰','😍','🤩','😘','😗','☺️','😚','😙','🥲','😋','😛','😜','🤪','😝',
+    '🤑','🤗','🤭','🫢','🫣','🤫','🤔','🫡','🤐','🤨','😐','😑','😶','🫥',
+    '😏','😒','🙄','😬','🤥','🫨','🙂‍↕️','🙂‍↔️','😌','😔','😪','🤤','😴',
+    '😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','😵‍💫','🤯','🤠',
+    '🥳','🥸','😎','🤓','🧐','😕','🫤','😟','🙁','☹️','😮','😯','😲','😳',
+    '🥺','🥹','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓',
+    '😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡',
+    '👹','👺','👻','👽','👾','🤖',
+    '😺','😸','😹','😻','😼','😽','🙀','😿','😾',
+  ],
+  People: [
+    // ── Hands & gestures — all 6 skin tones ──
+    ...T('👋'),...T('🤚'),...T('🖐️'),...T('✋'),...T('🖖'),
+    ...T('🫱'),...T('🫲'),...T('🫳'),...T('🫴'),...T('🫷'),...T('🫸'),
+    ...T('👌'),...T('🤌'),...T('🤏'),
+    ...T('✌️'),...T('🤞'),...T('🫰'),...T('🤟'),...T('🤘'),...T('🤙'),
+    ...T('👈'),...T('👉'),...T('👆'),...T('🖕'),...T('👇'),...T('☝️'),...T('🫵'),
+    ...T('👍'),...T('👎'),
+    ...T('✊'),...T('👊'),...T('🤛'),...T('🤜'),
+    ...T('🫱'),...T('🫲'),
+    '🤝',...T('🙏'),...T('👏'),...T('🙌'),...T('🫶'),...T('👐'),...T('🤲'),
+    ...T('✍️'),...T('💅'),...T('🤳'),
+    // ── Body parts ──
+    ...T('💪'),'🦾','🦿',
+    ...T('🦵'),...T('🦶'),
+    ...T('👂'),...T('🦻'),...T('👃'),
+    '🫀','🫁','🧠','🦷','🦴','👀','👁️','👅','👄','🫦',
+    // ── People — all skin tones ──
+    ...T('👶'),...T('🧒'),...T('👦'),...T('👧'),
+    ...T('🧑'),...T('👱'),
+    ...T('👨'),...T('🧔'),
+    '🧔‍♂️','🧔‍♀️',
+    ...T('👩'),
+    '👱‍♂️\u{1F3FB}','👱‍♂️\u{1F3FC}','👱‍♂️\u{1F3FD}','👱‍♂️\u{1F3FE}','👱‍♂️\u{1F3FF}',
+    '👱‍♀️\u{1F3FB}','👱‍♀️\u{1F3FC}','👱‍♀️\u{1F3FD}','👱‍♀️\u{1F3FE}','👱‍♀️\u{1F3FF}',
+    ...T('🧓'),...T('👴'),...T('👵'),
+    // ── Hair styles ──
+    '🧑‍🦰','🧑‍🦰\u{1F3FB}','🧑‍🦰\u{1F3FC}','🧑‍🦰\u{1F3FD}','🧑‍🦰\u{1F3FE}','🧑‍🦰\u{1F3FF}',
+    '🧑‍🦱','🧑‍🦱\u{1F3FB}','🧑‍🦱\u{1F3FC}','🧑‍🦱\u{1F3FD}','🧑‍🦱\u{1F3FE}','🧑‍🦱\u{1F3FF}',
+    '🧑‍🦳','🧑‍🦳\u{1F3FB}','🧑‍🦳\u{1F3FC}','🧑‍🦳\u{1F3FD}','🧑‍🦳\u{1F3FE}','🧑‍🦳\u{1F3FF}',
+    '🧑‍🦲','🧑‍🦲\u{1F3FB}','🧑‍🦲\u{1F3FC}','🧑‍🦲\u{1F3FD}','🧑‍🦲\u{1F3FE}','🧑‍🦲\u{1F3FF}',
+    // ── Gestures with skin tones ──
+    ...TG('🙍'),...TG('🙎'),...TG('🙅'),...TG('🙆'),...TG('💁'),
+    ...TG('🙋'),...TG('🧏'),...TG('🙇'),...TG('🤦'),...TG('🤷'),
+    // ── Roles / jobs ──
+    ...TG('👮'),...TG('🕵️'),...TG('💂'),'🥷',
+    ...TG('👷'),'🫅','🤴','👸',
+    ...TG('👳'),...TG('👲'),
+    ...T('🧕'),...TG('🤵'),...TG('👰'),
+    ...T('🤰'),...T('🫃'),...T('🫄'),...T('🤱'),
+    ...T('👼'),
+    '🎅','🎅\u{1F3FB}','🎅\u{1F3FC}','🎅\u{1F3FD}','🎅\u{1F3FE}','🎅\u{1F3FF}',
+    '🤶','🤶\u{1F3FB}','🤶\u{1F3FC}','🤶\u{1F3FD}','🤶\u{1F3FE}','🤶\u{1F3FF}',
+    '🧑‍🎄',
+    // ── Fantasy ──
+    ...TG('🦸'),...TG('🦹'),
+    ...TG('🧙'),...TG('🧚'),...TG('🧛'),...TG('🧜'),...TG('🧝'),
+    ...G('🧞'),...G('🧟'),'🧌',
+    // ── Activities ──
+    ...TG('💆'),...TG('💇'),
+    ...TG('🚶'),'🧍','🧍‍♂️','🧍‍♀️','🧎','🧎‍♂️','🧎‍♀️',
+    ...TG('🏃'),...T('💃'),...T('🕺'),'🕴️',
+    '👯','👯‍♂️','👯‍♀️',
+    ...TG('🧖'),...TG('🧗'),
+    // ── Couples / family ──
+    '👫','👬','👭','💏','💑','👪',
+    '👨‍👩‍👦','👨‍👩‍👧','👨‍👩‍👧‍👦','👨‍👨‍👦','👩‍👩‍👧',
+    '👤','👥','🫂','👣',
+  ],
+  Animals: [
+    '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐻‍❄️','🐨','🐯','🦁','🐮','🐷',
+    '🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐦‍🔥','🐦‍⬛','🐤','🐣','🐥',
+    '🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🦌','🐎','🫎',
+    '🐝','🪱','🐛','🦋','🐌','🐞','🐜','🪲','🦟','🦗','🪳','🕷️','🦂',
+    '🐢','🐍','🦎','🦕','🦖','🐙','🦑','🦐','🦞','🦀',
+    '🐡','🐠','🐟','🐬','🐳','🐋','🦈',
+    '🐊','🐅','🐆','🦓','🦍','🦧','🦣','🐘','🦛','🦏',
+    '🐪','🐫','🦒','🦘','🦬','🐃','🐂','🐄','🫏',
+    '🐖','🐏','🐑','🦙','🐐','🦃','🦤','🦚','🦜','🦢','🕊️',
+    '🐇','🦝','🦨','🦡','🦫','🦦','🦥','🐁','🐀','🐿️','🦔',
+    '🐾','🐉','🐲',
+    '🌵','🎄','🌲','🌳','🌴','🪵','🌱','🌿','☘️','🍀','🎍','🪴','🎋','🍃',
+    '🍂','🍁','🪺','🪹','🍄','🍄‍🟫','🌾','💐','🌷','🌹','🥀','🪷','🌺','🌸',
+    '🌼','🌻','🌞','🌝','🌛','🌜','🌚','🌕','🌙','🌟','⭐','🌈','☀️','⛅','☁️',
+  ],
+  Food: [
+    '🍎','🍐','🍊','🍋','🍋‍🟩','🍌','🍉','🍇','🍓','🫐','🍈','🍑','🥭','🍍','🥥',
+    '🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🫑','🧄','🧅','🥔','🍠','🫚',
+    '🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗',
+    '🍖','🌭','🍔','🍟','🍕','🫓','🥙','🧆','🌮','🌯','🫔','🥗','🥘','🫕',
+    '🥫','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🦪','🍤','🍙','🍘','🍥','🥮',
+    '🍢','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🫘',
+    '🍯','🧃','🥤','🧋','☕','🫖','🍵','🧉','🍺','🍻','🥂','🍷','🥃','🍸',
+    '🍹','🍾','🧊','🥄','🍴','🍽️','🥢','🧂',
+  ],
+  Travel: [
+    '🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🛻','🚚','🚛','🚜',
+    '🏍️','🛵','🛺','🚲','🛴','🛹','🛼','🛞','⛽','🚨','🚥','🚦','🛑','🚧',
+    '⚓','🪝','⛵','🛶','🚤','🛳️','⛴️','🛥️','🚢','✈️','🛩️','🛫','🛬','🪂',
+    '💺','🚁','🚀','🛸','🪐','🌍','🌎','🌏','🗺️','🧭','🏔️','⛰️','🌋','🗻',
+    '🏕️','🏖️','🏗️','🏘️','🏙️','🏚️','🏛️','🏟️','🏠','🏡','🏢','🏣','🏤','🏥',
+    '🏦','🏨','🏩','🏪','🏫','🏬','🏭','🏯','🏰','💒','🗼','🗽','⛪','🕌',
+    '🛕','🕍','⛩️','🕋','⛲','⛺','🌁','🌃','🌄','🌅','🌆','🌇','🌉',
+    '🎠','🛝','🎡','🎢','🚂','🚃','🚄','🚅','🚆','🚇','🚈','🚉','🚊','🚝','🚞',
+  ],
+  Activities: [
+    '⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🪀','🏓','🏸','🏒',
+    '🥍','🏑','🏏','🪃','🥅','⛳','🪁','🤿','🎣','🎽','🎿','🛷','🥌','🎯',
+    '🎮','🕹️','🎲','♟️','🎭','🎨','🖼️','🎪','🎤','🎧','🎼','🎹','🥁','🪘',
+    '🎷','🎺','🪗','🎸','🪕','🎻','🪈','🪇','🎬','🎥','📽️','🎞️','📺','📻',
+    '🎙️','🎚️','🎛️','🎁','🎀','🎊','🎉','🎈','🎏','🎐','🎑','🎃','🎄','🎆',
+    '🎇','🧨','✨','🎋','🎍','🎎','🎗️','🎟️','🎫','🤹',
+    '🩰','🏋️','🤼','🤸','🤺','🤾','🏌️','🏄','🚵','🚴','🏊','🤽','🧘','🏇','🏂','🧗',
+  ],
+  Objects: [
+    '👓','🕶️','🥽','🌂','☂️','🧵','🪡','🧶','🪢','👒','🎩','🪖','⛑️','📿',
+    '💄','💍','💎','📱','📲','☎️','📞','📟','📠','🔋','🪫','💻','🖥️','🖨️',
+    '⌨️','🖱️','🖲️','💽','💾','💿','📀','🧮','🎥','📷','📸','📹','📼','🔍',
+    '🔎','🕯️','💡','🔦','🏮','🪔','📔','📒','📕','📗','📘','📙','📚','📖',
+    '🔖','🏷️','💰','🪙','💴','💵','💶','💷','💸','💳','✉️','📧','📨','📩',
+    '📤','📥','📦','📫','📪','📬','📭','📮','🗳️','✏️','✒️','🖋️','🖊️','📝',
+    '📁','📂','🗂️','📅','📆','🗒️','🗓️','📇','📈','📉','📊','📋','📌','📍',
+    '📎','🖇️','📏','📐','✂️','🗃️','🗄️','🗑️','🔒','🔓','🔏','🔐','🔑','🗝️',
+    '🔨','🪓','⛏️','⚒️','🛠️','🗡️','⚔️','🔫','🛡️','🪚','🔧','🪛','🔩','⚙️',
+    '🗜️','⚖️','🦯','🔗','⛓️','⛓️‍💥','🪝','🧲','🪜','🧪','🧫','🧬','🔭','🔬',
+    '🩺','💊','🩹','🩼','🩻','🩸',
+    '🎒','👜','👝','🛍️','🎽','🩱','👙','👗','👘','🥻','🩴',
+    '👟','👠','👡','👢','👞','👒','🎩','🪖','⛑️','🧢','👛','👓',
+    '🪭','🪮','🪬','🧿','🪄','🪩','🪅','🎀',
+  ],
+  Symbols: [
+    '❤️','🩷','🧡','💛','🩵','💚','💙','💜','🖤','🩶','🤍','🤎',
+    '💔','❤️‍🔥','❤️‍🩹','💕','💞','💓','💗','💖','💘','💝','💟',
+    '☮️','✝️','☪️','🕉️','✡️','🔯','🕎','☯️','☦️','🛐',
+    '⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓',
+    '❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞',
+    '📵','🚭','❗','❕','❓','❔','‼️','⁉️','🔅','🔆','〽️','⚠️','🚸','🔱',
+    '⚜️','🔰','♻️','✅','🌐','💠','Ⓜ️','🌀','💤','🏧','🚾','♿','🅿️','🛗',
+    '🚹','🚺','🚼','⚧️','🏳️‍⚧️','🏳️‍🌈','🚻','🚮','🎦','📶','🈁','ℹ️',
+    '🔤','🔡','🔠','🆖','🆗','🆙','🆒','🆕','🆓',
+    '0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟','🔢','#️⃣','*️⃣',
+    '⏏️','▶️','⏸️','⏹️','⏺️','⏭️','⏮️','⏩','⏪','⏫','⏬','◀️','🔼','🔽',
+    '➡️','⬅️','⬆️','⬇️','↗️','↘️','↙️','↖️','↕️','↔️','↪️','↩️','⤴️','⤵️',
+    '🔀','🔁','🔂','🔄','🔃','➕','➖','➗','✖️','♾️','💲','💱','™️','©️','®️',
+    '〰️','➰','➿','✔️','☑️','🔘',
+    '🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤',
+    '🔺','🔻','🔸','🔹','🔶','🔷','🔳','🔲','▪️','▫️','◾','◽','◼️','◻️',
+    '🟥','🟧','🟨','🟩','🟦','🟪','⬛','⬜','🟫',
+  ]
+};
+
+let currentCat = 'Smileys';
+
+function buildPicker(cat) {
+  currentCat = cat;
+  emojiGrid.innerHTML = '';
+  (EMOJI_CATS[cat] || []).forEach(ch => {
+    const span = document.createElement('span');
+    span.className   = 'emoji-item';
+    span.textContent = ch;
+    span.addEventListener('mousedown', e => startPickerDrag(e, ch));
+    emojiGrid.appendChild(span);
+  });
+  emojiGrid.scrollTop = 0;
+}
+
+document.querySelectorAll('.panel-cat').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.panel-cat').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    buildPicker(el.dataset.cat);
+  });
+});
+buildPicker('Smileys');
+
+// ════════════════════════════════════════════════════════
+//  EMOJI STATE
+// ════════════════════════════════════════════════════════
+let placedEmojis    = [];
+let selectedEmoji   = null;
+let zCounter        = 10;
+let undoStack       = [];
+let restoreState    = null;
+let defaultCompVisible = true;
+
+function saveUndoState() {
+  undoStack.push(placedEmojis.map(d => ({
+    char: d.char, x: d.x, y: d.y,
+    rotation: d.rotation, scale: d.scale, flipped: d.flipped || false, z: d.z
+  })));
+  if (undoStack.length > 40) undoStack.shift();
+}
+
+function snapshotForRestore() {
+  restoreState = {
+    emojis: placedEmojis.map(d => ({
+      char: d.char, x: d.x, y: d.y,
+      rotation: d.rotation, scale: d.scale, flipped: d.flipped || false, z: d.z
+    })),
+    defaultCompVisible
+  };
+}
+
+// ════════════════════════════════════════════════════════
+//  PLACE EMOJI
+// ════════════════════════════════════════════════════════
+function placeEmoji(char, x, y, opts = {}) {
+  const data = { char, x, y, rotation: 0, scale: 1, flipped: false, z: ++zCounter, el: null };
+
+  const el = document.createElement('div');
+  el.className = 'placed-emoji';
+  el.textContent = char;
+
+  const rHandle = document.createElement('div');
+  rHandle.className = 'emoji-rotate-handle';
+  el.appendChild(rHandle);
+
+  const sHandle = document.createElement('div');
+  sHandle.className = 'emoji-scale-handle';
+  el.appendChild(sHandle);
+
+  data.el = el;
+  stage.appendChild(el);
+  placedEmojis.push(data);
+  updateTransform(data);
+
+  if (!opts.silent) {
+    selectEmoji(data);
+    // Default comp stays visible — emojis layer on top of it
+  }
+
+  el.addEventListener('mousedown', e => {
+    if (e.target === rHandle) { startRotate(e, data); return; }
+    if (e.target === sHandle) { startScale(e, data);  return; }
+    startMove(e, data);
+  });
+
+  // Floating tooltip — positioned at clip level so text never scales with emoji
+  const tooltip = document.getElementById('emoji-tooltip');
+  rHandle.addEventListener('mouseenter', () => {
+    const r = rHandle.getBoundingClientRect();
+    const clipR = clip.getBoundingClientRect();
+    tooltip.textContent = 'Rotate';
+    tooltip.style.left = (r.left + r.width / 2 - clipR.left) + 'px';
+    tooltip.style.top  = (r.top - clipR.top - 4) + 'px';
+    tooltip.style.display = 'block';
+  });
+  rHandle.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+  sHandle.addEventListener('mouseenter', () => {
+    const r = sHandle.getBoundingClientRect();
+    const clipR = clip.getBoundingClientRect();
+    tooltip.textContent = 'Scale';
+    tooltip.style.left = (r.left + r.width / 2 - clipR.left) + 'px';
+    tooltip.style.top  = (r.top - clipR.top - 4) + 'px';
+    tooltip.style.display = 'block';
+  });
+  sHandle.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+  // Double-click to flip; triple-click to delete
+  let clickCount = 0, clickTimer;
+  el.addEventListener('click', () => {
+    clickCount++;
+    clearTimeout(clickTimer);
+    clickTimer = setTimeout(() => { clickCount = 0; }, 400);
+    if (clickCount === 2) { data.flipped = !data.flipped; updateTransform(data); }
+    if (clickCount >= 3) { clickCount = 0; saveUndoState(); removeEmoji(data); }
+  });
+
+  return data;
+}
+
+function updateTransform(data) {
+  data.el.style.zIndex    = data.z;
+  data.el.style.left      = data.x + 'px';
+  data.el.style.top       = data.y + 'px';
+  const flip = data.flipped ? ' scaleX(-1)' : '';
+  data.el.style.transform = `translate(-50%,-50%) rotate(${data.rotation}deg) scale(${data.scale})${flip}`;
+}
+
+function selectEmoji(data) {
+  if (selectedEmoji && selectedEmoji !== data) selectedEmoji.el.classList.remove('selected');
+  selectedEmoji = data;
+  if (data) {
+    data.el.classList.add('selected');
+    data.z = ++zCounter;
+    updateTransform(data);
+  }
+}
+
+function removeEmoji(data) {
+  data.el.remove();
+  placedEmojis = placedEmojis.filter(d => d !== data);
+  if (selectedEmoji === data) selectedEmoji = null;
+}
+
+function removeSelected() {
+  if (!selectedEmoji) return;
+  saveUndoState();
+  removeEmoji(selectedEmoji);
+}
+
+// Deselect on stage background click (not on defaultComp — it has its own handler)
+stage.addEventListener('mousedown', e => {
+  if (e.target === stage) selectEmoji(null);
+});
+
+// ── Default comp drag — always stays at z-index 1 (behind all emojis) ──
+let compDragging = false, compDragStartX = 0, compDragStartY = 0;
+let compDragStartDeltaX = 0, compDragStartDeltaY = 0;
+
+defaultComp.addEventListener('mousedown', e => {
+  e.preventDefault(); e.stopPropagation();
+  selectEmoji(null);
+  compDragging = true;
+  compDragStartX = e.clientX;
+  compDragStartY = e.clientY;
+  compDragStartDeltaX = compDeltaX;
+  compDragStartDeltaY = compDeltaY;
+});
+
+// ════════════════════════════════════════════════════════
+//  DRAG FROM PICKER
+// ════════════════════════════════════════════════════════
+const dragGhost    = document.getElementById('drag-ghost');
+let pickerDragging = false;
+let pickerChar     = '';
+
+function startPickerDrag(e, char) {
+  e.preventDefault();
+  pickerDragging = true;
+  pickerChar = char;
+  dragGhost.textContent = char;
+  dragGhost.style.display = 'block';
+  dragGhost.style.left = e.clientX + 'px';
+  dragGhost.style.top  = e.clientY + 'px';
+  dragGhost.classList.remove('over-stage');
+}
+
+document.addEventListener('mousemove', e => {
+  // Comp drag
+  if (compDragging) {
+    compDeltaX = compDragStartDeltaX + (e.clientX - compDragStartX);
+    compDeltaY = compDragStartDeltaY + (e.clientY - compDragStartY);
+    const u = clipW() / D.W;
+    defaultComp.style.left = (Math.round((D.comp.x - 15) * u) + compDeltaX) + 'px';
+    defaultComp.style.top  = (Math.round((D.comp.y - 28) * u) + compDeltaY) + 'px';
+    return;
+  }
+  if (!pickerDragging) return;
+  dragGhost.style.left = e.clientX + 'px';
+  dragGhost.style.top  = e.clientY + 'px';
+  const stageR  = stage.getBoundingClientRect();
+  const panelR  = emojiPanel.getBoundingClientRect();
+  const ctrlR   = document.getElementById('controls-wrap').getBoundingClientRect();
+  const onStage = e.clientX >= stageR.left && e.clientX <= stageR.right
+               && e.clientY >= stageR.top  && e.clientY <= stageR.bottom;
+  const onPanel = e.clientX >= panelR.left && e.clientX <= panelR.right
+               && e.clientY >= panelR.top  && e.clientY <= panelR.bottom;
+  const onCtrl  = e.clientX >= ctrlR.left  && e.clientX <= ctrlR.right
+               && e.clientY >= ctrlR.top   && e.clientY <= ctrlR.bottom;
+  dragGhost.classList.toggle('over-stage', onStage && !onPanel && !onCtrl);
+});
+
+document.addEventListener('mouseup', e => {
+  if (!pickerDragging) return;
+  pickerDragging = false;
+  dragGhost.style.display = 'none';
+  const stageR = stage.getBoundingClientRect();
+  const panelR = emojiPanel.getBoundingClientRect();
+  const clipR  = clip.getBoundingClientRect();
+  const onPanel = e.clientX >= panelR.left && e.clientX <= panelR.right
+               && e.clientY >= panelR.top  && e.clientY <= panelR.bottom;
+  if (!onPanel
+    && e.clientX >= stageR.left && e.clientX <= stageR.right
+    && e.clientY >= stageR.top  && e.clientY <= stageR.bottom) {
+    saveUndoState();
+    placeEmoji(pickerChar, e.clientX - clipR.left, e.clientY - clipR.top);
+  }
+});
+
+// ════════════════════════════════════════════════════════
+//  MOVE / ROTATE / SCALE INTERACTIONS
+// ════════════════════════════════════════════════════════
+let activeInteraction = null;
+
+function startMove(e, data) {
+  e.preventDefault(); e.stopPropagation();
+  selectEmoji(data);
+  activeInteraction = { type: 'move', data,
+    startX: e.clientX, startY: e.clientY, origX: data.x, origY: data.y };
+}
+
+function startRotate(e, data) {
+  e.preventDefault(); e.stopPropagation();
+  const clipR = clip.getBoundingClientRect();
+  const dx = e.clientX - clipR.left - data.x;
+  const dy = e.clientY - clipR.top  - data.y;
+  activeInteraction = { type: 'rotate', data, clipR,
+    startAngle: Math.atan2(dy, dx) * (180 / Math.PI), origRot: data.rotation };
+}
+
+function startScale(e, data) {
+  e.preventDefault(); e.stopPropagation();
+  const clipR = clip.getBoundingClientRect();
+  const dx = e.clientX - clipR.left - data.x;
+  const dy = e.clientY - clipR.top  - data.y;
+  activeInteraction = { type: 'scale', data, clipR,
+    startDist: Math.hypot(dx, dy), origScale: data.scale };
+}
+
+document.addEventListener('mousemove', e => {
+  if (!activeInteraction) return;
+  const { type, data } = activeInteraction;
+  if (type === 'move') {
+    data.x = activeInteraction.origX + (e.clientX - activeInteraction.startX);
+    data.y = activeInteraction.origY + (e.clientY - activeInteraction.startY);
+    updateTransform(data);
+  } else if (type === 'rotate') {
+    const clipR = activeInteraction.clipR;
+    const angle = Math.atan2(
+      e.clientY - clipR.top  - data.y,
+      e.clientX - clipR.left - data.x
+    ) * (180 / Math.PI);
+    data.rotation = activeInteraction.origRot + (angle - activeInteraction.startAngle);
+    updateTransform(data);
+  } else if (type === 'scale') {
+    const clipR = activeInteraction.clipR;
+    const dist  = Math.hypot(e.clientX - clipR.left - data.x, e.clientY - clipR.top - data.y);
+    const ratio = dist / Math.max(activeInteraction.startDist, 1);
+    data.scale  = Math.max(0.1, Math.min(10, activeInteraction.origScale * ratio));
+    updateTransform(data);
+  }
+});
+
+document.addEventListener('mouseup', () => {
+  if (compDragging) { compDragging = false; }
+  if (activeInteraction) { saveUndoState(); activeInteraction = null; }
+});
+
+// ════════════════════════════════════════════════════════
+//  TRACKPAD GESTURES
+// ════════════════════════════════════════════════════════
+let gestureTarget = null, gestureStartRot = 0, gestureStartScale = 1;
+document.addEventListener('gesturestart', e => {
+  e.preventDefault();
+  if (selectedEmoji) {
+    gestureTarget     = selectedEmoji;
+    gestureStartRot   = gestureTarget.rotation;
+    gestureStartScale = gestureTarget.scale;
+  }
+});
+document.addEventListener('gesturechange', e => {
+  e.preventDefault();
+  if (!gestureTarget) return;
+  gestureTarget.rotation = gestureStartRot + e.rotation;
+  gestureTarget.scale    = Math.max(0.1, Math.min(10, gestureStartScale * e.scale));
+  updateTransform(gestureTarget);
+});
+document.addEventListener('gestureend', e => {
+  e.preventDefault();
+  if (gestureTarget) { saveUndoState(); gestureTarget = null; }
+});
+
+// Scroll wheel = scale selected emoji
+stage.addEventListener('wheel', e => {
+  if (!selectedEmoji) return;
+  e.preventDefault();
+  selectedEmoji.scale = Math.max(0.1, Math.min(10, selectedEmoji.scale * (e.deltaY > 0 ? 0.93 : 1.07)));
+  updateTransform(selectedEmoji);
+}, { passive: false });
+
+// ════════════════════════════════════════════════════════
+//  KEYBOARD
+// ════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if ((e.key === 'x' || e.key === 'X') && !e.metaKey && !e.ctrlKey) { e.preventDefault(); removeSelected(); }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedEmoji) {
+    e.preventDefault(); saveUndoState(); removeEmoji(selectedEmoji);
+  }
+});
+
+// ════════════════════════════════════════════════════════
+//  COLLAGE ACTIONS
+// ════════════════════════════════════════════════════════
+function showDefaultComp() {
+  defaultCompVisible = true;
+  defaultComp.style.display = 'block';
+  requestAnimationFrame(() => { defaultComp.style.opacity = '1'; });
+}
+function hideDefaultComp() {
+  defaultCompVisible = false;
+  defaultComp.style.opacity = '0';
+  setTimeout(() => { if (defaultComp.style.opacity === '0') defaultComp.style.display = 'none'; }, 400);
+}
+function clearAllEmojis() {
+  placedEmojis.forEach(d => d.el.remove());
+  placedEmojis = [];
+  selectedEmoji = null;
+}
+
+function clearCollage() {
+  snapshotForRestore();
+  clearAllEmojis();
+  undoStack.length = 0;
+  showDefaultComp();
+}
+function blankCollage() {
+  snapshotForRestore();
+  clearAllEmojis();
+  undoStack.length = 0;
+  hideDefaultComp();
+}
+function restoreCollage() {
+  if (!restoreState) return;
+  clearAllEmojis();
+  if (restoreState.defaultCompVisible) showDefaultComp(); else hideDefaultComp();
+  restoreState.emojis.forEach(saved => {
+    const data = placeEmoji(saved.char, saved.x, saved.y, { silent: true });
+    data.rotation = saved.rotation; data.scale = saved.scale; data.flipped = saved.flipped || false; data.z = saved.z;
+    updateTransform(data);
+  });
+}
+function undoEmoji() {
+  if (undoStack.length === 0) return;
+  const prev = undoStack.pop();
+  clearAllEmojis();
+  prev.forEach(saved => {
+    const data = placeEmoji(saved.char, saved.x, saved.y, { silent: true });
+    data.rotation = saved.rotation; data.scale = saved.scale; data.flipped = saved.flipped || false; data.z = saved.z;
+    updateTransform(data);
+  });
+  // Default comp visibility is controlled only by Clear/Blank, not undo
+}
+
+// ════════════════════════════════════════════════════════
+//  CAPTURE — full page screenshot via html2canvas
+// ════════════════════════════════════════════════════════
+async function captureCollage() {
+  // Deselect any emoji so handles don't appear in screenshot
+  selectEmoji(null);
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+  const canvas = await html2canvas(document.body, {
+    useCORS: true,
+    allowTaint: true,
+    scale: 1,
+    logging: false,
+    width: window.innerWidth,
+    height: window.innerHeight,
+    windowWidth: window.innerWidth,
+    windowHeight: window.innerHeight,
+  });
+
+  const a = document.createElement('a');
+  a.download = 'naman-nanda-emoji.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+</script>
 </body>
 </html>
