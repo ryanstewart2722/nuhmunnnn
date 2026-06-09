@@ -36,17 +36,17 @@ body {
   display:flex; align-items:center; justify-content:space-between;
   padding:0 15px; background:#D9D9D9; z-index:200;
 }
-#nav a { font-family:'ABCDiatype',Arial,sans-serif; font-size:10px; color:#1a1a1a; text-decoration:none; }
+#nav a { font-family:'ABCDiatype',Arial,sans-serif; font-size:12px; color:#1a1a1a; text-decoration:none; }
 #nav a:hover { opacity:0.5; }
 #nav-center {
   position:absolute; left:50%; transform:translateX(-50%);
-  font-family:'ABCDiatype',Arial,sans-serif; font-size:10px; color:#1a1a1a;
+  font-family:'ABCDiatype',Arial,sans-serif; font-size:12px; color:#1a1a1a;
 }
 #footer {
   position:fixed; bottom:0; left:0; right:0; height:28px;
   display:flex; align-items:center; justify-content:center;
   background:#D9D9D9; z-index:200;
-  font-family:'ABCDiatype',Arial,sans-serif; font-size:10px; color:#1a1a1a;
+  font-family:'ABCDiatype',Arial,sans-serif; font-size:12px; color:#1a1a1a;
 }
 
 /* ── Scroll viewport ── */
@@ -78,7 +78,7 @@ body {
 .mod {
   position:absolute;
   font-family:'ABCDiatype',Arial,sans-serif;
-  font-size:10px; color:#1a1a1a; line-height:normal;
+  font-size:12px; color:#1a1a1a; line-height:normal;
 }
 
 /* ── Image slots ── */
@@ -119,7 +119,7 @@ body {
   pointer-events: none;
   z-index: 9999;
   font-family: 'ABCDiatype', Arial, sans-serif;
-  font-size: 10px;
+  font-size: 12px;
   color: #fff;
   mix-blend-mode: difference;
   transform: translate(-50%, -50%);
@@ -165,7 +165,7 @@ body {
    × at 45° = closed state (looks like +, click to expand) */
 .rot-x {
   display:inline-block;
-  font-size:10px; line-height:1;
+  font-size:12px; line-height:1;
   transition:transform 0.38s cubic-bezier(0.77,0,0.175,1);
   transform:rotate(0deg);
   cursor:pointer;
@@ -195,13 +195,13 @@ body {
 
 .card-header-row {
   position:relative; height:13px;
-  font-family:'ABCDiatype',Arial,sans-serif; font-size:10px; color:#1a1a1a;
+  font-family:'ABCDiatype',Arial,sans-serif; font-size:12px; color:#1a1a1a;
 }
 .h-name   { position:absolute; left:0; white-space:nowrap; }
 .h-toggle {
   position:absolute; right:0;
   background:none; cursor:pointer;
-  font-family:'ABCDiatype',Arial,sans-serif; font-size:10px; color:#1a1a1a;
+  font-family:'ABCDiatype',Arial,sans-serif; font-size:12px; color:#1a1a1a;
 }
 
 /* Year and client positioned via JS (proportional to card width) */
@@ -211,7 +211,7 @@ body {
 /* Card body */
 #card-desc { margin-top:39px; }
 .card-p {
-  font-size:10px; line-height:1.55; color:#1a1a1a;
+  font-size:12px; line-height:1.55; color:#1a1a1a;
   margin-bottom:1em;
 }
 .card-p:last-child { margin-bottom:0; }
@@ -222,20 +222,20 @@ body {
 .card-section-head {
   border-top:1px solid #1a1a1a; padding-top:4px;
   display:flex; justify-content:space-between; align-items:center;
-  font-size:10px; color:#1a1a1a;
+  font-size:12px; color:#1a1a1a;
 }
 /* Padding lives INSIDE .s-body-pad so it's clipped with max-height:0 */
 .s-body { overflow:hidden; }
 .s-body-pad { padding-top:15px; }
 .card-table { position:relative; }
-.card-table .col-a { font-size:10px; line-height:1.7; }
+.card-table .col-a { font-size:12px; line-height:1.7; }
 .card-table .col-b {
   position:absolute; top:0; left:214px;
-  font-size:10px; line-height:1.7;
+  font-size:12px; line-height:1.7;
 }
 .card-also-img { background:#d9d9d9; margin-bottom:7px; }
-.card-also-meta { display:flex; gap:74px; font-size:10px; margin-bottom:5px; }
-.card-also-link { font-size:10px; color:rgba(0,0,0,0.45); }
+.card-also-meta { display:flex; gap:74px; font-size:12px; margin-bottom:5px; }
+.card-also-link { font-size:12px; color:rgba(0,0,0,0.45); }
 
 /* Hidden by default — mobile media query turns it on */
 #mobile-project { display: none; }
@@ -330,7 +330,7 @@ body {
     align-items: center;
     padding: 2px 0 0;
     font-family: 'ABCDiatype', Arial, sans-serif;
-    font-size: 10px;
+    font-size: 12px;
     color: #1a1a1a;
   }
   .mp-h-name  { flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -362,7 +362,7 @@ body {
   }
   .mp-img-cap {
     font-family: 'ABCDiatype', Arial, sans-serif;
-    font-size: 10px;
+    font-size: 12px;
     color: #1a1a1a;
     padding: 4px 0 0;
   }
@@ -392,12 +392,12 @@ body {
   .mp-next-title {
     position: absolute; left: 10px; top: 10px; z-index: 2;
     font-family: 'ABCDiatype', Arial, sans-serif;
-    font-size: 10px; color: #fff; white-space: nowrap;
+    font-size: 12px; color: #fff; white-space: nowrap;
   }
   .mp-next-meta {
     position: absolute; right: 10px; top: 10px; z-index: 2;
     font-family: 'ABCDiatype', Arial, sans-serif;
-    font-size: 10px; color: #fff;
+    font-size: 12px; color: #fff;
     display: flex; gap: 10px;
   }
 }
@@ -420,13 +420,13 @@ body {
 
     <!-- © copyright -->
     <div id="m-copy" class="mod" style="width:100%;text-align:center;">
-      <span style="font-size:12px;color:rgba(0,0,0,0.45);">© 2026 All Rights Reserved</span>
+      <span style="font-size:14px;color:rgba(0,0,0,0.45);">© 2026 All Rights Reserved</span>
     </div>
 
     <!-- MODULE 1: Hero — Figma x:365 y:56 w:709 -->
     <div id="m-hero" class="mod">
       <div class="img-slot loaded" id="img-hero" style="width:100%;aspect-ratio:709/906;background-image:url('./images/Flaus-Hero.png');background-size:cover;background-position:center;"></div>
-      <p id="cap-hero" style="margin-top:5px;font-size:12px;text-align:center;">Lorem Ipsum Dolor Sit Amet</p>
+      <p id="cap-hero" style="margin-top:5px;font-size:14px;text-align:center;">Lorem Ipsum Dolor Sit Amet</p>
     </div>
 
     <!-- MODULE 2: Wide single slideshow — Figma x:10 y:975 w:1418 -->
@@ -514,13 +514,13 @@ body {
     <div id="m-next" class="mod" style="overflow:hidden;cursor:pointer;" onclick="window.location.href='pax-project.html'">
       <div class="img-slot dark loaded" style="position:absolute;inset:0;background-image:url('./images/product-pax-wide.jpg');background-size:cover;background-position:center;"></div>
       <p style="position:absolute;left:20px;top:17px;z-index:2;
-                font-family:'ABCDiatype',Arial,sans-serif;font-size:13px;
+                font-family:'ABCDiatype',Arial,sans-serif;font-size:15px;
                 color:#fff;line-height:normal;white-space:nowrap;">
         Pax Technologies Smoking Products
       </p>
       <div style="position:absolute;right:10px;top:17px;z-index:2;
                   display:flex;gap:10px;
-                  font-family:'ABCDiatype',Arial,sans-serif;font-size:13px;
+                  font-family:'ABCDiatype',Arial,sans-serif;font-size:15px;
                   color:#fff;line-height:normal;white-space:nowrap;">
         <span>2023</span><span>Pax Technologies</span>
       </div>

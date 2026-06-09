@@ -32,19 +32,19 @@ body {
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 15px; background: #D9D9D9; z-index: 200; cursor: auto;
 }
-#nav a { font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a; text-decoration: none; }
+#nav a { font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px; color: #1a1a1a; text-decoration: none; }
 #nav a:hover { opacity: 0.5; }
-#nav span.nav-cur { font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a; }
+#nav span.nav-cur { font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px; color: #1a1a1a; }
 #nav-center {
   position: absolute; left: 50%; transform: translateX(-50%);
-  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a;
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px; color: #1a1a1a;
 }
 
 #footer {
   position: fixed; bottom: 0; left: 0; right: 0; height: 28px;
   display: flex; align-items: center; justify-content: center;
   background: #D9D9D9; z-index: 200; cursor: auto;
-  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a;
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px; color: #1a1a1a;
 }
 
 /* ── Content clip ── */
@@ -85,7 +85,7 @@ body {
 }
 .mode-tab {
   font-family: 'ABCDiatype', Arial, sans-serif;
-  font-size: 10px; color: #1a1a1a;
+  font-size: 12px; color: #1a1a1a;
   padding: 4px 9px;
   cursor: pointer;
   white-space: nowrap;
@@ -125,7 +125,7 @@ body {
 #brush-shortcut, #eyedropper-shortcut {
   display: inline-flex; align-items: center; gap: 10px;
   padding: 4px 9px;
-  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: rgba(0,0,0,0.45);
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px; color: rgba(0,0,0,0.45);
 }
 #eyedropper-shortcut.active { color: rgba(0,0,0,0.85); }
 .key-cap {
@@ -142,7 +142,7 @@ body {
   display: inline-flex; align-items: stretch; cursor: auto;
 }
 #draw-controls button {
-  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 10px; color: #1a1a1a;
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px; color: #1a1a1a;
   background: none; cursor: pointer; padding: 4px 9px;
   transition: opacity 0.2s, color 0.2s;
   white-space: nowrap;
@@ -218,7 +218,7 @@ body {
   border-top: 1px solid #1a1a1a;
   margin-bottom: 0;
 }
-#sec-bio-title { font-size: 10px; color: #1a1a1a; }
+#sec-bio-title { font-size: 12px; color: #1a1a1a; }
 
 /* card-body: everything below the header, collapses as one unit */
 #card-body {
@@ -231,7 +231,7 @@ body {
 /* Bio paragraphs — 32% indent matching project page */
 #sec-bio-body { padding-top: 8px; padding-bottom: 0; }
 .a-bio-p {
-  font-size: 10px; color: #1a1a1a;
+  font-size: 12px; color: #1a1a1a;
   line-height: 1.55; margin-bottom: 1em;
   text-indent: 32%;
 }
@@ -247,10 +247,10 @@ body {
   border-top: 1px solid #1a1a1a;
   margin-bottom: 8px;
 }
-.a-sec-title { font-size: 10px; color: #1a1a1a; }
+.a-sec-title { font-size: 12px; color: #1a1a1a; }
 
 .rot-x {
-  display: inline-block; font-size: 10px; line-height: 1;
+  display: inline-block; font-size: 12px; line-height: 1;
   transition: transform 0.38s cubic-bezier(0.77,0,0.175,1);
   transform: rotate(0deg); cursor: pointer;
 }
@@ -267,11 +267,11 @@ body {
 .a-col-a { flex: 1 1 auto; min-width: 0; }
 .a-col-b { flex: 0 0 auto; }
 .a-table .a-col-a > div,
-.a-table .a-col-b > div { font-size: 10px; color: #1a1a1a; line-height: 1.9; white-space: nowrap; }
+.a-table .a-col-b > div { font-size: 12px; color: #1a1a1a; line-height: 1.9; white-space: nowrap; }
 .a-col-a > div { overflow: hidden; text-overflow: ellipsis; }
 
 /* ── Contact ── */
-.a-email { font-size: 10px; color: #1a1a1a; text-decoration: none; transition: opacity 0.2s; }
+.a-email { font-size: 12px; color: #1a1a1a; text-decoration: none; transition: opacity 0.2s; }
 .a-email:hover { opacity: 0.45; }
 
 /* ── Camera ── */
@@ -282,7 +282,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
 }
-#cam-placeholder span { font-size: 10px; color: #fff; pointer-events: none; }
+#cam-placeholder span { font-size: 12px; color: #fff; pointer-events: none; }
 #cam-video { width: 100%; aspect-ratio: 5/3; object-fit: cover; display: none; background: #000; transform: scaleX(-1); }
 </style>
 </head>
@@ -331,7 +331,7 @@ body {
     </div>
     <div id="eyedropper-shortcut" class="glass-frame">
       <span>Eyedropper</span>
-      <span class="key-cap" id="eyedropper-key" style="font-size:10px;color:#1a1a1a;">i</span>
+      <span class="key-cap" id="eyedropper-key" style="font-size:12px;color:#1a1a1a;">i</span>
     </div>
   </div>
 
@@ -367,7 +367,6 @@ body {
         <!-- Bio paragraphs -->
         <div id="sec-bio-body">
           <p class="a-bio-p">Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Donec odio. Quisque volutpat mattis eros. Nullam malesuada erat ut turpis. Suspendisse urna nibh viverra non semper suscipit posuere a pede. Donec nec justo eget felis facilisis fermentum. Aliquam porttitor mauris sit amet orci. Aenean dignissim pellentesque felis.</p>
-          <p class="a-bio-p">Morbi in sem quis dui placerat ornare. Pellentesque odio nisi euismod in pharetra a ultricies in diam. Sed arcu. Cras consequat.rnare. Pellentesque odio nisi euismod in pharetra a ultricies in diam. Sed arcu.  Cras consequat.Morbi in sem qu. Phasellus ultrices nulla quis nibh quisque volutpat erat volutpat.</p>
         </div>
 
         <!-- Awards -->
