@@ -220,11 +220,12 @@ body {
 
 #cam-wrapper { width: 100%; margin-top: 5px; }
 #cam-placeholder {
-  width: 100%; aspect-ratio: 5/3; background: #888;
+  width: 100%; aspect-ratio: 16/7;
   display: flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: background 1.2s ease;
 }
-#cam-placeholder span { font-size: 12px; color: #fff; pointer-events: none; }
-#cam-video { width: 100%; aspect-ratio: 5/3; object-fit: cover; display: none; background: #000; transform: scaleX(-1); }
+#cam-placeholder span { font-size: 12px; color: rgba(0,0,0,0.45); pointer-events: none; }
+#cam-video { width: 100%; aspect-ratio: 16/7; object-fit: cover; display: none; background: #000; transform: scaleX(-1); }
 
 /* ── Emoji panel — glass container, bottom-left ── */
 #emoji-panel {
@@ -701,6 +702,25 @@ function toggleEmojiPanel() {
 // ════════════════════════════════════════════════════════
 const video       = document.getElementById('cam-video');
 const placeholder = document.getElementById('cam-placeholder');
+
+// Animate placeholder through soft pastels
+(function animatePlaceholder() {
+  const BANNED_HUE_RANGES = [[160,220]];
+  let lastH = -1;
+  function nextPastel() {
+    let h;
+    do {
+      h = Math.floor(Math.random() * 360);
+    } while (Math.abs(h - lastH) < 40 || BANNED_HUE_RANGES.some(([a,b]) => h >= a && h <= b));
+    lastH = h;
+    const s = 35 + Math.floor(Math.random() * 20);
+    const l = 62 + Math.floor(Math.random() * 10);
+    return `hsl(${h},${s}%,${l}%)`;
+  }
+  placeholder.style.background = nextPastel();
+  setInterval(() => { placeholder.style.background = nextPastel(); }, 2000);
+})();
+
 async function requestCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
@@ -710,6 +730,17 @@ async function requestCamera() {
     video.style.display = 'block';
   } catch { placeholder.querySelector('span').textContent = 'Camera unavailable'; }
 }
+
+// Click live video → stop stream and return to animated placeholder
+video.addEventListener('click', () => {
+  if (video.srcObject) {
+    video.srcObject.getTracks().forEach(t => t.stop());
+    video.srcObject = null;
+  }
+  video.style.display = 'none';
+  placeholder.querySelector('span').textContent = 'Allow Camera Access';
+  placeholder.style.display = 'flex';
+});
 
 // ════════════════════════════════════════════════════════
 //  EMOJI DATA
