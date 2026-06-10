@@ -73,7 +73,7 @@ body {
   display: none; position: absolute; inset: 0; z-index: 2;
   align-items: center; justify-content: center;
   font-family: 'ABCDiatype', Arial, sans-serif;
-  font-size: 12px; color: rgba(26,26,26,0.5);
+  font-size: 12px; color: #fff; mix-blend-mode: exclusion;
   pointer-events: none;
 }
 #cam-denied.visible { display: flex; }
@@ -520,7 +520,7 @@ async function startCamera() {
     // Permission denied — show message over the pastel background
     console.warn('Camera unavailable:', err);
     const denied = document.getElementById('cam-denied');
-    if (denied) { denied.textContent = 'Allow Camera Access'; denied.classList.add('visible'); }
+    if (denied) { denied.textContent = 'Click & Allow Camera Access'; denied.classList.add('visible'); }
   }
 }
 startCamera();

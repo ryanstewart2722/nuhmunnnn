@@ -282,7 +282,7 @@ body {
   cursor: pointer;
   transition: background 1.2s ease;
 }
-#cam-placeholder span { font-size: 12px; color: rgba(0,0,0,0.45); pointer-events: none; }
+#cam-placeholder span { font-size: 12px; color: #fff; mix-blend-mode: exclusion; pointer-events: none; }
 #cam-video { width: 100%; aspect-ratio: 16/7; object-fit: cover; display: none; background: #000; transform: scaleX(-1); }
 </style>
 </head>
@@ -445,7 +445,7 @@ body {
           <div class="a-sec-body">
             <div id="cam-wrapper">
               <div id="cam-placeholder" onclick="requestCamera()">
-                <span>Allow Camera Access</span>
+                <span>Click & Allow Camera Access</span>
               </div>
               <video id="cam-video" autoplay muted playsinline></video>
             </div>
@@ -953,7 +953,7 @@ video.addEventListener('click', () => {
     video.srcObject = null;
   }
   video.style.display = 'none';
-  placeholder.querySelector('span').textContent = 'Allow Camera Access';
+  placeholder.querySelector('span').textContent = 'Click & Allow Camera Access';
   placeholder.style.display = 'flex';
 });
 // Don't auto-request — wait for user click so gesture fires getUserMedia correctly
