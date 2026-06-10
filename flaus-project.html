@@ -769,13 +769,22 @@ function maxScroll() { return Math.max(0, page.offsetHeight - clip.offsetHeight)
 
 function clampScroll(v) { return Math.min(Math.max(v, 0), maxScroll()); }
 
+let swipeBackAcc = 0;
 clip.addEventListener('wheel', e => {
   e.preventDefault();
-  targetY = clampScroll(targetY + e.deltaY * 1.2);
+  if (Math.abs(e.deltaX) > Math.abs(e.deltaY) * 2) {
+    swipeBackAcc += e.deltaX;
+    if (swipeBackAcc < -300) { swipeBackAcc = 0; history.back(); }
+    else if (swipeBackAcc > 300) { swipeBackAcc = 0; history.forward(); }
+  } else {
+    swipeBackAcc = 0;
+    targetY = clampScroll(targetY + e.deltaY * 1.2);
+  }
 }, { passive: false });
 
 document.addEventListener('wheel', e => {
   e.preventDefault();
+  if (Math.abs(e.deltaX) > Math.abs(e.deltaY) * 2) return; // handled by clip
   targetY = clampScroll(targetY + e.deltaY * 1.2);
 }, { passive: false });
 

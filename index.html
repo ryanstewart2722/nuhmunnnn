@@ -128,19 +128,37 @@ body {
 <div id="cursor"></div>
 
 <script>
+// 5×5 = 25 zones. Zone 12 (row 2, col 2) = center = Pax Grinder (image 13).
+// Images used in order 1–25 as provided.
 const SECTIONS = [
-  { file: 'Home_1_Saintly Tushy.png',          label: 'Saintly Tushy' },
-  { file: 'Home_2_Canopy Diffuser.png',         label: 'Canopy Diffuser' },
-  { file: 'Home_3_Flaus Electric Flosser.png',  label: 'Flaus Electric Flosser' },
-  { file: 'Home_4_Sanctuary by Canopy.png',     label: 'Sanctuary by Canopy' },
-  { file: 'Home_5_Pax Grinder.png',             label: 'Pax Grinder' },
-  { file: 'Home_6_Bloom by Canopy.png',         label: 'Bloom by Canopy' },
-  { file: 'Home_7_Arber Packaging.png',         label: 'Arber Packaging' },
-  { file: 'Home_8_Pax Smoking Kit.png',         label: 'Pax Smoking Kit' },
-  { file: 'Home_9_Canopy Water Filter.png',     label: 'Canopy Water Filter' },
+  { file: 'Home_1_Canopy Humidifier.png',       label: 'Canopy Humidifier' },       // 0
+  { file: 'Home_2_Canopy.png',                  label: 'Canopy' },                  // 1
+  { file: 'Home_3_Saintly Tushy.png',           label: 'Saintly Tushy' },           // 2
+  { file: 'Home_4_Pax Smoking Kit.png',         label: 'Pax Smoking Kit' },         // 3
+  { file: 'Home_5_Made In Utensil Set.png',     label: 'Made In Utensil Set' },     // 4
+  { file: 'Home_6_Pax Grinder.png',             label: 'Pax Grinder' },             // 5
+  { file: 'Home_7_Canopy Showerhead.png',       label: 'Canopy Showerhead' },       // 6
+  { file: 'Home_8_Pax Smoking Kit.png',         label: 'Pax Smoking Kit' },         // 7
+  { file: 'Home_9_Flaus Electric Flosser.png',  label: 'Flaus Electric Flosser' },  // 8
+  { file: 'Home_10_Saintly Tushy.png',          label: 'Saintly Tushy' },           // 9
+  { file: 'Home_11_Flaus Electric Flosser.png', label: 'Flaus Electric Flosser' },  // 10
+  { file: 'Home_12_Canopy.png',                 label: 'Canopy' },                  // 11
+  { file: 'Home_13_Pax Grinder.png',            label: 'Pax Grinder' },             // 12 — CENTER
+  { file: 'Home_14_Canopy Humidifier.png',      label: 'Canopy Humidifier' },       // 13
+  { file: 'Home_15_Pax Grinder.png',            label: 'Pax Grinder' },             // 14
+  { file: 'Home_16_Saintly Tushy.png',          label: 'Saintly Tushy' },           // 15
+  { file: 'Home_17_Arber Soil Food.png',        label: 'Arber Soil Food' },         // 16
+  { file: 'Home_18_Pax Smoking Kit.png',        label: 'Pax Smoking Kit' },         // 17
+  { file: 'Home_19_Canopy.png',                 label: 'Canopy' },                  // 18
+  { file: 'Home_20_Canopy Water Faucet.png',    label: 'Canopy Water Faucet' },     // 19
+  { file: 'Home_21_Flaus Electric Flosser.png', label: 'Flaus Electric Flosser' },  // 20
+  { file: 'Home_22_Canopy Humidifier.png',      label: 'Canopy Humidifier' },       // 21
+  { file: 'Home_23_Canopy Water Faucet.png',    label: 'Canopy Water Faucet' },     // 22
+  { file: 'Home_24_Made In Utensil Set.png',    label: 'Made In Utensil Set' },     // 23
+  { file: 'Home_25_Canopy.png',                 label: 'Canopy' },                  // 24
 ];
-const BASE         = 'images/Home images/';
-const DEFAULT_ZONE = 4; // Pax Grinder
+const BASE         = 'images/';
+const DEFAULT_ZONE = 12; // Pax Grinder — center of 5×5
 
 // Preload all images so zone transitions are instant
 SECTIONS.forEach(s => { const img = new Image(); img.src = BASE + s.file; });
@@ -186,9 +204,9 @@ function crossfadeTo(idx) {
 
 function zoneAt(cx, cy) {
   const r   = clip.getBoundingClientRect();
-  const col = Math.min(2, Math.floor(((cx - r.left) / r.width)  * 3));
-  const row = Math.min(2, Math.floor(((cy - r.top)  / r.height) * 3));
-  return row * 3 + col;
+  const col = Math.min(4, Math.floor(((cx - r.left) / r.width)  * 5));
+  const row = Math.min(4, Math.floor(((cy - r.top)  / r.height) * 5));
+  return row * 5 + col;
 }
 
 document.addEventListener('mousemove', (e) => {

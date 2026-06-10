@@ -214,7 +214,7 @@ body {
 /* ── View toggle (bottom-left of footer) ── */
 #view-toggle {
   position: absolute;
-  left: 10px; top: 50%; transform: translateY(-50%);
+  left: 20px; top: 50%; transform: translateY(-50%);
   display: flex; gap: 10px; align-items: center;
 }
 .vt-label {
@@ -698,10 +698,32 @@ document.addEventListener('keydown',e=>{
 // to match the 0.55s CSS canvas transition.
 let swipeLocked = false;
 let swipeAccX = 0, swipeAccY = 0;
-const SWIPE_THRESHOLD = 40;
+const SWIPE_THRESHOLD = 80;
 
 clip.addEventListener('wheel', e => {
-  e.preventDefault(); // block scroll — navigate via arrows or minimap only
+  e.preventDefault();
+  if (pvMode) return;
+
+  swipeAccX += e.deltaX;
+  swipeAccY += e.deltaY;
+
+  if (swipeLocked) return;
+
+  const ax = Math.abs(swipeAccX), ay = Math.abs(swipeAccY);
+  if (ax < SWIPE_THRESHOLD && ay < SWIPE_THRESHOLD) return;
+
+  // Pick dominant axis
+  let dir;
+  if (ax >= ay) {
+    dir = swipeAccX > 0 ? 'right' : 'left';
+  } else {
+    dir = swipeAccY > 0 ? 'down' : 'up';
+  }
+
+  swipeAccX = 0; swipeAccY = 0;
+  swipeLocked = true;
+  navTo(dir);
+  setTimeout(() => { swipeLocked = false; swipeAccX = 0; swipeAccY = 0; }, 900);
 }, { passive: false });
 
 // ════════════════════════════════════════════
