@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>About Camera — Naman Nanda</title>
 <style>
+:root { --edge: 20px; }
 @font-face {
   font-family: 'ABCDiatype';
   src: url('./fonts/ABCDiatype-Regular.otf') format('opentype');
@@ -84,7 +85,7 @@ body {
 
 /* ── Mode tabs — top-left ── */
 #mode-tabs {
-  position: absolute; top: 10px; left: 10px;
+  position: absolute; top: 20px; left: 20px;
   z-index: 300; display: inline-flex; align-items: stretch;
   border: 1px solid rgb(209, 209, 209);
   background: rgba(236, 236, 236, 0.60);
@@ -116,7 +117,7 @@ body {
 
 /* ── Controls group — 10px below mode tabs ── */
 #controls-wrap {
-  position: absolute; top: 41px; left: 10px;
+  position: absolute; top: 52px; left: 20px;
   z-index: 300; display: flex; flex-direction: row; gap: 10px;
   align-items: stretch; cursor: auto;
 }
@@ -470,10 +471,10 @@ function layout() {
   const w = clipW();
   const h = clipH();
   const u = w / D.W;
-  card.style.top   = Math.round(D.card.y * u) + 'px';
-  card.style.right = Math.round((D.W - D.card.x - D.card.w) * u) + 'px';
+  card.style.top   = '20px';
+  card.style.right = '20px';
   card.style.width = Math.round(D.card.w * u) + 'px';
-  card.style.maxHeight = (h - Math.round(D.card.y * u) - 20) + 'px';
+  card.style.maxHeight = (h - 20 - 20) + 'px';
   resizeCanvas();
   // No default background — camera shows through transparent canvas
   drawColorBar();

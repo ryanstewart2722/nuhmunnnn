@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>About — Emoji Maker — Naman Nanda</title>
 <style>
+:root { --edge: 20px; }
 @font-face {
   font-family: 'ABCDiatype';
   src: url('./fonts/ABCDiatype-Regular.otf') format('opentype');
@@ -72,7 +73,7 @@ body {
   position: absolute;
   pointer-events: auto;
   cursor: move;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.65s ease, filter 0.65s ease;
   z-index: 1;
   object-fit: fill;
   user-select: none; -webkit-user-select: none;
@@ -81,7 +82,7 @@ body {
 
 /* ── Mode tabs — top-left ── */
 #mode-tabs {
-  position: absolute; top: 10px; left: 10px;
+  position: absolute; top: 20px; left: 20px;
   z-index: 300; display: inline-flex; align-items: stretch;
   border: 1px solid rgb(209, 209, 209);
   background: rgba(236, 236, 236, 0.60);
@@ -107,7 +108,7 @@ body {
 
 /* ── Controls — 10px below mode tabs ── */
 #controls-wrap {
-  position: absolute; top: 41px; left: 10px;
+  position: absolute; top: 52px; left: 20px;
   z-index: 300; display: flex; flex-direction: row; gap: 10px;
   align-items: stretch; cursor: auto;
   user-select: none; -webkit-user-select: none;
@@ -248,9 +249,20 @@ body {
 #panel-header span:first-child { font-size: 12px; color: #1a1a1a; }
 #panel-toggle {
   font-size: 12px; color: #1a1a1a; cursor: pointer;
-  opacity: 0.5; transition: opacity 0.2s;
 }
-#panel-toggle:hover { opacity: 1; }
+
+#emoji-search {
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px; color: #1a1a1a;
+  background: none; border: none; outline: none;
+  width: 80px; padding: 0; flex-shrink: 0;
+  caret-color: #1a1a1a; position: absolute; right: 0;
+  text-align: right; direction: rtl;
+}
+#emoji-search::placeholder { color: rgba(26,26,26,0.4); text-align: right; }
+#panel-cats-sep {
+  color: rgba(26,26,26,0.35); font-size: 12px; flex-shrink: 0; margin: 0 1px;
+  pointer-events: none;
+}
 
 #panel-body {
   display: flex; flex-direction: column; flex: 1; overflow: hidden;
@@ -261,7 +273,7 @@ body {
 /* Category filter row */
 #panel-cats {
   display: flex; align-items: center; justify-content: center;
-  padding: 0; flex-shrink: 0;
+  padding: 0; flex-shrink: 0; position: relative;
   overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap;
 }
 #panel-cats::-webkit-scrollbar { display: none; }
@@ -536,6 +548,8 @@ body {
     </div>
     <div id="panel-body">
       <div id="panel-cats">
+        <input id="emoji-search" type="text" placeholder="Search" autocomplete="off" spellcheck="false">
+        <span id="panel-cats-sep">·</span>
         <span class="panel-cat active" data-cat="All">All</span>
         <span class="panel-cat" data-cat="Smileys">Smileys</span>
         <span class="panel-cat" data-cat="People">People</span>
@@ -611,10 +625,10 @@ function layout() {
   const u  = cw / D.W;
 
   // About card
-  card.style.top       = Math.round(D.card.y * u) + 'px';
-  card.style.right     = Math.round((D.W - D.card.x - D.card.w) * u) + 'px';
+  card.style.top       = '20px';
+  card.style.right     = '20px';
   card.style.width     = Math.round(D.card.w * u) + 'px';
-  card.style.maxHeight = (ch - Math.round(D.card.y * u) - 20) + 'px';
+  card.style.maxHeight = (ch - 20 - 20) + 'px';
 
   // Default comp — scale with viewport, preserve any drag delta
   const compW = Math.round(D.comp.w * u);
@@ -746,9 +760,15 @@ video.addEventListener('click', () => {
 //  EMOJI DATA
 // ════════════════════════════════════════════════════════
 
+const SKIN_TONES = ['\u{1F3FB}','\u{1F3FC}','\u{1F3FD}','\u{1F3FE}','\u{1F3FF}'];
 // Helper: base emoji + all 5 skin tone variants
 function T(e) {
-  return [e, e+'\u{1F3FB}', e+'\u{1F3FC}', e+'\u{1F3FD}', e+'\u{1F3FE}', e+'\u{1F3FF}'];
+  return [e, ...SKIN_TONES.map(t => e+t)];
+}
+// Helper: person + skin tones + ZWJ + modifier (for hair/style ZWJ sequences)
+// e.g. TZwj('🧑','🦰') → ['🧑‍🦰','🧑🏻‍🦰',...]
+function TZwj(person, mod) {
+  return [person+'‍'+mod, ...SKIN_TONES.map(t => person+t+'‍'+mod)];
 }
 // Helper: same as T() but strips VS16 (U+FE0F) before inserting tone modifier
 // needed for sport/activity emojis like 🏋️ where tone goes before the variation selector
@@ -793,18 +813,28 @@ const EMOJI_CATS = {
     '😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡',
     '👹','👺','👻','👽','👾','🤖',
     '😺','😸','😹','😻','😼','😽','🙀','😿','😾',
+    // ── Hands & gestures ──
+    ...T('👋'),...T('🤚'),...TS('🖐️'),...T('✋'),...T('🖖'),
+    ...T('👍'),...T('👎'),...T('👌'),...T('🤌'),...T('🤏'),
+    ...TS('✌️'),...T('🤞'),...T('🫰'),...T('🤟'),...T('🤘'),...T('🤙'),
+    ...T('👈'),...T('👉'),...T('👆'),...T('👇'),...TS('☝️'),...T('🫵'),
+    ...T('✊'),...T('👊'),...T('🤛'),...T('🤜'),
+    '🤝',...T('🙏'),...T('👏'),...T('🙌'),...T('🫶'),...T('👐'),...T('🤲'),
+    ...TS('✍️'),...T('💅'),...T('🤳'),...T('💪'),
+    ...T('🫱'),...T('🫲'),...T('🫳'),...T('🫴'),...T('🫷'),...T('🫸'),
+    ...T('🖕'),
   ],
   People: [
     // ── Hands & gestures — all 6 skin tones ──
-    ...T('👋'),...T('🤚'),...T('🖐️'),...T('✋'),...T('🖖'),
+    ...T('👋'),...T('🤚'),...TS('🖐️'),...T('✋'),...T('🖖'),
     ...T('🫱'),...T('🫲'),...T('🫳'),...T('🫴'),...T('🫷'),...T('🫸'),
     ...T('👌'),...T('🤌'),...T('🤏'),
-    ...T('✌️'),...T('🤞'),...T('🫰'),...T('🤟'),...T('🤘'),...T('🤙'),
-    ...T('👈'),...T('👉'),...T('👆'),...T('🖕'),...T('👇'),...T('☝️'),...T('🫵'),
+    ...TS('✌️'),...T('🤞'),...T('🫰'),...T('🤟'),...T('🤘'),...T('🤙'),
+    ...T('👈'),...T('👉'),...T('👆'),...T('🖕'),...T('👇'),...TS('☝️'),...T('🫵'),
     ...T('👍'),...T('👎'),
     ...T('✊'),...T('👊'),...T('🤛'),...T('🤜'),
     '🤝',...T('🙏'),...T('👏'),...T('🙌'),...T('🫶'),...T('👐'),...T('🤲'),
-    ...T('✍️'),...T('💅'),...T('🤳'),
+    ...TS('✍️'),...T('💅'),...T('🤳'),
     // ── Body parts ──
     ...T('💪'),'🦾','🦿',
     ...T('🦵'),...T('🦶'),
@@ -816,20 +846,17 @@ const EMOJI_CATS = {
     ...T('👨'),...T('🧔'),
     '🧔‍♂️','🧔‍♀️',
     ...T('👩'),
-    '👱‍♂️\u{1F3FB}','👱‍♂️\u{1F3FC}','👱‍♂️\u{1F3FD}','👱‍♂️\u{1F3FE}','👱‍♂️\u{1F3FF}',
-    '👱‍♀️\u{1F3FB}','👱‍♀️\u{1F3FC}','👱‍♀️\u{1F3FD}','👱‍♀️\u{1F3FE}','👱‍♀️\u{1F3FF}',
+    ...SKIN_TONES.map(t => '👱'+t+'‍♂️'),
+    ...SKIN_TONES.map(t => '👱'+t+'‍♀️'),
     ...T('🧓'),...T('👴'),...T('👵'),
     // ── Hair styles ──
-    '🧑‍🦰','🧑‍🦰\u{1F3FB}','🧑‍🦰\u{1F3FC}','🧑‍🦰\u{1F3FD}','🧑‍🦰\u{1F3FE}','🧑‍🦰\u{1F3FF}',
-    '🧑‍🦱','🧑‍🦱\u{1F3FB}','🧑‍🦱\u{1F3FC}','🧑‍🦱\u{1F3FD}','🧑‍🦱\u{1F3FE}','🧑‍🦱\u{1F3FF}',
-    '🧑‍🦳','🧑‍🦳\u{1F3FB}','🧑‍🦳\u{1F3FC}','🧑‍🦳\u{1F3FD}','🧑‍🦳\u{1F3FE}','🧑‍🦳\u{1F3FF}',
-    '🧑‍🦲','🧑‍🦲\u{1F3FB}','🧑‍🦲\u{1F3FC}','🧑‍🦲\u{1F3FD}','🧑‍🦲\u{1F3FE}','🧑‍🦲\u{1F3FF}',
+    ...TZwj('🧑','🦰'),...TZwj('🧑','🦱'),...TZwj('🧑','🦳'),...TZwj('🧑','🦲'),
     // ── Gestures with skin tones ──
     ...TG('🙍'),...TG('🙎'),...TG('🙅'),...TG('🙆'),...TG('💁'),
     ...TG('🙋'),...TG('🧏'),...TG('🙇'),...TG('🤦'),...TG('🤷'),
     // ── Roles / jobs ──
     ...TG('👮'),...TG('🕵️'),...TG('💂'),'🥷',
-    ...TG('👷'),'🫅','🤴','👸',
+    ...TG('👷'),...TG('🫅'),...T('🤴'),...T('👸'),
     ...TG('👳'),...TG('👲'),
     ...T('🧕'),...TG('🤵'),...TG('👰'),
     ...T('🤰'),...T('🫃'),...T('🫄'),...T('🤱'),
@@ -981,6 +1008,8 @@ const EMOJI_CATS = {
     '🔑','🗝️','🔨','🪓','⛏️','⚒️','🛠️','🪚','🔧','🪛','🔩','⚙️','🗜️',
     '🧲','🪜','🪝','⛓️','⛓️‍💥','🔗','⚖️','🦯','🔒','🔓','🔏','🔐',
     '🧯','🛒','🪤','🧸','🪆','🏺','🗿','🪄','🧿','🪅','🪩',
+    // ── Elements ──
+    '🔥','💧','❄️','⚡','🌊','💨','🌫️','💥','✨','🌟','⭐','🌈',
     // ── Tech ──
     '📱','📲','☎️','📞','📟','📠','🔋','🪫','🔌','💻','🖥️','🖨️',
     '⌨️','🖱️','🖲️','💽','💾','💿','📀','🧮',
@@ -1080,13 +1109,278 @@ let currentCat = 'All';
 
 function buildPicker(cat) {
   currentCat = cat;
-  emojiGrid.innerHTML = '';
   const list = cat === 'All'
     ? Object.values(EMOJI_CATS).flat()
     : (EMOJI_CATS[cat] || []);
+  renderGrid(list);
+}
+
+document.querySelectorAll('.panel-cat').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.panel-cat').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('emoji-search').value = '';
+    buildPicker(el.dataset.cat);
+  });
+});
+
+// ── Emoji keyword names (Apple-style) ──
+const EMOJI_NAMES = {
+  // Smileys
+  '😀':['grinning','happy','smile'],'😃':['big eyes','happy','grinning'],'😄':['smile','happy','laugh'],
+  '😁':['grin','teeth','happy'],'😆':['laughing','happy','lol'],'😅':['sweat','laugh','nervous'],
+  '🤣':['rolling','laughing','lol','rofl'],'😂':['joy','crying laughing','tears','funny','lol'],
+  '🙂':['slightly smiling','smile'],'🙃':['upside down','silly'],'🫠':['melting','nervous'],
+  '😉':['wink','winking'],'😊':['blush','smile','happy'],'😇':['angel','halo','innocent'],
+  '🥰':['hearts','love','adore','smiling'],'😍':['heart eyes','love','adore'],
+  '🤩':['star struck','excited','wow','star eyes'],'😘':['kiss','blowing kiss','love'],
+  '😗':['kissing','kiss'],'☺️':['smile','blush'],'😚':['kiss','closed eyes'],
+  '😙':['kiss','smile'],'🥲':['smile','tear','grateful'],'😋':['yum','delicious','tongue'],
+  '😛':['tongue','silly'],'😜':['wink','tongue','silly'],'🤪':['crazy','zany','silly'],
+  '😝':['tongue','taste'],'🤑':['money','greedy','rich'],'🤗':['hug','hugging'],
+  '🤭':['oops','quiet','shh','giggle'],'🫢':['gasp','shocked','quiet'],
+  '🤫':['shh','quiet','secret','hushing'],'🤔':['thinking','hmm','wondering'],
+  '🤐':['zipper','quiet','secret','sealed lips'],'🤨':['raised eyebrow','suspicious'],
+  '😐':['neutral','expressionless'],'😑':['expressionless','blank'],
+  '😶':['no mouth','silent'],'😏':['smirk','sly'],'😒':['unamused','annoyed'],
+  '🙄':['eye roll','whatever','annoyed'],'😬':['grimace','awkward','nervous'],
+  '😔':['pensive','sad','thoughtful'],'😪':['sleepy','tired'],'🤤':['drooling','hungry'],
+  '😴':['sleeping','zzz','tired','snore'],'😷':['mask','sick','ill','covid'],
+  '🤒':['sick','thermometer','ill'],'🤕':['bandage','hurt','injured'],
+  '🤢':['sick','nauseous','green'],'🤮':['vomit','sick','throwing up'],
+  '🤧':['sneezing','sick','cold'],'🥵':['hot','sweating','overheated'],
+  '🥶':['cold','freezing','blue'],'🥴':['woozy','drunk','dizzy'],
+  '😵':['dizzy','dead','x eyes'],'🤯':['mind blown','exploding head'],
+  '🤠':['cowboy','hat','western'],'🥳':['party','celebrate','birthday'],
+  '😎':['cool','sunglasses','awesome'],'🤓':['nerd','glasses','smart'],
+  '🧐':['monocle','fancy','suspicious'],'😕':['confused','unsure'],
+  '😟':['worried','concerned'],'🙁':['frowning','sad'],
+  '☹️':['frowning','sad'],'😮':['surprised','open mouth','wow'],
+  '😯':['hushed','surprised'],'😲':['astonished','shocked','wow'],
+  '😳':['flushed','embarrassed','shocked'],'🥺':['pleading','puppy eyes','please'],
+  '🥹':['holding back tears','emotional'],'😦':['frowning','shocked'],
+  '😧':['anguished','worried'],'😨':['fearful','scared','scared'],
+  '😰':['anxious','sweat','nervous'],'😥':['sad','disappointed','sweat'],
+  '😢':['cry','crying','sad','tear'],'😭':['cry','sobbing','sad','tears'],
+  '😱':['scream','scared','horror','shocked'],'😖':['confounded','frustrated'],
+  '😣':['persevere','struggling'],'😞':['disappointed','sad'],
+  '😓':['downcast','sweat'],'😩':['weary','tired'],'😫':['tired','exhausted'],
+  '🥱':['yawn','tired','bored'],'😤':['steam','frustrated','angry'],
+  '😡':['angry','pouting','rage','mad'],'😠':['angry','mad'],
+  '🤬':['cursing','swearing','angry','mad'],'😈':['devil','evil','smiling devil'],
+  '👿':['angry devil','evil'],'💀':['skull','dead','death'],
+  '☠️':['skull','crossbones','poison','death'],'💩':['poop','pile of poo'],
+  '🤡':['clown','circus'],'👹':['ogre','monster','japanese'],'👺':['goblin','red demon'],
+  '👻':['ghost','spooky','halloween'],'👽':['alien','ufo','space'],
+  '👾':['space invader','alien','game'],'🤖':['robot','bot','machine'],
+  // Cat faces
+  '😺':['cat','happy','smiling cat'],'😸':['cat','grin','happy cat'],
+  '😹':['cat','tears','joy cat'],'😻':['cat','heart eyes','love cat'],
+  '😼':['cat','smirk','wry cat'],'😽':['cat','kiss'],'🙀':['cat','weary','shocked cat'],
+  '😿':['cat','crying','sad cat'],'😾':['cat','pouting','angry cat'],
+  // People & hands
+  '👋':['wave','hi','hello','goodbye','waving','hand','hands'],'🤚':['raised hand','stop','hand','hands','palm'],
+  '🖐️':['hand','hands','five','stop','palm','fingers'],'✋':['raised hand','high five','stop','hand','hands'],
+  '🖖':['vulcan','spock','live long','hand'],'👌':['ok','perfect','okay','hand','fingers'],
+  '🤌':['pinched fingers','italian','gesture','hand'],'🤏':['pinching','small','hand','fingers'],
+  '✌️':['peace','victory','two','hand','fingers'],'🤞':['crossed fingers','luck','hope','hand','fingers'],
+  '🫰':['snap','fingers','hand'],'🤟':['love you','rock','hang loose','hand'],
+  '🤘':['rock','metal','horns','hand'],'🤙':['call me','hang loose','shaka','hand','phone'],
+  '👈':['left','pointing left','hand','finger'],'👉':['right','pointing right','hand','finger'],
+  '👆':['up','pointing up','hand','finger'],'🖕':['middle finger','rude','hand'],
+  '👇':['down','pointing down','hand','finger'],'☝️':['pointing up','one','hand','finger'],
+  '🫵':['pointing at you','you','hand','finger'],'👍':['thumbs up','like','good','yes','approve','hand'],
+  '👎':['thumbs down','dislike','bad','no','hand'],'✊':['fist','raised fist','power','hand'],
+  '👊':['punch','fist','hit','hand'],'🤛':['left fist','fist bump','hand'],
+  '🤜':['right fist','fist bump','hand'],'🤝':['handshake','deal','agreement','hands'],
+  '🙏':['pray','please','thanks','hands','namaste','folded hands','grateful'],
+  '👏':['clap','applause','bravo','hands'],'🙌':['celebrate','hands','hooray','raised hands'],
+  '🫶':['heart hands','love','hands'],'👐':['open hands','hands'],'🤲':['palms up','cupped hands','hands'],
+  '✍️':['writing','pen','hand','write'],'💅':['nails','manicure','sassy','fingers'],
+  '🤳':['selfie','phone','camera'],'💪':['muscle','strong','flex','arm','arms','bicep','body','limb'],
+  '🦾':['mechanical arm','prosthetic','arm','body'],'🦿':['mechanical leg','prosthetic','leg','body'],
+  '🦵':['leg','legs','kick','thigh','limb','body'],'🦶':['foot','feet','toes','sole','body'],'👂':['ear','ears','listen','hearing'],
+  '🦻':['ear with aid','hearing','ears'],'👃':['nose','smell','nostrils'],
+  '🫀':['heart','anatomical heart','organ','body'],'🫁':['lungs','breath','organ','breathing','body'],
+  '🧠':['brain','mind','smart','head','think'],'🦷':['tooth','teeth','dentist','dental'],'🦴':['bone','bones','skeleton'],
+  '👀':['eyes','look','see','watching','stare'],'👁️':['eye','eyes','see','look'],
+  '👅':['tongue','taste','lick','mouth'],'👄':['lips','kiss','mouth','lipstick'],'🫦':['biting lip','lip','bite'],
+  '👶':['baby','infant'],'🧒':['child','kid'],'👦':['boy'],
+  '👧':['girl'],'🧑':['person','adult'],'👱':['blond','blonde'],
+  '👨':['man'],'🧔':['beard','man'],'👩':['woman'],
+  '🧓':['older person','elder'],'👴':['old man','grandfather'],
+  '👵':['old woman','grandmother'],'👮':['police','cop','officer'],
+  '🕵️':['detective','spy','investigation'],'💂':['guard','soldier'],
+  '🥷':['ninja'],'👷':['construction','worker','hardhat'],
+  '🫅':['person crown','royalty'],'🤴':['prince','crown','royalty'],
+  '👸':['princess','crown','royalty'],'👳':['turban','man'],
+  '👲':['cap','man','chinese'],'🧕':['headscarf','hijab','woman'],
+  '🤵':['suit','tuxedo','formal'],'👰':['wedding','bride','veil'],
+  '🤰':['pregnant','baby','expecting'],'🤱':['breastfeeding','nursing','baby'],
+  '👼':['angel','baby','wings'],'🎅':['santa','christmas','holiday'],
+  '🤶':['mrs claus','christmas','holiday'],'🦸':['superhero','hero','power'],
+  '🦹':['supervillain','villain'],'🧙':['wizard','mage','witch','magic'],
+  '🧚':['fairy','magic','wings'],'🧛':['vampire','dracula'],
+  '🧜':['mermaid','merman','sea'],'🧝':['elf','fantasy'],
+  '🧞':['genie','magic','lamp'],'🧟':['zombie','undead'],
+  '🧌':['troll'],'💆':['massage','relax','spa'],'💇':['haircut','salon'],
+  '🚶':['walking','person'],'🧍':['standing','person'],
+  '🧎':['kneeling','bow'],'🏃':['running','sprint','exercise'],
+  '💃':['dance','dancer','woman'],'🕺':['dance','dancer','man'],
+  '🧖':['sauna','steam','spa'],'🧗':['climbing','rock'],
+  '👯':['bunny ears','dancing','party'],
+  // Animals
+  '🐶':['dog','puppy','pet'],'🐱':['cat','kitten','pet'],'🐭':['mouse','rat'],
+  '🐹':['hamster','pet'],'🐰':['rabbit','bunny','easter'],'🦊':['fox'],
+  '🐻':['bear'],'🐼':['panda'],'🐻‍❄️':['polar bear','white bear','arctic'],
+  '🐨':['koala','australia'],'🐯':['tiger'],'🦁':['lion'],
+  '🐮':['cow','moo'],'🐷':['pig','oink'],'🐸':['frog'],
+  '🐙':['octopus','tentacles','sea'],'🦋':['butterfly','wings'],
+  '🐝':['bee','honey','buzz'],'🐛':['bug','caterpillar','worm'],
+  '🦄':['unicorn','magical'],'🐔':['chicken','hen'],'🐧':['penguin','arctic'],
+  '🐦':['bird'],'🦆':['duck'],'🦅':['eagle','bird'],
+  '🦉':['owl','wise'],'🐺':['wolf','howl'],'🦝':['raccoon'],
+  '🐊':['crocodile','alligator'],'🐢':['turtle','slow'],
+  '🐍':['snake','slither'],'🦎':['lizard','reptile'],
+  '🐬':['dolphin'],'🐳':['whale','water'],'🦈':['shark'],
+  '🐉':['dragon'],'🌵':['cactus','desert'],'🌲':['tree','pine','forest'],
+  '🌹':['rose','flower','love'],'🌸':['cherry blossom','sakura','spring'],
+  '🌻':['sunflower','sun'],'🍀':['clover','lucky'],
+  '🍁':['maple leaf','fall','autumn','canada'],
+  // Food
+  '🍎':['apple','red','fruit'],'🍌':['banana','yellow','fruit'],
+  '🍉':['watermelon','summer','fruit'],'🍇':['grapes','fruit'],
+  '🍓':['strawberry','fruit','red'],'🫐':['blueberry'],
+  '🍑':['peach','fruit'],'🥝':['kiwi','fruit'],
+  '🍅':['tomato','red','vegetable'],'🥑':['avocado','guac'],
+  '🍕':['pizza','slice','food'],'🍔':['burger','hamburger','food'],
+  '🍟':['fries','french fries','fast food'],'🌭':['hotdog','sausage'],
+  '🌮':['taco','mexican','food'],'🌯':['burrito','wrap','food'],
+  '🍜':['ramen','noodles'],'🍣':['sushi','japanese','fish'],
+  '🍩':['donut','dessert','sweet'],'🍪':['cookie','dessert','sweet'],
+  '🎂':['cake','birthday','celebration'],'🍰':['cake','slice','dessert'],
+  '🍫':['chocolate','candy','sweet'],'🍬':['candy','sweet'],
+  '🍭':['lollipop','candy','sweet'],'🍦':['ice cream','soft serve'],
+  '🍧':['shaved ice'],'🍨':['ice cream'],
+  '☕':['coffee','hot','cafe','espresso'],'🍵':['tea','hot','drink'],
+  '🧃':['juice','drink'],'🥤':['cup','soda','drink'],
+  '🍺':['beer','drink','cheers'],'🍻':['beers','cheers','drink'],
+  '🥂':['champagne','cheers','celebrate'],'🍷':['wine','drink'],
+  '🍸':['cocktail','martini','drink'],'🍹':['tropical drink','cocktail'],
+  '🧁':['cupcake','dessert','sweet'],'🥐':['croissant','bread','pastry'],
+  '🍞':['bread','loaf'],'🥚':['egg'],'🧀':['cheese'],
+  // Travel
+  '🚗':['car','drive','red car'],'✈️':['airplane','plane','fly','flight','travel'],
+  '🚀':['rocket','space','launch'],'🛸':['ufo','alien','flying saucer'],
+  '🚢':['ship','cruise','boat'],'🚲':['bike','bicycle','cycle'],
+  '🏠':['house','home'],'🏖️':['beach','sand','vacation'],
+  '🌍':['earth','world','globe','africa','europe'],
+  '🌎':['earth','world','globe','americas'],
+  '🌏':['earth','world','globe','asia'],
+  '🏔️':['mountain','snow'],'🌋':['volcano'],
+  '🗺️':['map','world'],'🏕️':['camping','tent','outdoors'],
+  // Activities
+  '⚽':['soccer','football','sport','ball'],'🏀':['basketball','sport','ball'],
+  '🏈':['football','american football','sport'],'⚾':['baseball','sport','ball'],
+  '🎾':['tennis','sport'],'🏐':['volleyball','sport'],
+  '🏆':['trophy','win','champion','award'],'🥇':['gold','medal','first','winner'],
+  '🥈':['silver','medal','second'],'🥉':['bronze','medal','third'],
+  '🎮':['game','controller','video game','gaming'],
+  '🎲':['dice','game','random'],'🎯':['target','bullseye','dart'],
+  '🎨':['art','paint','palette','creative'],'🎭':['theater','performance'],
+  '🎪':['circus','tent','carnival'],'🎤':['microphone','sing','karaoke'],
+  '🎧':['headphones','music','listen'],'🎸':['guitar','music'],
+  '🥁':['drum','music','beat'],'🎹':['piano','music','keys'],
+  '🎷':['saxophone','music','jazz'],'🎺':['trumpet','music'],
+  '🎻':['violin','music'],'🎬':['clapper','movie','film'],
+  '🎉':['party','celebration','confetti','tada'],'🎊':['confetti','party','celebrate'],
+  '🎁':['gift','present','birthday'],'🎈':['balloon','party','birthday'],
+  '🎃':['pumpkin','halloween','spooky'],
+  '🎄':['christmas','tree','holiday'],
+  // Objects
+  '📱':['phone','mobile','cell'],'💻':['laptop','computer','mac'],
+  '⌨️':['keyboard','type'],'🖥️':['desktop','computer','screen','monitor'],
+  '📷':['camera','photo','picture'],'📸':['camera','selfie','flash'],
+  '🎥':['video','movie','camera'],'📺':['tv','television'],
+  '🔑':['key','lock'],'🔒':['lock','secure','locked'],
+  '🔓':['unlock','open'],'💡':['light','bulb','idea'],
+  '🔦':['flashlight','torch'],'📚':['books','library','study'],
+  '📖':['book','read'],'✏️':['pencil','write','draw'],
+  '🖊️':['pen','write'],'📝':['memo','note','write'],
+  '💊':['pill','medicine'],'💉':['syringe','injection','vaccine'],
+  '🩺':['stethoscope','doctor'],'🔬':['microscope','science'],
+  '🔭':['telescope','space','stars'],'🧪':['test tube','science','experiment'],
+  '💰':['money','cash','bag','rich'],'💵':['dollar','money','cash'],
+  '🪙':['coin','money'],'💳':['credit card','payment'],
+  '👑':['crown','king','queen','royalty'],'💍':['ring','diamond','wedding','engagement'],
+  '💎':['diamond','gem','precious'],'🪄':['magic wand','magic','spell'],
+  '🔥':['fire','hot','flame','lit'],'💧':['water','drop'],'❄️':['snow','cold','ice','winter'],
+  '⚡':['lightning','electric','bolt','thunder'],'🌈':['rainbow','colorful'],
+  '☀️':['sun','sunny','hot','day'],'🌙':['moon','night','crescent'],
+  '⭐':['star'],'🌟':['star','glowing','shining','sparkle'],
+  '✨':['sparkles','stars','magic','glitter'],'💥':['explosion','boom','impact'],
+  // Symbols
+  '❤️':['heart','love','red heart'],'🩷':['heart','pink','love'],
+  '🧡':['heart','orange','love'],'💛':['heart','yellow','love'],
+  '💚':['heart','green','love'],'💙':['heart','blue','love'],
+  '💜':['heart','purple','love'],'🖤':['heart','black','love'],
+  '🤍':['heart','white','love'],'🤎':['heart','brown','love'],
+  '💔':['broken heart','heartbreak','sad'],'❤️‍🔥':['heart fire','passion'],
+  '💕':['hearts','love'],'💞':['revolving hearts','love'],
+  '💓':['beating heart','love'],'💗':['growing heart','love'],
+  '💖':['sparkling heart','love'],'💘':['heart arrow','love','cupid'],
+  '💝':['heart ribbon','love'],'💟':['heart decoration'],
+  '💯':['100','perfect','score','hundred'],'‼️':['exclamation','double bang'],
+  '❓':['question','what','huh'],'❗':['exclamation','important'],
+  '✅':['check','done','correct','yes'],'❌':['x','no','wrong','cancel'],
+  '⭕':['circle','yes'],'🔴':['red circle'],'🟡':['yellow circle'],
+  '🟢':['green circle'],'🔵':['blue circle'],'⚫':['black circle'],
+  '⚪':['white circle'],'🔰':['beginner','japanese'],
+  '♻️':['recycle','green','environment'],'🚫':['no','prohibited','banned'],
+  '⚠️':['warning','caution','alert'],'🔞':['no minors','adult','18'],
+  // Flags
+  '🏁':['checkered flag','race','finish'],'🚩':['red flag','warning'],
+  '🏳️‍🌈':['rainbow flag','pride','lgbtq'],'🏴‍☠️':['pirate flag','skull','crossbones'],
+  '🇺🇸':['usa','american','united states'],'🇬🇧':['uk','british','england'],
+  '🇨🇦':['canada','canadian'],'🇦🇺':['australia'],'🇯🇵':['japan','japanese'],
+  '🇫🇷':['france','french'],'🇩🇪':['germany','german'],'🇮🇳':['india','indian'],
+  '🇧🇷':['brazil','brazilian'],'🇨🇳':['china','chinese'],
+  '🇮🇹':['italy','italian'],'🇲🇽':['mexico','mexican'],'🇪🇸':['spain','spanish'],
+};
+
+// Auto-expand skin tone variants for all named emojis
+Object.entries(EMOJI_NAMES).forEach(([base, keywords]) => {
+  SKIN_TONES.forEach(t => {
+    if (!EMOJI_NAMES[base + t]) EMOJI_NAMES[base + t] = keywords;
+  });
+});
+
+// ── CDN emoji search index (emojibase CLDR data) ──
+let CDN_SEARCH = null;
+fetch('https://cdn.jsdelivr.net/npm/unicode-emoji-json@0.4.0/data-by-emoji.json')
+  .then(r => r.json())
+  .then(data => {
+    CDN_SEARCH = new Map();
+    Object.entries(data).forEach(([emoji, info]) => {
+      const name = (info.name || '').toLowerCase();
+      const slug = (info.slug || '').replace(/_/g, ' ');
+      const words = name.split(/[\s:,&]+/).filter(Boolean);
+      CDN_SEARCH.set(emoji, [name, slug, ...words]);
+      // auto-expand skin tone variants
+      if (info.skin_tone_support) {
+        SKIN_TONES.forEach(t => {
+          if (!CDN_SEARCH.has(emoji + t)) CDN_SEARCH.set(emoji + t, [name, slug, ...words]);
+        });
+      }
+    });
+  })
+  .catch(() => {});
+
+function renderGrid(list) {
+  emojiGrid.innerHTML = '';
   list.forEach(ch => {
     const span = document.createElement('span');
-    span.className   = 'emoji-item';
+    span.className = 'emoji-item';
     span.textContent = ch;
     span.addEventListener('mousedown', e => startPickerDrag(e, ch));
     span.addEventListener('click', () => {
@@ -1099,13 +1393,34 @@ function buildPicker(cat) {
   emojiGrid.scrollTop = 0;
 }
 
-document.querySelectorAll('.panel-cat').forEach(el => {
-  el.addEventListener('click', () => {
-    document.querySelectorAll('.panel-cat').forEach(c => c.classList.remove('active'));
-    el.classList.add('active');
-    buildPicker(el.dataset.cat);
+const emojiSearchInput = document.getElementById('emoji-search');
+emojiSearchInput.addEventListener('input', () => {
+  const q = emojiSearchInput.value.trim().toLowerCase();
+  if (!q) { buildPicker(currentCat); return; }
+  const all = Object.values(EMOJI_CATS).flat();
+  const seen = new Set();
+  const results = [];
+  all.forEach(emoji => {
+    if (seen.has(emoji)) return;
+    const cdnKw = (CDN_SEARCH && CDN_SEARCH.get(emoji)) || [];
+    const localKw = EMOJI_NAMES[emoji] || [];
+    const kw = cdnKw.length ? [...cdnKw, ...localKw] : localKw;
+    if (kw.some(k => k.toLowerCase().includes(q))) {
+      seen.add(emoji); results.push(emoji);
+    }
   });
+  renderGrid(results);
 });
+emojiSearchInput.addEventListener('blur', () => {
+  if (!emojiSearchInput.value.trim()) buildPicker(currentCat);
+});
+emojiSearchInput.addEventListener('keydown', e => {
+  e.stopPropagation();
+  if (e.key === 'Enter') { emojiSearchInput.value = ''; emojiSearchInput.blur(); buildPicker(currentCat); }
+  if (e.key === 'Escape') { emojiSearchInput.value = ''; emojiSearchInput.blur(); buildPicker(currentCat); }
+});
+emojiSearchInput.addEventListener('mousedown', e => e.stopPropagation());
+
 buildPicker('All');
 
 // ════════════════════════════════════════════════════════
@@ -1159,9 +1474,18 @@ function placeEmoji(char, x, y, opts = {}) {
   placedEmojis.push(data);
   updateTransform(data);
 
+  // Blur away default comp on first emoji placed
+  if (defaultCompVisible && placedEmojis.length === 1 && !opts.silent) {
+    defaultComp.style.filter = 'blur(18px)';
+    defaultComp.style.opacity = '0';
+    setTimeout(() => {
+      defaultComp.style.display = 'none';
+      defaultCompVisible = false;
+    }, 700);
+  }
+
   if (!opts.silent) {
     selectEmoji(data);
-    // Default comp stays visible — emojis layer on top of it
   }
 
   el.addEventListener('mousedown', e => {
@@ -1440,7 +1764,7 @@ document.addEventListener('keydown', e => {
 function showDefaultComp() {
   defaultCompVisible = true;
   defaultComp.style.display = 'block';
-  requestAnimationFrame(() => { defaultComp.style.opacity = '1'; });
+  requestAnimationFrame(() => { defaultComp.style.opacity = '1'; defaultComp.style.filter = ''; });
 }
 function hideDefaultComp() {
   defaultCompVisible = false;

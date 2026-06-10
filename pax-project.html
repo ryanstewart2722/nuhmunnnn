@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pax Products — Naman Nanda</title>
 <style>
+:root { --edge: 20px; }
 @font-face {
   font-family: 'ABCDiatype';
   src: url('./fonts/ABCDiatype-Regular.otf') format('opentype');
@@ -638,10 +639,10 @@ function layout() {
   // Glass card
   const card    = document.getElementById('glass-card');
   const cardW   = Math.round(D.card.w * u);
-  const cardTop = Math.round(D.card.y * u);
-  openMaxH = clip.offsetHeight - cardTop - 8;
-  card.style.top   = cardTop + 'px';
-  card.style.right = px(D.W - D.card.x - D.card.w);
+  
+  openMaxH = clip.offsetHeight - 20 - 20;
+  card.style.top   = '20px';
+  card.style.right = '20px';
   card.style.width = cardW + 'px';
   if (isOpen) {
     card.style.maxHeight = openMaxH + 'px';
