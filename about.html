@@ -62,19 +62,43 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
   user-select: none; -webkit-user-select: none;
 }
 
-/* ── Load-in overlay — pastel that sits on top and fades out ── */
+/* ── Load-in overlay ── */
 #load-overlay {
   position: absolute; inset: 0; z-index: 400;
   pointer-events: none;
   transition: opacity 0.65s ease;
 }
 
-/* ── Drawing canvas — z-index 1 so it's always behind the glass card ── */
-#draw-canvas { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
-/* Crosshair everywhere in clip except over card/controls */
+/* ── Background canvas (images) — behind draw canvas ── */
+#bg-canvas { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+
+/* ── Camera video — behind everything ── */
+#bg-video {
+  position: absolute; inset: 0; z-index: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  transform: scaleX(-1);
+  opacity: 0;
+  filter: blur(28px);
+  transition: opacity 0.5s ease, filter 0.7s ease;
+}
+
+/* ── Camera denied message ── */
+#cam-denied {
+  display: none; position: absolute; inset: 0; z-index: 2;
+  align-items: center; justify-content: center;
+  font-family: 'ABCDiatype', Arial, sans-serif;
+  font-size: 12px; color: #fff; mix-blend-mode: exclusion;
+  pointer-events: none;
+}
+#cam-denied.visible { display: flex; }
+
+/* ── Drawing canvas — transparent strokes layer ── */
+#draw-canvas { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
 #clip { cursor: none; }
 
-/* ── Emoji mode — hide canvas-only elements ── */
+/* ── Emoji mode ── */
 #clip.emoji-mode { cursor: default; }
 #clip.emoji-mode #draw-canvas { opacity: 0; pointer-events: none; }
 #clip.emoji-mode #brush-shortcut { display: none; }
@@ -114,12 +138,12 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
 
 /* ── Controls group — 10px below mode tabs ── */
 #controls-wrap {
-  position: absolute; top: 52px; left: 20px;
+  position: absolute; top: 57px; left: 20px;
   z-index: 300; display: flex; flex-direction: row; gap: 10px;
   align-items: stretch; cursor: auto;
 }
 
-/* Shared glass frame — matches mode tabs */
+/* Shared glass frame */
 .glass-frame {
   display: inline-flex; align-items: stretch;
   border: 1px solid rgb(209, 209, 209);
@@ -129,36 +153,43 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
   user-select: none; -webkit-user-select: none;
 }
 
-/* Brush size shortcut + eyedropper shortcut — label text grey */
+/* Buttons inside glass frames */
+.glass-frame button {
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px; color: #1a1a1a;
+  background: none; cursor: pointer; padding: 4px 9px;
+  transition: opacity 0.2s, color 0.2s;
+  white-space: nowrap;
+  opacity: 0.45;
+}
+.glass-frame button + button { border-left: 1px solid rgb(209,209,209); }
+.glass-frame button:hover { opacity: 1; color: #000; }
+
+/* Brush size shortcut + eyedropper shortcut */
 #brush-shortcut, #eyedropper-shortcut {
   display: inline-flex; align-items: center; gap: 10px;
   padding: 4px 9px;
   font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px; color: rgba(0,0,0,0.45);
 }
 #eyedropper-shortcut.active { color: rgba(0,0,0,0.85); }
+
+/* Background toggle shortcut */
+#bg-shortcut {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 4px 9px;
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px; color: rgba(0,0,0,0.45);
+  cursor: pointer;
+}
+#bg-shortcut:hover { color: rgba(0,0,0,0.85); }
+
 .key-cap {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 25px; height: 13px; flex-shrink: 0;
+  min-width: 22px; height: 14px; flex-shrink: 0;
+  font-size: 9px;
   background: rgba(236, 236, 236, 0.60);
   border: 1px solid rgb(209, 209, 209);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
-
-/* Capture / Clear / Undo / Blank */
-#draw-controls {
-  display: inline-flex; align-items: stretch; cursor: auto;
-}
-#draw-controls button {
-  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px; color: #1a1a1a;
-  background: none; cursor: pointer; padding: 4px 9px;
-  transition: opacity 0.2s, color 0.2s;
-  white-space: nowrap;
-}
-#draw-controls button + button { border-left: 1px solid rgb(209,209,209); }
-#draw-controls button:hover { opacity: 1; color: #000; }
-#capture-btn, #clear-btn, #undo-btn, #blank-btn, #restore-btn { opacity: 0.45; }
-#capture-btn:hover, #clear-btn:hover, #undo-btn:hover, #blank-btn:hover, #restore-btn:hover { opacity: 1; color: #000; }
 
 /* ── Color bar — bottom center, glass module ── */
 #color-bar-wrap {
@@ -173,7 +204,7 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
 }
 #current-color-swatch {
   width: 11px; height: 11px; flex-shrink: 0;
-  background: rgb(0,0,0); /* default black, updated by JS */
+  background: rgb(0,0,0);
   border: 0.5px solid rgba(0,0,0,0.45);
 }
 #bar-container { position: relative; flex-shrink: 0; }
@@ -211,14 +242,13 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
   overflow: hidden;
   z-index: 200;
   cursor: auto;
-  transform: translateZ(0); /* force compositing layer — clips video element */
+  transform: translateZ(0);
 }
 
 #card-scroll { overflow-y: auto; scrollbar-width: none; max-height: inherit; }
 #card-scroll::-webkit-scrollbar { display: none; }
 #card-inner { padding: 20px; }
 
-/* ── Panel header — "About Me" collapses entire panel ── */
 #sec-bio-head {
   display: flex; align-items: center; justify-content: space-between;
   cursor: pointer; user-select: none;
@@ -228,7 +258,6 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
 }
 #sec-bio-title { font-size: 12px; color: #1a1a1a; }
 
-/* card-body: everything below the header, collapses as one unit */
 #card-body {
   overflow: hidden;
   max-height: 2000px; opacity: 1;
@@ -236,7 +265,6 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
 }
 #card-body.collapsed { max-height: 0; opacity: 0; }
 
-/* Bio paragraphs — 32% indent matching project page */
 #sec-bio-body { padding-top: 8px; padding-bottom: 0; }
 .a-bio-p {
   font-size: 12px; color: #1a1a1a;
@@ -245,7 +273,6 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
 }
 .a-bio-p:last-child { margin-bottom: 0; }
 
-/* ── Collapsible sections ── */
 .a-section { margin-top: 15px; margin-bottom: 0; }
 
 .a-sec-head {
@@ -270,7 +297,6 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
 }
 .a-sec-body.collapsed { max-height: 0; opacity: 0; }
 
-/* ── Two-column table ── */
 .a-table { display: flex; gap: 6px; }
 .a-col-a { flex: 1 1 auto; min-width: 0; }
 .a-col-b { flex: 0 0 auto; }
@@ -278,20 +304,8 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
 .a-table .a-col-b > div { font-size: 12px; color: #1a1a1a; line-height: 1.9; white-space: nowrap; }
 .a-col-a > div { overflow: hidden; text-overflow: ellipsis; }
 
-/* ── Contact ── */
 .a-email { font-size: 12px; color: #1a1a1a; text-decoration: none; transition: opacity 0.2s; }
 .a-email:hover { opacity: 0.45; }
-
-/* ── Camera ── */
-#cam-wrapper { width: 100%; margin-top: 5px; }
-#cam-placeholder {
-  width: 100%; aspect-ratio: 16/7;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  transition: background 1.2s ease;
-}
-#cam-placeholder span { font-size: 12px; color: #fff; mix-blend-mode: exclusion; pointer-events: none; }
-#cam-video { width: 100%; aspect-ratio: 16/7; object-fit: cover; display: none; background: #000; transform: scaleX(-1); }
 </style>
 </head>
 <body>
@@ -309,37 +323,43 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
 
 <div id="clip">
 
-  <!-- Pastel load-in overlay — color fades out once content is ready -->
   <div id="load-overlay"></div>
 
+  <canvas id="bg-canvas"></canvas>
+  <video id="bg-video" autoplay muted playsinline></video>
+  <div id="cam-denied"></div>
   <canvas id="draw-canvas"></canvas>
 
   <!-- Mode tabs — top-left -->
   <div id="mode-tabs">
     <span class="mode-tab active" id="tab-canvas" onclick="setMode('canvas')">Canvas</span>
     <span class="mode-tab" id="tab-emoji" onclick="window.location.href='emoji.html'">Emoji Collage</span>
-    <span class="mode-tab" id="tab-camera" onclick="window.location.href='about-camera.html'">Camera</span>
   </div>
 
   <!-- Controls group — bottom-left row -->
   <div id="controls-wrap">
-    <div id="draw-controls" class="glass-frame">
+    <div id="capture-frame" class="glass-frame">
       <button id="capture-btn" onclick="captureDrawing()">Capture</button>
+    </div>
+    <div id="draw-controls" class="glass-frame">
       <button id="clear-btn" onclick="clearCanvas()">Clear</button>
       <button id="undo-btn" onclick="undoCanvas()">Undo</button>
-      <button id="blank-btn" onclick="blankCanvas()">Blank</button>
-      <button id="restore-btn" onclick="restoreCanvas()">Restore</button>
+      <button id="redo-btn" onclick="redoCanvas()">Redo</button>
     </div>
     <div id="brush-shortcut" class="glass-frame">
       <span>Brush Size Shortcut:</span>
       <span id="key-caps-group" style="display:inline-flex;gap:5px;">
-        <span class="key-cap"><svg width="3" height="7" viewBox="0 0 3 7" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 0V7H3V6.45465H0.764151V0.545349H3V0H0Z" fill="black"/></svg></span>
-        <span class="key-cap"><svg width="3" height="7" viewBox="0 0 3 7" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 0V7H0V6.45465H2.23585V0.545349H0V0H3Z" fill="black"/></svg></span>
+        <span class="key-cap" style="cursor:pointer;" onclick="_brushHeld=0;_brushStep(-1)"><svg width="3" height="7" viewBox="0 0 3 7" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 0V7H3V6.45465H0.764151V0.545349H3V0H0Z" fill="black"/></svg></span>
+        <span class="key-cap" style="cursor:pointer;" onclick="_brushHeld=0;_brushStep(1)"><svg width="3" height="7" viewBox="0 0 3 7" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 0V7H0V6.45465H2.23585V0.545349H0V0H3Z" fill="black"/></svg></span>
       </span>
     </div>
-    <div id="eyedropper-shortcut" class="glass-frame">
+    <div id="bg-shortcut" class="glass-frame" onclick="cycleBackground()">
+      <span>Background Toggle:</span>
+      <span class="key-cap" style="color:#1a1a1a;">b</span>
+    </div>
+    <div id="eyedropper-shortcut" class="glass-frame" onclick="setEyedropperMode(!eyedropperMode)" style="cursor:pointer;">
       <span>Eyedropper</span>
-      <span class="key-cap" id="eyedropper-key" style="font-size:12px;color:#1a1a1a;">i</span>
+      <span class="key-cap" id="eyedropper-key" style="color:#1a1a1a;">i</span>
     </div>
   </div>
 
@@ -363,21 +383,17 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
     <div id="card-scroll">
     <div id="card-inner">
 
-      <!-- Panel header — collapses everything below -->
       <div id="sec-bio-head" onclick="togglePanel()">
         <span id="sec-bio-title">Naman Nanda</span>
         <span id="sec-bio-x" class="rot-x">&#215;</span>
       </div>
 
-      <!-- Card body — all content toggled by header click -->
       <div id="card-body">
 
-        <!-- Bio paragraphs -->
         <div id="sec-bio-body">
           <p class="a-bio-p">Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Donec odio. Quisque volutpat mattis eros. Nullam malesuada erat ut turpis. Suspendisse urna nibh viverra non semper suscipit posuere a pede. Donec nec justo eget felis facilisis fermentum. Aliquam porttitor mauris sit amet orci. Aenean dignissim pellentesque felis.</p>
         </div>
 
-        <!-- Awards -->
         <div class="a-section">
           <div class="a-sec-head" onclick="toggleSec(this)">
             <span class="a-sec-title">Awards</span>
@@ -396,7 +412,6 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
           </div>
         </div>
 
-        <!-- Contact -->
         <div class="a-section">
           <div class="a-sec-head" onclick="toggleSec(this)">
             <span class="a-sec-title">Contact</span>
@@ -407,7 +422,6 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
           </div>
         </div>
 
-        <!-- Press -->
         <div class="a-section">
           <div class="a-sec-head" onclick="toggleSec(this)">
             <span class="a-sec-title">Press</span>
@@ -426,8 +440,7 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
           </div>
         </div>
 
-        <!-- Credits -->
-        <div class="a-section">
+        <div class="a-section" style="margin-bottom:0">
           <div class="a-sec-head" onclick="toggleSec(this)">
             <span class="a-sec-title">Credits</span>
             <span class="rot-x">&#215;</span>
@@ -440,22 +453,6 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
               <div class="a-col-b">
                 <div>Design + Dev</div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Camera -->
-        <div class="a-section" id="sec-camera" style="margin-bottom:0">
-          <div class="a-sec-head" onclick="toggleSec(this)">
-            <span class="a-sec-title">Camera</span>
-            <span class="rot-x">&#215;</span>
-          </div>
-          <div class="a-sec-body">
-            <div id="cam-wrapper">
-              <div id="cam-placeholder" onclick="requestCamera()">
-                <span>Click & Allow Camera Access</span>
-              </div>
-              <video id="cam-video" autoplay muted playsinline></video>
             </div>
           </div>
         </div>
@@ -475,21 +472,23 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
 // ════════════════════════════════════════════════════════
 const D = { W: 1440, card: { x: 1010, y: 30, w: 400 } };
 
-const clip        = document.getElementById('clip');
-const card        = document.getElementById('about-card');
-const drawCanvas  = document.getElementById('draw-canvas');
-const ctx         = drawCanvas.getContext('2d');
+const clip       = document.getElementById('clip');
+const card       = document.getElementById('about-card');
+const bgCanvas   = document.getElementById('bg-canvas');
+const bgCtx      = bgCanvas.getContext('2d');
+const bgVideo    = document.getElementById('bg-video');
+const drawCanvas = document.getElementById('draw-canvas');
+const ctx        = drawCanvas.getContext('2d');
 
 // ── Pastel load-in overlay ──
-// The overlay sits on top of the canvas; it fades out once the drawing is ready.
 function randomPastel() {
   const last = parseInt(localStorage.getItem('bgHue') ?? '-1', 10);
   let h;
   do { h = Math.floor(Math.random() * 360); }
   while (last >= 0 && Math.min(Math.abs(h - last), 360 - Math.abs(h - last)) < 60);
   localStorage.setItem('bgHue', h);
-  const s = 35 + Math.floor(Math.random() * 20); // 35–55%
-  const l = 62 + Math.floor(Math.random() * 10); // 62–72%
+  const s = 35 + Math.floor(Math.random() * 20);
+  const l = 62 + Math.floor(Math.random() * 10);
   return `hsl(${h}, ${s}%, ${l}%)`;
 }
 const loadOverlay = document.getElementById('load-overlay');
@@ -503,38 +502,127 @@ function dismissOverlay() {
   setTimeout(() => { if (loadOverlay.parentNode) loadOverlay.remove(); }, 900);
 }
 
-// Default background image — 'pending' → 'active' (drawn) → 'cleared' (Reset pressed)
-let defaultBgState = 'pending';
-const defaultBg    = new Image();
-defaultBg.src      = 'images/Nam-drawing-about.png';
-defaultBg.onload   = () => drawDefaultBg();
+// ── Background images ──
+const defaultBg = new Image();
+defaultBg.src = 'images/Nam-drawing-about.png';
+defaultBg.onload = () => {
+  if (bgMode === 'drawing1') { drawBgOnCanvas(); }
+};
 
-// Reliable dimension helpers — fallback to window size if clip hasn't laid out yet
+const defaultBg2 = new Image();
+defaultBg2.src = 'images/default-bg-2.png';
+defaultBg2.onload = () => {
+  if (bgMode === 'drawing2') { drawBgOnCanvas(); }
+};
+
+// ── Background state machine ──
+const BG_MODES = ['drawing1', 'blank', 'camera', 'drawing2', 'color'];
+let bgMode = 'drawing1';
+let bgColor = '';
+
+function drawBgOnCanvas() {
+  if (bgCanvas.width === 0 || bgCanvas.height === 0) return;
+  bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+  if (bgMode === 'drawing1') {
+    if (defaultBg.complete && defaultBg.naturalWidth) {
+      const cw = bgCanvas.width, ch = bgCanvas.height;
+      const scale = Math.min(cw / defaultBg.naturalWidth, ch / defaultBg.naturalHeight);
+      bgCtx.drawImage(defaultBg, 0, (ch - defaultBg.naturalHeight * scale) / 2,
+        defaultBg.naturalWidth * scale, defaultBg.naturalHeight * scale);
+      seedColorsFromCanvas();
+      dismissOverlay();
+    }
+    // else: wait for onload to fire drawBgOnCanvas again
+  } else if (bgMode === 'drawing2') {
+    if (defaultBg2.complete && defaultBg2.naturalWidth) {
+      const cw = bgCanvas.width, ch = bgCanvas.height;
+      const scale = Math.min(cw / defaultBg2.naturalWidth, ch / defaultBg2.naturalHeight);
+      bgCtx.drawImage(defaultBg2, 0, (ch - defaultBg2.naturalHeight * scale) / 2,
+        defaultBg2.naturalWidth * scale, defaultBg2.naturalHeight * scale);
+    }
+    dismissOverlay();
+  } else {
+    // blank / camera / party — bgCanvas stays clear
+    dismissOverlay();
+  }
+}
+
+let _cameraStream = null;
+
+async function startCamera() {
+  clip.style.background = randomPastel();
+  bgVideo.style.display = 'block';
+  try {
+    _cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    bgVideo.srcObject = _cameraStream;
+    bgVideo.addEventListener('playing', () => {
+      bgVideo.style.opacity = '1';
+      bgVideo.style.filter = 'blur(0px)';
+    }, { once: true });
+  } catch (err) {
+    const denied = document.getElementById('cam-denied');
+    if (denied) { denied.textContent = 'Click & Allow Camera Access'; denied.classList.add('visible'); }
+  }
+}
+
+function stopCamera() {
+  if (_cameraStream) { _cameraStream.getTracks().forEach(t => t.stop()); _cameraStream = null; }
+  bgVideo.srcObject = null;
+  bgVideo.style.opacity = '0';
+  bgVideo.style.filter = 'blur(28px)';
+  bgVideo.style.display = 'none';
+  const denied = document.getElementById('cam-denied');
+  if (denied) denied.classList.remove('visible');
+}
+
+function cycleBackground() {
+  const idx = BG_MODES.indexOf(bgMode);
+  setBgMode(BG_MODES[(idx + 1) % BG_MODES.length]);
+}
+
+function setBgMode(mode) {
+  const wasCamera = bgMode === 'camera';
+  bgMode = mode;
+  if (wasCamera && mode !== 'camera') stopCamera();
+  if (mode === 'camera') {
+    clip.style.background = '';
+    startCamera();
+  } else if (mode === 'color') {
+    bgColor = randomPastel();
+    clip.style.background = bgColor;
+  } else {
+    clip.style.background = '';
+  }
+  drawBgOnCanvas();
+}
+
+// ── Dimension helpers ──
 function clipW() { return clip.offsetWidth  || (window.innerWidth  - 30); }
 function clipH() { return clip.offsetHeight || (window.innerHeight - 56); }
 
 function resizeCanvas() {
+  // Preserve strokes across resize
   const tmp = document.createElement('canvas');
   tmp.width = drawCanvas.width; tmp.height = drawCanvas.height;
   tmp.getContext('2d').drawImage(drawCanvas, 0, 0);
   drawCanvas.width  = clipW();
   drawCanvas.height = clipH();
   ctx.drawImage(tmp, 0, 0);
+  // Resize bg canvas and redraw
+  bgCanvas.width  = clipW();
+  bgCanvas.height = clipH();
+  drawBgOnCanvas();
 }
 
 function layout() {
   const w = clipW();
   const h = clipH();
   const u = w / D.W;
-  card.style.top   = '20px';
-  card.style.right = '20px';
-  card.style.width = Math.round(D.card.w * u) + 'px';
-  card.style.maxHeight = (h - 20 - 20) + 'px';
-  // Reset bg state so it redraws at the correct canvas size on every layout
-  // (only when user hasn't drawn any strokes — preserves user artwork on resize)
-  if (!drawn) defaultBgState = 'pending';
+  card.style.top      = '20px';
+  card.style.right    = '20px';
+  card.style.width    = Math.round(D.card.w * u) + 'px';
+  card.style.maxHeight = (h - 40) + 'px';
   resizeCanvas();
-  drawDefaultBg();
   drawColorBar();
   updateBtns();
   updateCursor();
@@ -543,7 +631,6 @@ function layout() {
 }
 
 window.addEventListener('resize', layout);
-// Defer first layout so browser has calculated all dimensions
 requestAnimationFrame(() => requestAnimationFrame(() => layout()));
 
 // ════════════════════════════════════════════════════════
@@ -569,11 +656,10 @@ function toggleSec(head) {
 const barCanvas   = document.getElementById('color-bar-canvas');
 const barCtx      = barCanvas.getContext('2d');
 const barCursorEl = document.getElementById('color-bar-cursor');
-let currentColor  = [0, 0, 0];   // default black
-let barT          = 0.06;        // default position (black)
+let currentColor  = [0, 0, 0];
+let barT          = 0.06;
 let barDragging   = false;
 
-// Recent colors — populated from drawing on load, then updated as you draw
 let recentColors = [null, null, null, null];
 
 function updateCurrentSwatch() {
@@ -588,7 +674,6 @@ function renderRecentColors() {
     if (!el) continue;
     if (recentColors[i]) {
       const [r, g, b] = recentColors[i];
-      // Fade unused slots via background alpha, not element opacity — keeps border visible
       const a = i >= 2 ? '0.12' : '1';
       el.style.background = `rgba(${r},${g},${b},${a})`;
     } else {
@@ -601,7 +686,6 @@ function renderRecentColors() {
 
 function addRecentColor(color) {
   const [r, g, b] = color;
-  // Skip if same as most recent
   if (recentColors.length > 0 && recentColors[0] !== null) {
     const [lr, lg, lb] = recentColors[0];
     if (lr === r && lg === g && lb === b) return;
@@ -611,7 +695,6 @@ function addRecentColor(color) {
   renderRecentColors();
 }
 
-// Click recent swatch to restore that color (bound immediately — elements exist in HTML)
 document.querySelectorAll('.recent-swatch').forEach((el, i) => {
   el.addEventListener('click', e => {
     e.stopPropagation();
@@ -626,28 +709,25 @@ function drawColorBar() {
   barCanvas.width  = Math.round(clipW() * 0.24) || 230;
   barCanvas.height = 11;
   const w = barCanvas.width;
-  const h = barCanvas.height;
 
-  // Gradient: white → black → full hue spectrum
   const g = barCtx.createLinearGradient(0, 0, w, 0);
-  g.addColorStop(0.00, '#ffffff');             // white
-  g.addColorStop(0.06, '#000000');             // black
-  g.addColorStop(0.12, 'hsl(0,100%,50%)');    // red
-  g.addColorStop(0.25, 'hsl(40,100%,50%)');   // orange
-  g.addColorStop(0.33, 'hsl(60,100%,50%)');   // yellow
-  g.addColorStop(0.44, 'hsl(120,100%,50%)');  // green
-  g.addColorStop(0.54, 'hsl(180,100%,50%)');  // cyan
-  g.addColorStop(0.61, 'hsl(210,100%,50%)');  // sky blue
-  g.addColorStop(0.68, 'hsl(240,100%,50%)');  // blue
-  g.addColorStop(0.78, 'hsl(270,100%,50%)');  // violet
-  g.addColorStop(0.85, 'hsl(300,100%,50%)');  // magenta
-  g.addColorStop(0.93, 'hsl(330,100%,50%)');  // pink
+  g.addColorStop(0.00, '#ffffff');
+  g.addColorStop(0.06, '#000000');
+  g.addColorStop(0.12, 'hsl(0,100%,50%)');
+  g.addColorStop(0.25, 'hsl(40,100%,50%)');
+  g.addColorStop(0.33, 'hsl(60,100%,50%)');
+  g.addColorStop(0.44, 'hsl(120,100%,50%)');
+  g.addColorStop(0.54, 'hsl(180,100%,50%)');
+  g.addColorStop(0.61, 'hsl(210,100%,50%)');
+  g.addColorStop(0.68, 'hsl(240,100%,50%)');
+  g.addColorStop(0.78, 'hsl(270,100%,50%)');
+  g.addColorStop(0.85, 'hsl(300,100%,50%)');
+  g.addColorStop(0.93, 'hsl(330,100%,50%)');
   g.addColorStop(1.00, 'hsl(360,100%,50%)');
   barCtx.fillStyle = g;
-  barCtx.fillRect(0, 0, w, h);
+  barCtx.fillRect(0, 0, w, barCanvas.height);
 
   updateBarCursor();
-  // Sync currentColor to the cursor position after (re)drawing the bar
   const px = Math.min(Math.round(barT * (w - 1)), w - 1);
   const d  = barCtx.getImageData(px, 0, 1, 1).data;
   currentColor = [d[0], d[1], d[2]];
@@ -675,30 +755,43 @@ barCanvas.addEventListener('mousedown', e => {
 document.addEventListener('mouseup', () => { barDragging = false; });
 
 // ════════════════════════════════════════════════════════
-//  UNDO HISTORY
+//  UNDO / REDO HISTORY
 // ════════════════════════════════════════════════════════
 const MAX_HISTORY = 30;
 const undoStack = [];
-let drawn = false; // true once any stroke has been painted
-let restoreSnapshot = null; // saved before Clear/Blank so Restore can undo it
+const redoStack = [];
+let drawn = false;
 
-function updateBtns() {
-  // All buttons always grey via CSS — nothing to manage here
-}
+function updateBtns() {}
 
 function saveHistory() {
   undoStack.push(ctx.getImageData(0, 0, drawCanvas.width, drawCanvas.height));
   if (undoStack.length > MAX_HISTORY) undoStack.shift();
+  redoStack.length = 0;
   drawn = true;
-  updateBtns();
 }
 
 function undoCanvas() {
   if (undoStack.length === 0) return;
+  redoStack.push(ctx.getImageData(0, 0, drawCanvas.width, drawCanvas.height));
   const prev = undoStack.pop();
   ctx.putImageData(prev, 0, 0);
   if (undoStack.length === 0) drawn = false;
-  updateBtns();
+}
+
+function redoCanvas() {
+  if (redoStack.length === 0) return;
+  undoStack.push(ctx.getImageData(0, 0, drawCanvas.width, drawCanvas.height));
+  const next = redoStack.pop();
+  ctx.putImageData(next, 0, 0);
+  drawn = true;
+}
+
+function clearCanvas() {
+  ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+  drawn = false;
+  undoStack.length = 0;
+  redoStack.length = 0;
 }
 
 // ════════════════════════════════════════════════════════
@@ -712,11 +805,10 @@ const MIN_BRUSH = 1;
 const MAX_BRUSH = 100;
 
 function updateCursor() {
-  const r  = brushRadius;
+  const r   = brushRadius;
   const pad = 2;
-  const d  = (r + pad) * 2;
-  const c  = r + pad;
-  // Outer dark ring + inner light ring for visibility on any background
+  const d   = (r + pad) * 2;
+  const c   = r + pad;
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${d}' height='${d}'>`
     + `<circle cx='${c}' cy='${c}' r='${r}' fill='none' stroke='rgba(255,255,255,0.7)' stroke-width='2'/>`
     + `<circle cx='${c}' cy='${c}' r='${r}' fill='none' stroke='rgba(0,0,0,0.55)' stroke-width='1'/>`
@@ -772,6 +864,7 @@ document.addEventListener('keydown', e => {
     }
   }
   if (e.key === 'i' || e.key === 'I') { setEyedropperMode(!eyedropperMode); }
+  if (e.key === 'b' || e.key === 'B') { cycleBackground(); }
 });
 
 document.addEventListener('keyup', e => {
@@ -794,30 +887,43 @@ function airbrush(x, y) {
   }
 }
 
-// Convert any mouse event to canvas coordinates
 function clipPos(e) {
   const r = clip.getBoundingClientRect();
   return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
 
-// Skip drawing when clicking on card headers, buttons, color bar, or in emoji mode
 function isNonDrawTarget(el) {
   if (currentMode === 'emoji') return true;
   return el.closest('#about-card, #controls-wrap, #color-bar-wrap, #mode-tabs');
 }
 
-// Listen at document level so nothing inside #clip can block the event via stopPropagation
 document.addEventListener('mousedown', e => {
-  if (!e.target?.closest?.('#clip')) return; // ignore events outside #clip
-  // Eyedropper: sample pixel on click
+  if (!e.target?.closest?.('#clip')) return;
   if (eyedropperMode && currentMode !== 'emoji') {
     if (!e.target.closest('#about-card, #controls-wrap, #color-bar-wrap, #mode-tabs')) {
       e.preventDefault();
       const { x, y } = clipPos(e);
       const px = Math.round(Math.max(0, Math.min(x, drawCanvas.width  - 1)));
       const py = Math.round(Math.max(0, Math.min(y, drawCanvas.height - 1)));
-      const d = ctx.getImageData(px, py, 1, 1).data;
-      currentColor = d[3] === 0 ? [255, 255, 255] : [d[0], d[1], d[2]];
+      // Check stroke layer first
+      const sd = ctx.getImageData(px, py, 1, 1).data;
+      if (sd[3] > 0) {
+        currentColor = [sd[0], sd[1], sd[2]];
+      } else if (bgMode === 'camera' && bgVideo.readyState >= 2) {
+        // Sample from mirrored video (matches what user sees)
+        const tmp = document.createElement('canvas');
+        tmp.width = drawCanvas.width; tmp.height = drawCanvas.height;
+        drawVideoMirroredCover(tmp.getContext('2d'), tmp.width, tmp.height);
+        const vd = tmp.getContext('2d').getImageData(px, py, 1, 1).data;
+        currentColor = [vd[0], vd[1], vd[2]];
+      } else if (bgMode === 'drawing1' || bgMode === 'drawing2') {
+        const bpx = Math.min(px, bgCanvas.width - 1);
+        const bpy = Math.min(py, bgCanvas.height - 1);
+        const bd = bgCtx.getImageData(bpx, bpy, 1, 1).data;
+        currentColor = bd[3] > 0 ? [bd[0], bd[1], bd[2]] : [255, 255, 255];
+      } else {
+        currentColor = [255, 255, 255];
+      }
       addRecentColor(currentColor);
       updateCurrentSwatch();
       setEyedropperMode(false);
@@ -825,8 +931,8 @@ document.addEventListener('mousedown', e => {
     }
   }
   if (isNonDrawTarget(e.target)) return;
-  e.preventDefault(); // prevent text selection while drawing
-  saveHistory(); // snapshot before this stroke
+  e.preventDefault();
+  saveHistory();
   drawing = true;
   const { x, y } = clipPos(e);
   lastX = x; lastY = y;
@@ -846,47 +952,25 @@ document.addEventListener('mousemove', e => {
 });
 
 window.addEventListener('mouseup', () => {
-  if (drawing) addRecentColor(currentColor); // record color used for this stroke
+  if (drawing) addRecentColor(currentColor);
   drawing = false;
 });
 window.addEventListener('mouseleave', () => { drawing = false; });
 
 // ════════════════════════════════════════════════════════
-//  DEFAULT BACKGROUND
+//  SEED COLORS FROM BACKGROUND CANVAS
 // ════════════════════════════════════════════════════════
-function drawDefaultBg() {
-  if (defaultBgState !== 'pending') return;        // already active, or user cleared it
-  if (!defaultBg.complete || !defaultBg.naturalWidth) return; // image not ready yet
-  // Draw contain-style: scale image to fit canvas, maintaining aspect ratio, left-aligned
-  const cw = drawCanvas.width;
-  const ch = drawCanvas.height;
-  const iw = defaultBg.naturalWidth;
-  const ih = defaultBg.naturalHeight;
-  const scale = Math.min(cw / iw, ch / ih);
-  const dw = iw * scale;
-  const dh = ih * scale;
-  const dx = 0;
-  const dy = (ch - dh) / 2;
-  ctx.drawImage(defaultBg, dx, dy, dw, dh);
-  defaultBgState = 'active';
-  updateBtns();
-  // Seed recent colors from the drawing's actual pixels
-  seedColorsFromCanvas();
-  // Dismiss the pastel overlay now that the drawing is painted
-  dismissOverlay();
-}
-
 function seedColorsFromCanvas() {
-  const w = drawCanvas.width, h = drawCanvas.height;
+  if (bgMode !== 'drawing1' && bgMode !== 'drawing2') return;
+  const w = bgCanvas.width, h = bgCanvas.height;
+  if (w === 0 || h === 0) return;
   const found = [];
-  // Scan a grid; collect first 4 non-white, non-transparent pixels
   outer: for (let sy = 0.15; sy <= 0.85; sy += 0.07) {
     for (let sx = 0.05; sx <= 0.75; sx += 0.05) {
-      const d = ctx.getImageData(Math.round(sx * w), Math.round(sy * h), 1, 1).data;
-      if (d[3] < 30) continue;                          // transparent
-      if (d[0] > 220 && d[1] > 220 && d[2] > 220) continue; // near-white
+      const d = bgCtx.getImageData(Math.round(sx * w), Math.round(sy * h), 1, 1).data;
+      if (d[3] < 30) continue;
+      if (d[0] > 220 && d[1] > 220 && d[2] > 220) continue;
       const col = [d[0], d[1], d[2]];
-      // Avoid near-duplicates
       const isDupe = found.some(c => Math.abs(c[0]-col[0])+Math.abs(c[1]-col[1])+Math.abs(c[2]-col[2]) < 30);
       if (!isDupe) { found.push(col); if (found.length >= 4) break outer; }
     }
@@ -898,96 +982,27 @@ function seedColorsFromCanvas() {
 }
 
 // ════════════════════════════════════════════════════════
-//  CLEAR
+//  VIDEO HELPERS
 // ════════════════════════════════════════════════════════
-function clearCanvas() {
-  // Save current state so Restore can bring it back
-  restoreSnapshot = ctx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
-  // Clear strokes and restore the default background image
-  ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-  if (defaultBg.complete && defaultBg.naturalWidth) {
-    const cw = drawCanvas.width, ch = drawCanvas.height;
-    const iw = defaultBg.naturalWidth, ih = defaultBg.naturalHeight;
-    const scale = Math.min(cw / iw, ch / ih);
-    const s = scale;
-    ctx.drawImage(defaultBg, 0, (ch - ih*s)/2, iw*s, ih*s);
-    defaultBgState = 'active';
-  } else {
-    defaultBgState = 'pending';
-  }
-  drawn = false;
-  undoStack.length = 0;
-  updateBtns();
+function drawVideoMirroredCover(vctx, w, h) {
+  const vw = bgVideo.videoWidth  || w;
+  const vh = bgVideo.videoHeight || h;
+  const scale = Math.max(w / vw, h / vh);
+  const dw = vw * scale, dh = vh * scale;
+  vctx.save();
+  vctx.translate(w, 0);
+  vctx.scale(-1, 1);
+  vctx.drawImage(bgVideo, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  vctx.restore();
 }
 
-function blankCanvas() {
-  // Save current state so Restore can bring it back
-  restoreSnapshot = ctx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
-  // Wipe everything — pure white canvas
-  ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-  drawn = false;
-  defaultBgState = 'cleared';
-  undoStack.length = 0;
-  updateBtns();
+function drawVideoCover(vctx, w, h) {
+  const vw = bgVideo.videoWidth  || w;
+  const vh = bgVideo.videoHeight || h;
+  const scale = Math.max(w / vw, h / vh);
+  const dw = vw * scale, dh = vh * scale;
+  vctx.drawImage(bgVideo, (w - dw) / 2, (h - dh) / 2, dw, dh);
 }
-
-function restoreCanvas() {
-  if (!restoreSnapshot) return;
-  ctx.putImageData(restoreSnapshot, 0, 0);
-  drawn = true;
-  defaultBgState = 'active';
-  undoStack.length = 0;
-  updateBtns();
-}
-
-// ════════════════════════════════════════════════════════
-//  CAMERA
-// ════════════════════════════════════════════════════════
-const video       = document.getElementById('cam-video');
-const placeholder = document.getElementById('cam-placeholder');
-
-// Animate placeholder through soft pastels
-(function animatePlaceholder() {
-  const BANNED_HUE_RANGES = [[160,220]];
-  let lastH = -1;
-  function nextPastel() {
-    let h;
-    do {
-      h = Math.floor(Math.random() * 360);
-    } while (Math.abs(h - lastH) < 40 || BANNED_HUE_RANGES.some(([a,b]) => h >= a && h <= b));
-    lastH = h;
-    const s = 35 + Math.floor(Math.random() * 20);
-    const l = 62 + Math.floor(Math.random() * 10);
-    return `hsl(${h},${s}%,${l}%)`;
-  }
-  placeholder.style.background = nextPastel();
-  setInterval(() => { placeholder.style.background = nextPastel(); }, 2000);
-})();
-
-async function requestCamera() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-    video.srcObject = stream;
-    video.onloadedmetadata = () => video.play();
-    placeholder.style.display = 'none';
-    video.style.display = 'block';
-  } catch (err) {
-    placeholder.querySelector('span').textContent = 'Camera unavailable';
-  }
-}
-
-// Click live video → stop stream and return to animated placeholder
-video.addEventListener('click', () => {
-  if (video.srcObject) {
-    video.srcObject.getTracks().forEach(t => t.stop());
-    video.srcObject = null;
-  }
-  video.style.display = 'none';
-  placeholder.querySelector('span').textContent = 'Click & Allow Camera Access';
-  placeholder.style.display = 'flex';
-});
-// Don't auto-request — wait for user click so gesture fires getUserMedia correctly
-
 
 // ════════════════════════════════════════════════════════
 //  CAPTURE — full visual: nav bars + clip content
@@ -1007,7 +1022,7 @@ async function captureDrawing() {
   const clipXpx = Math.round(clipX * dpr);
   const clipYpx = Math.round(clipY * dpr);
 
-  // Snapshot drawing canvas now (synchronous, before any async work)
+  // Snapshot strokes NOW (synchronous)
   const strokesSnap = document.createElement('canvas');
   strokesSnap.width  = drawCanvas.width  || cW;
   strokesSnap.height = drawCanvas.height || cH;
@@ -1015,7 +1030,27 @@ async function captureDrawing() {
     try { strokesSnap.getContext('2d').drawImage(drawCanvas, 0, 0); } catch (_) {}
   }
 
-  // Panel bounds (computed before async — DOM doesn't change during capture)
+  // Snapshot camera video if in camera mode
+  let videoSnap = null;
+  if (bgMode === 'camera') {
+    const videoRaw = document.createElement('canvas');
+    videoRaw.width = cWpx; videoRaw.height = cHpx;
+    if (bgVideo.readyState >= 2) {
+      drawVideoCover(videoRaw.getContext('2d'), cWpx, cHpx);
+    } else {
+      videoRaw.getContext('2d').fillStyle = '#000';
+      videoRaw.getContext('2d').fillRect(0, 0, cWpx, cHpx);
+    }
+    // Mirror to match live preview
+    videoSnap = document.createElement('canvas');
+    videoSnap.width = cWpx; videoSnap.height = cHpx;
+    const vsc = videoSnap.getContext('2d');
+    vsc.translate(cWpx, 0);
+    vsc.scale(-1, 1);
+    vsc.drawImage(videoRaw, 0, 0);
+  }
+
+  // Panel bounds (computed before async)
   const colorBarWrap = document.getElementById('color-bar-wrap');
   const clipBCR = clip.getBoundingClientRect();
   const cardBCR = card.getBoundingClientRect();
@@ -1032,36 +1067,20 @@ async function captureDrawing() {
   const cardPx = toPx(cardBCR);
   const barPx  = toPx(barBCR);
 
-  // Three html2canvas calls in parallel:
-  //   a) Body with draw-canvas cleared + clip transparent → nav/footer/controls
-  //   b) about-card only → text/borders on top of glass sim
-  //   c) color-bar-wrap only → color bar on top of glass sim
   let uiLayer = null, cardLayer = null, barLayer = null;
   try {
     [uiLayer, cardLayer, barLayer] = await Promise.all([
       Promise.race([
         html2canvas(document.body, {
-          useCORS:         true,
-          allowTaint:      false,
-          scale:           dpr,
-          logging:         false,
-          backgroundColor: null,
-          windowWidth:     fullW,
-          windowHeight:    fullH,
-          scrollX:         0,
-          scrollY:         0,
+          useCORS: true, allowTaint: false, scale: dpr, logging: false,
+          backgroundColor: null, windowWidth: fullW, windowHeight: fullH,
+          scrollX: 0, scrollY: 0,
+          ignoreElements: el => el.id === 'bg-video' || el.id === 'bg-canvas' || el.id === 'draw-canvas',
           onclone(doc) {
             doc.documentElement.style.background = 'transparent';
             doc.body.style.background = 'transparent';
             const c = doc.getElementById('clip');
-            if (c) {
-              c.style.background = 'transparent';
-              c.style.backgroundColor = 'transparent';
-            }
-            const dc = doc.getElementById('draw-canvas');
-            if (dc) {
-              try { dc.getContext('2d').clearRect(0, 0, dc.width, dc.height); } catch (_) {}
-            }
+            if (c) { c.style.background = 'transparent'; c.style.backgroundColor = 'transparent'; }
             const lo = doc.getElementById('load-overlay');
             if (lo) lo.remove();
           },
@@ -1081,8 +1100,37 @@ async function captureDrawing() {
     console.warn('html2canvas failed:', err);
   }
 
-  // Extracts a panel area from the output canvas, blurs it, draws it back
-  function applyGlass(out, octx, px) {
+  const out  = document.createElement('canvas');
+  out.width  = outW;
+  out.height = outH;
+  const octx = out.getContext('2d');
+
+  // Layer 1: grey frame base
+  octx.fillStyle = '#D9D9D9';
+  octx.fillRect(0, 0, outW, outH);
+
+  // Layer 2: clip background
+  if (bgMode === 'camera' && videoSnap) {
+    octx.drawImage(videoSnap, clipXpx, clipYpx);
+  } else if ((bgMode === 'drawing1' || bgMode === 'drawing2') && bgCanvas.width > 0) {
+    octx.drawImage(bgCanvas, clipXpx, clipYpx, cWpx, cHpx);
+  } else if (bgMode === 'color' && bgColor) {
+    octx.fillStyle = bgColor;
+    octx.fillRect(clipXpx, clipYpx, cWpx, cHpx);
+  } else {
+    octx.fillStyle = '#ffffff';
+    octx.fillRect(clipXpx, clipYpx, cWpx, cHpx);
+  }
+
+  // Layer 3: strokes (early pass — visible through glass panels)
+  if (strokesSnap.width > 0 && strokesSnap.height > 0) {
+    octx.drawImage(strokesSnap, clipXpx, clipYpx, cWpx, cHpx);
+  }
+
+  // Layer 4: UI chrome — nav, footer, controls (clip area transparent)
+  if (uiLayer) octx.drawImage(uiLayer, 0, 0);
+
+  function applyGlass(px) {
     const { l, t, w, h } = px;
     if (w <= 0 || h <= 0) return;
     const snap = document.createElement('canvas');
@@ -1097,37 +1145,13 @@ async function captureDrawing() {
     octx.drawImage(blurred, l, t);
   }
 
-  const out  = document.createElement('canvas');
-  out.width  = outW;
-  out.height = outH;
-  const octx = out.getContext('2d');
-
-  // Layer 1: grey frame base
-  octx.fillStyle = '#D9D9D9';
-  octx.fillRect(0, 0, outW, outH);
-
-  // Layer 2: clip background (party color or white)
-  octx.fillStyle = document.body.classList.contains('party') ? document.body.style.backgroundColor : '#ffffff';
-  octx.fillRect(clipXpx, clipYpx, cWpx, cHpx);
-
-  // Layer 3: drawing — everywhere across the clip area
-  if (strokesSnap.width > 0 && strokesSnap.height > 0) {
-    octx.drawImage(strokesSnap, clipXpx, clipYpx, cWpx, cHpx);
-  }
-
-  // Layer 4: body html2canvas — nav, footer, controls.
-  //   Clip area is transparent (draw-canvas cleared in onclone).
-  if (uiLayer) {
-    octx.drawImage(uiLayer, 0, 0);
-  }
-
   // Layer 5: glass sim for about-card
-  applyGlass(out, octx, cardPx);
+  applyGlass(cardPx);
 
   // Layer 6: glass sim for color-bar-wrap
-  applyGlass(out, octx, barPx);
+  applyGlass(barPx);
 
-  // Layer 7: card text/borders on top of glass sim (clipped to card bounds)
+  // Layer 7: card text/borders on top of glass sim
   if (cardLayer) {
     octx.save();
     octx.beginPath();
@@ -1137,7 +1161,7 @@ async function captureDrawing() {
     octx.restore();
   }
 
-  // Layer 8: color bar on top of glass sim (clipped to bar bounds)
+  // Layer 8: color bar on top of glass sim
   if (barLayer) {
     octx.save();
     octx.beginPath();
@@ -1147,7 +1171,7 @@ async function captureDrawing() {
     octx.restore();
   }
 
-  // Layer 9: strokes drawn LAST — always visible, evenodd excludes both panels.
+  // Layer 9: strokes drawn LAST — evenodd excludes both panels
   if (strokesSnap.width > 0 && strokesSnap.height > 0) {
     octx.save();
     octx.beginPath();
@@ -1173,26 +1197,21 @@ let currentMode = 'canvas';
 function setMode(mode) {
   if (mode === currentMode) return;
   currentMode = mode;
-
   document.getElementById('tab-canvas').classList.toggle('active', mode === 'canvas');
   document.getElementById('tab-emoji').classList.toggle('active', mode === 'emoji');
-
   if (mode === 'emoji') {
     clip.classList.add('emoji-mode');
     drawCanvas.style.pointerEvents = 'none';
   } else {
     clip.classList.remove('emoji-mode');
-    drawCanvas.style.pointerEvents = 'none'; // always none — drawing uses clip events
+    drawCanvas.style.pointerEvents = 'none';
     updateCursor();
   }
 }
 
-// layout() is called deferred via rAF above — it calls drawColorBar() which
-// also picks the initial color. Nothing else needed here.
-
 // ── Party mode ──
+let _setParty;
 (function() {
-  const KEY = 'naman-party';
   const BANNED = [[160, 220]];
   let lastH = -1, _interval = null;
   function nextPastel() {
@@ -1204,7 +1223,6 @@ function setMode(mode) {
   }
   function setParty(on) {
     document.body.classList.toggle('party', on);
-    localStorage.setItem(KEY, on ? '1' : '0');
     if (on) {
       document.body.style.backgroundColor = nextPastel();
       _interval = setInterval(() => { document.body.style.backgroundColor = nextPastel(); }, 2000);
@@ -1213,6 +1231,7 @@ function setMode(mode) {
       document.body.style.backgroundColor = '';
     }
   }
+  _setParty = setParty;
   document.getElementById('party-toggle').addEventListener('click', () => setParty(!document.body.classList.contains('party')));
 })();
 </script>
