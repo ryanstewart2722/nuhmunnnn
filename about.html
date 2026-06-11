@@ -94,6 +94,14 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
   cursor: pointer;
 }
 #cam-denied.visible { display: flex; pointer-events: auto; }
+#cam-wrapper { width: 100%; margin-top: 5px; }
+#cam-placeholder {
+  width: 100%; aspect-ratio: 16/7;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: background 1.2s ease;
+}
+#cam-placeholder span { font-size: 12px; color: #fff; mix-blend-mode: exclusion; pointer-events: none; }
+#cam-video { width: 100%; aspect-ratio: 16/7; object-fit: cover; display: none; background: #000; transform: scaleX(-1); }
 
 /* ── Drawing canvas — transparent strokes layer ── */
 #draw-canvas { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
@@ -441,7 +449,7 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
           </div>
         </div>
 
-        <div class="a-section" style="margin-bottom:0">
+        <div class="a-section">
           <div class="a-sec-head" onclick="toggleSec(this)">
             <span class="a-sec-title">Credits</span>
             <span class="rot-x">&#215;</span>
@@ -454,6 +462,21 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
               <div class="a-col-b">
                 <div>Design + Dev</div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="a-section" id="sec-camera" style="margin-bottom:0">
+          <div class="a-sec-head" onclick="toggleSec(this)">
+            <span class="a-sec-title">Camera</span>
+            <span class="rot-x">&#215;</span>
+          </div>
+          <div class="a-sec-body">
+            <div id="cam-wrapper">
+              <div id="cam-placeholder" onclick="cardCameraClick()">
+                <span>Click &amp; Allow Camera Access</span>
+              </div>
+              <video id="cam-video" autoplay muted playsinline></video>
             </div>
           </div>
         </div>
@@ -559,6 +582,8 @@ async function startCamera() {
     bgVideo.addEventListener('playing', () => {
       bgVideo.style.opacity = '1';
       bgVideo.style.filter = 'blur(0px)';
+      if (camVideo) { camVideo.srcObject = _cameraStream; camVideo.style.display = 'block'; }
+      if (camPlaceholder) camPlaceholder.style.display = 'none';
     }, { once: true });
   } catch (err) {
     const denied = document.getElementById('cam-denied');
@@ -580,6 +605,44 @@ function stopCamera() {
   if (denied) denied.classList.remove('visible');
 }
 
+// ── Card camera panel ──
+const camPlaceholder = document.getElementById('cam-placeholder');
+const camVideo = document.getElementById('cam-video');
+
+// Animate placeholder through soft pastels (matches emoji page)
+(function animatePlaceholder() {
+  const BANNED = [[160,220]];
+  let lastH = -1;
+  function nextPastel() {
+    let h;
+    do { h = Math.floor(Math.random() * 360); }
+    while (Math.abs(h - lastH) < 40 || BANNED.some(([a,b]) => h >= a && h <= b));
+    lastH = h;
+    return `hsl(${h},${35 + Math.floor(Math.random()*20)}%,${62 + Math.floor(Math.random()*10)}%)`;
+  }
+  if (camPlaceholder) {
+    camPlaceholder.style.background = nextPastel();
+    setInterval(() => { camPlaceholder.style.background = nextPastel(); }, 2000);
+  }
+})();
+
+async function cardCameraClick() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    camVideo.srcObject = stream;
+    camVideo.onloadedmetadata = () => camVideo.play();
+    camPlaceholder.style.display = 'none';
+    camVideo.style.display = 'block';
+  } catch { camPlaceholder.querySelector('span').textContent = 'Camera unavailable'; }
+}
+
+camVideo.addEventListener('click', () => {
+  if (camVideo.srcObject) { camVideo.srcObject.getTracks().forEach(t => t.stop()); camVideo.srcObject = null; }
+  camVideo.style.display = 'none';
+  camPlaceholder.querySelector('span').textContent = 'Click & Allow Camera Access';
+  camPlaceholder.style.display = 'flex';
+});
+
 function cycleBackground() {
   const idx = BG_MODES.indexOf(bgMode);
   setBgMode(BG_MODES[(idx + 1) % BG_MODES.length]);
@@ -599,6 +662,14 @@ function setBgMode(mode) {
     clip.style.background = '';
   }
   drawBgOnCanvas();
+  const secCamera = document.getElementById('sec-camera');
+  if (secCamera) secCamera.style.display = mode === 'camera' ? 'none' : '';
+  // Reset card camera panel when leaving camera bg mode
+  if (mode !== 'camera' && camVideo && camPlaceholder) {
+    if (camVideo.srcObject) { camVideo.srcObject.getTracks().forEach(t => t.stop()); camVideo.srcObject = null; }
+    camVideo.style.display = 'none';
+    camPlaceholder.style.display = 'flex';
+  }
 }
 
 // ── Dimension helpers ──
@@ -1104,7 +1175,14 @@ async function captureDrawing() {
         new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000)),
       ]),
       Promise.race([
-        html2canvas(card, { useCORS: true, allowTaint: false, scale: dpr, logging: false, backgroundColor: null }),
+        html2canvas(card, { useCORS: true, allowTaint: false, scale: dpr, logging: false, backgroundColor: null,
+          onclone(doc) {
+            if (bgMode === 'camera') {
+              const sc = doc.getElementById('sec-camera');
+              if (sc) sc.style.display = 'none';
+            }
+          }
+        }),
         new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
       ]),
       Promise.race([
