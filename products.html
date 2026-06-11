@@ -201,10 +201,6 @@ body {
   transition: filter 1.4s cubic-bezier(0.25,0,0.1,1), opacity 1.2s ease;
 }
 .cat-img.loaded { filter: blur(0); opacity: 1; }
-.cat-img.loaded.confidential { filter: blur(10px); }
-
-/* Confidential blur — gallery view */
-.card-img.confidential-img { filter: blur(10px); background-color: transparent; }
 .cat-rule { width: 100%; height: 1px; background: #000; display: block; margin-top: 4px; }
 .cat-meta {
   display: flex; align-items: baseline;
@@ -586,7 +582,7 @@ function buildGrid() {
     card.appendChild(link);
 
     const imgDiv = document.createElement('div');
-    imgDiv.className = 'card-img' + (p.name === 'Confidential' ? ' confidential-img' : '');
+    imgDiv.className = 'card-img';
     imgDiv.style.cssText = 'width:'+cardW+'px;height:'+imgH+'px;background-image:url('+JSON.stringify(p.img)+');';
     card.appendChild(imgDiv);
 
@@ -697,23 +693,19 @@ function buildCatalogue() {
   catObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        const el = entry.target;
-        el.classList.add('loaded');
-        if (el.dataset.confidential) el.classList.add('confidential');
-        catObserver.unobserve(el);
+        entry.target.classList.add('loaded');
+        catObserver.unobserve(entry.target);
       }
     });
   }, { threshold: 0.05, root: catalogue });
 
   projects.forEach(p => {
-    const isConf = p.name === 'Confidential';
     const a = document.createElement('a');
     a.className = 'cat-card';
     a.href = (p.client && p.client.includes('Pax')) ? 'pax-project.html' : 'flaus-project.html';
 
     const imgDiv = document.createElement('div');
     imgDiv.className = 'cat-img';
-    if (isConf) imgDiv.dataset.confidential = '1';
     imgDiv.style.backgroundImage = 'url(' + JSON.stringify(p.img) + ')';
 
     const rule = document.createElement('div');
