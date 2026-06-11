@@ -818,7 +818,8 @@ document.addEventListener('mousemove', e => {
   if (catMode) {
     const r = clip.getBoundingClientRect();
     const ins = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-    if (!ins || e.target.closest('#view-mode-tabs')) {
+    const onCard = !!e.target.closest('.cat-card');
+    if (!ins || e.target.closest('#view-mode-tabs') || !onCard) {
       catCursor.style.display  = 'none';
       document.body.style.cursor = ins ? 'auto' : 'none';
     } else {
