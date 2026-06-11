@@ -71,6 +71,16 @@
       'font-family:ABCDiatype,Arial,sans-serif;font-size:10px;color:#1a1a1a;'
     );
 
+    // Sync overlay background with party mode
+    var partyObs = new MutationObserver(function() {
+      if (document.body.classList.contains('party')) {
+        overlay.style.background = document.body.style.backgroundColor || '#ffffff';
+      } else {
+        overlay.style.background = '#ffffff';
+      }
+    });
+    partyObs.observe(document.body, { attributes: true, attributeFilter: ['style', 'class'] });
+
     // Close — top right
     var closeBtn = mk('div',
       'position:absolute;top:9px;right:24px;cursor:pointer;z-index:10;user-select:none;',
