@@ -729,14 +729,15 @@ function buildCatalogue() {
     catObserver.observe(imgDiv);
   });
 
-  // Hover fade — only dims when cursor is over a card, not the grid gap
-  grid.addEventListener('mouseover', e => {
+  // Hover fade — mousemove is more reliable than mouseover with mask-image
+  const catDiv = document.getElementById('catalogue');
+  catDiv.addEventListener('mousemove', e => {
     const card = e.target.closest('.cat-card');
     grid.querySelectorAll('.cat-card').forEach(c => {
       c.style.opacity = card && c !== card ? '0.80' : '1';
     });
   });
-  grid.addEventListener('mouseleave', () => {
+  catDiv.addEventListener('mouseleave', () => {
     grid.querySelectorAll('.cat-card').forEach(c => c.style.opacity = '1');
   });
 }
