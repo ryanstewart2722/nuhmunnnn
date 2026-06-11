@@ -819,9 +819,13 @@ document.addEventListener('mousemove', e => {
     const r = clip.getBoundingClientRect();
     const ins = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
     const onCard = !!e.target.closest('.cat-card');
-    if (!ins || e.target.closest('#view-mode-tabs') || !onCard) {
+    const onUI   = !!(e.target.closest('#view-mode-tabs') || e.target.closest('#zoom-shortcut'));
+    if (!ins || onUI) {
       catCursor.style.display  = 'none';
       document.body.style.cursor = ins ? 'auto' : 'none';
+    } else if (!onCard) {
+      catCursor.style.display  = 'none';
+      document.body.style.cursor = 'default';
     } else {
       catCursor.style.left = e.clientX + 'px';
       catCursor.style.top  = e.clientY + 'px';
