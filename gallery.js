@@ -12,8 +12,8 @@
   var HI_PAD      = 7;             // padding inside highlight box
   var HI_H        = THUMB_H + HI_PAD * 2;  // 102px highlight height
   var STRIP_AREA  = HI_H + 57;     // total bottom bar height (strip + caption row, +35px lift)
-  var MAX_W_PCT   = 0.56;          // max display width fraction of overlay
-  var MAX_H_PCT   = 0.80;          // max display height fraction of available
+  var MAX_W_PCT   = 0.90;          // max display width fraction of overlay
+  var MAX_H_PCT   = 0.90;          // max display height fraction of available
   var LERP        = 0.13;          // filmstrip lerp factor
   var CENTER_ZONE = 0.14;          // center-zone width fraction for slideshows
   var SNAP_DELAY  = 150;           // ms after drag release before snap
@@ -22,6 +22,7 @@
   // ── State ────────────────────────────────────────────────────────────
   var overlay, mainArea, mainImg, galCursor, captionEl, counterEl;
   var filmWrap, filmStrip, highlightEl;
+  var scrollBlocker;
   var thumbEls = [], thumbWidths = [], thumbOffsets = [];
   var images = [];
   var curIdx   = 0;
@@ -56,11 +57,15 @@
     built = true;
 
     // Gallery sits inside all 4 fixed gray strips
+    // Full-viewport scroll blocker — sits behind overlay, blocks wheel events on grey strips
+    scrollBlocker = mk('div',
+      'position:fixed;top:0;bottom:0;left:0;right:0;z-index:899;display:none;pointer-events:none;'
+    );
+    document.body.appendChild(scrollBlocker);
+
     overlay = mk('div',
       'position:fixed;top:28px;bottom:28px;left:15px;right:15px;z-index:900;' +
-      'background:rgba(255,255,255,0.72);' +
-      'backdrop-filter:blur(28px) saturate(180%);' +
-      '-webkit-backdrop-filter:blur(28px) saturate(180%);' +
+      'background:#ffffff;' +
       'display:none;opacity:0;' +
       'transition:opacity 0.2s ease;' +
       'font-family:ABCDiatype,Arial,sans-serif;font-size:10px;color:#1a1a1a;'
@@ -68,7 +73,7 @@
 
     // Close — top right
     var closeBtn = mk('div',
-      'position:absolute;top:9px;right:15px;cursor:pointer;z-index:10;user-select:none;',
+      'position:absolute;top:9px;right:24px;cursor:pointer;z-index:10;user-select:none;',
       'Close'
     );
     closeBtn.addEventListener('mouseenter', function () { closeBtn.style.opacity = '0.45'; });
@@ -143,8 +148,8 @@
     filmWrap.appendChild(filmStrip);
 
     // Caption + counter
-    captionEl = mk('div', 'position:absolute;bottom:14px;left:15px;');
-    counterEl = mk('div', 'position:absolute;bottom:14px;right:15px;');
+    captionEl = mk('div', 'position:absolute;bottom:14px;left:24px;');
+    counterEl = mk('div', 'position:absolute;bottom:14px;right:24px;');
 
     bottom.appendChild(filmWrap);
     bottom.appendChild(captionEl);
@@ -161,6 +166,30 @@
       if (e.key === 'ArrowLeft')  goTo(curIdx - 1);
       if (e.key === 'Escape')     close();
     });
+
+    // Wheel scroll — document-level capture so grey strips don't leak through
+    var wheelTimer = null;
+    function onWheel(e) {
+      if (!overlay || overlay.style.display === 'none') return;
+      e.preventDefault();
+      var delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      targetX -= delta;
+      clamp();
+
+      var ovW    = overlay.offsetWidth || window.innerWidth;
+      var center = ovW / 2;
+      var best = curIdx, bestD = Infinity;
+      thumbOffsets.forEach(function (cx, i) {
+        var d = Math.abs(cx + targetX - center);
+        if (d < bestD) { bestD = d; best = i; }
+      });
+      if (best !== curIdx) { curIdx = best; updateDisplay(best); }
+
+      tickRAF();
+      clearTimeout(wheelTimer);
+      wheelTimer = setTimeout(function () { snapNearest(); }, 150);
+    }
+    document.addEventListener('wheel', onWheel, { passive: false, capture: true });
   }
 
   // ── Thumbnails ───────────────────────────────────────────────────────
@@ -385,6 +414,16 @@
     targetX = tx;
     filmStrip.style.transform = 'translateX(' + Math.round(tx) + 'px)';
 
+    var scrollEl = document.getElementById('card-scroll') || document.body;
+    var savedScrollTop = scrollEl.scrollTop;
+    // Lock scroll: overflow hidden + force-reset on any scroll event (beats macOS momentum)
+    scrollEl.style.overflowY = 'hidden';
+    scrollEl.scrollTop = savedScrollTop;
+    function lockScroll() { scrollEl.scrollTop = savedScrollTop; }
+    scrollEl.addEventListener('scroll', lockScroll);
+    scrollEl._lockScroll = lockScroll;
+    scrollEl._savedScrollTop = savedScrollTop;
+    scrollBlocker.style.display = 'block';
     overlay.style.display = 'block';
     requestAnimationFrame(function () { overlay.style.opacity = '1'; });
     goTo(idx);
@@ -393,6 +432,14 @@
   function close() {
     if (!overlay) return;
     overlay.style.opacity = '0';
+    scrollBlocker.style.display = 'none';
+    var scrollEl = document.getElementById('card-scroll') || document.body;
+    scrollEl.style.overflowY = '';
+    if (scrollEl._lockScroll) {
+      scrollEl.removeEventListener('scroll', scrollEl._lockScroll);
+      scrollEl._lockScroll = null;
+    }
+    scrollEl.scrollTop = scrollEl._savedScrollTop || 0;
     setTimeout(function () { overlay.style.display = 'none'; }, 200);
     if (galCursor) galCursor.style.display = 'none';
   }
