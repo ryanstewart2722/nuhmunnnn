@@ -754,7 +754,7 @@ function buildCatalogue() {
     // Hover fade: enter dims others, leave resets all (including gap areas)
     a.addEventListener('mouseenter', () => {
       grid.querySelectorAll('.cat-card').forEach(c => {
-        c.style.opacity = c !== a ? '0.20' : '1';
+        c.style.opacity = c !== a ? '0.50' : '1';
       });
     });
     a.addEventListener('mouseleave', () => {
