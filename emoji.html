@@ -69,6 +69,23 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
   transition: opacity 0.65s ease;
 }
 
+/* ── Camera video — behind everything ── */
+#bg-video {
+  position: absolute; inset: 0; z-index: 0;
+  width: 100%; height: 100%; object-fit: cover;
+  pointer-events: none; transform: scaleX(-1);
+  opacity: 0; filter: blur(28px);
+  transition: opacity 0.5s ease, filter 0.7s ease;
+}
+#cam-denied {
+  display: none; position: absolute; inset: 0; z-index: 2;
+  align-items: center; justify-content: center;
+  font-family: 'ABCDiatype', Arial, sans-serif;
+  font-size: 12px; color: #fff; mix-blend-mode: exclusion;
+  pointer-events: none;
+}
+#cam-denied.visible { display: flex; }
+
 /* ── Emoji stage — fills full clip ── */
 #emoji-stage {
   position: absolute; inset: 0;
@@ -132,17 +149,24 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
 }
 
 /* Action buttons */
-#action-controls {
+#capture-frame, #action-controls {
   display: inline-flex; align-items: stretch;
 }
-#action-controls button {
+#capture-frame button, #action-controls button {
   font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px; color: #1a1a1a;
   background: none; cursor: pointer; padding: 4px 9px;
   transition: opacity 0.2s, color 0.2s;
   white-space: nowrap; opacity: 0.45;
 }
 #action-controls button + button { border-left: 1px solid rgb(209,209,209); }
-#action-controls button:hover { opacity: 1; color: #000; }
+#capture-frame button:hover, #action-controls button:hover { opacity: 1; color: #000; }
+
+#bg-shortcut {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 4px 9px;
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px; color: rgba(0,0,0,0.45);
+}
+#bg-shortcut:hover { color: rgba(0,0,0,0.85); }
 
 /* Remove Selected — label only, non-interactive */
 #remove-controls {
@@ -422,6 +446,9 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
   <!-- Pastel load-in overlay — color fades out once content is ready -->
   <div id="load-overlay"></div>
 
+  <video id="bg-video" autoplay muted playsinline></video>
+  <div id="cam-denied"></div>
+
   <!-- Stage — emoji placement area, fills entire clip -->
   <div id="emoji-stage">
     <img id="default-comp" src="images/default-emoji-comp.png" alt="">
@@ -431,17 +458,21 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
   <div id="mode-tabs">
     <span class="mode-tab" onclick="window.location.href='about.html'">Canvas</span>
     <span class="mode-tab active">Emoji Collage</span>
-    <span class="mode-tab" onclick="window.location.href='about-camera.html'">Camera</span>
   </div>
 
   <!-- Controls row — 10px below mode tabs -->
   <div id="controls-wrap">
-    <div id="action-controls" class="glass-frame">
+    <div id="capture-frame" class="glass-frame">
       <button onclick="captureCollage()">Capture</button>
+    </div>
+    <div id="action-controls" class="glass-frame">
       <button onclick="clearCollage()">Clear</button>
       <button onclick="undoEmoji()">Undo</button>
-      <button onclick="blankCollage()">Blank</button>
-      <button onclick="restoreCollage()">Restore</button>
+      <button onclick="redoEmoji()">Redo</button>
+    </div>
+    <div id="bg-shortcut" class="glass-frame" onclick="cycleBackground()" style="cursor:pointer;">
+      <span>Background Toggle:</span>
+      <span class="key-cap" style="color:#1a1a1a;">b</span>
     </div>
     <div id="remove-controls" class="glass-frame">
       Remove Selected
@@ -1437,6 +1468,7 @@ let placedEmojis    = [];
 let selectedEmoji   = null;
 let zCounter        = 10;
 let undoStack       = [];
+let redoStack       = [];
 let restoreState    = null;
 let defaultCompVisible = true;
 
@@ -1446,6 +1478,7 @@ function saveUndoState() {
     rotation: d.rotation, scale: d.scale, flipped: d.flipped || false, z: d.z
   })));
   if (undoStack.length > 40) undoStack.shift();
+  redoStack.length = 0;
 }
 
 function snapshotForRestore() {
@@ -1763,6 +1796,7 @@ document.addEventListener('keydown', e => {
   if ((e.key === 'Delete' || e.key === 'Backspace') && selectedEmoji) {
     e.preventDefault(); saveUndoState(); removeEmoji(selectedEmoji);
   }
+  if (e.key === 'b' || e.key === 'B') { cycleBackground(); }
 });
 
 // ════════════════════════════════════════════════════════
@@ -1808,6 +1842,10 @@ function restoreCollage() {
 }
 function undoEmoji() {
   if (undoStack.length === 0) return;
+  redoStack.push(placedEmojis.map(d => ({
+    char: d.char, x: d.x, y: d.y,
+    rotation: d.rotation, scale: d.scale, flipped: d.flipped || false, z: d.z
+  })));
   const prev = undoStack.pop();
   clearAllEmojis();
   prev.forEach(saved => {
@@ -1815,7 +1853,84 @@ function undoEmoji() {
     data.rotation = saved.rotation; data.scale = saved.scale; data.flipped = saved.flipped || false; data.z = saved.z;
     updateTransform(data);
   });
-  // Default comp visibility is controlled only by Clear/Blank, not undo
+}
+
+function redoEmoji() {
+  if (redoStack.length === 0) return;
+  undoStack.push(placedEmojis.map(d => ({
+    char: d.char, x: d.x, y: d.y,
+    rotation: d.rotation, scale: d.scale, flipped: d.flipped || false, z: d.z
+  })));
+  const next = redoStack.pop();
+  clearAllEmojis();
+  next.forEach(saved => {
+    const data = placeEmoji(saved.char, saved.x, saved.y, { silent: true });
+    data.rotation = saved.rotation; data.scale = saved.scale; data.flipped = saved.flipped || false; data.z = saved.z;
+    updateTransform(data);
+  });
+}
+
+// ════════════════════════════════════════════════════════
+//  BACKGROUND TOGGLE
+// ════════════════════════════════════════════════════════
+const bgVideo = document.getElementById('bg-video');
+const BG_MODES = ['blank', 'camera', 'color'];
+let bgMode = 'blank';
+let bgColor = '';
+let _cameraStream = null;
+
+async function startCamera() {
+  clip.style.background = randomPastel();
+  bgVideo.style.display = 'block';
+  try {
+    _cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    bgVideo.srcObject = _cameraStream;
+    bgVideo.addEventListener('playing', () => {
+      bgVideo.style.opacity = '1';
+      bgVideo.style.filter = 'blur(0px)';
+    }, { once: true });
+  } catch (err) {
+    const denied = document.getElementById('cam-denied');
+    if (denied) { denied.textContent = 'Click & Allow Camera Access'; denied.classList.add('visible'); }
+  }
+}
+
+function stopCamera() {
+  if (_cameraStream) { _cameraStream.getTracks().forEach(t => t.stop()); _cameraStream = null; }
+  bgVideo.srcObject = null;
+  bgVideo.style.opacity = '0';
+  bgVideo.style.filter = 'blur(28px)';
+  bgVideo.style.display = 'none';
+  const denied = document.getElementById('cam-denied');
+  if (denied) denied.classList.remove('visible');
+}
+
+function cycleBackground() {
+  const idx = BG_MODES.indexOf(bgMode);
+  setBgMode(BG_MODES[(idx + 1) % BG_MODES.length]);
+}
+
+function setBgMode(mode) {
+  const wasCamera = bgMode === 'camera';
+  bgMode = mode;
+  if (wasCamera && mode !== 'camera') stopCamera();
+  if (mode === 'camera') {
+    clip.style.background = '';
+    startCamera();
+  } else if (mode === 'color') {
+    bgColor = randomPastel();
+    clip.style.background = bgColor;
+  } else {
+    clip.style.background = '';
+  }
+}
+
+function drawVideoCover(vctx, w, h) {
+  const vw = bgVideo.videoWidth  || w;
+  const vh = bgVideo.videoHeight || h;
+  const scale = Math.max(w / vw, h / vh);
+  const dw = vw * scale, dh = vh * scale;
+  vctx.drawImage(bgVideo, (w - dw) / 2, (h - dh) / 2, dw, dh);
 }
 
 // ════════════════════════════════════════════════════════
@@ -1839,6 +1954,24 @@ async function captureCollage() {
   const cHpx    = Math.round(cH   * dpr);
   const clipXpx = Math.round(clipX * dpr);
   const clipYpx = Math.round(clipY * dpr);
+
+  // Snapshot camera video NOW if needed (synchronous, before async work)
+  let videoSnap = null;
+  if (bgMode === 'camera') {
+    const videoRaw = document.createElement('canvas');
+    videoRaw.width = cWpx; videoRaw.height = cHpx;
+    if (bgVideo.readyState >= 2) {
+      drawVideoCover(videoRaw.getContext('2d'), cWpx, cHpx);
+    } else {
+      videoRaw.getContext('2d').fillStyle = '#000';
+      videoRaw.getContext('2d').fillRect(0, 0, cWpx, cHpx);
+    }
+    videoSnap = document.createElement('canvas');
+    videoSnap.width = cWpx; videoSnap.height = cHpx;
+    const vsc = videoSnap.getContext('2d');
+    vsc.translate(cWpx, 0); vsc.scale(-1, 1);
+    vsc.drawImage(videoRaw, 0, 0);
+  }
 
   // Compute panel bounds before async work
   const clipBCR  = clip.getBoundingClientRect();
@@ -1868,6 +2001,7 @@ async function captureCollage() {
           useCORS: true, allowTaint: false, scale: dpr, logging: false,
           backgroundColor: null, windowWidth: fullW, windowHeight: fullH,
           scrollX: 0, scrollY: 0,
+          ignoreElements: el => el.id === 'bg-video',
           onclone(doc) {
             doc.documentElement.style.background = 'transparent';
             doc.body.style.background = 'transparent';
@@ -1908,9 +2042,16 @@ async function captureCollage() {
   octx.fillStyle = '#D9D9D9';
   octx.fillRect(0, 0, outW, outH);
 
-  // Layer 2: clip background (party color or white)
-  octx.fillStyle = document.body.classList.contains('party') ? document.body.style.backgroundColor : '#ffffff';
-  octx.fillRect(clipXpx, clipYpx, cWpx, cHpx);
+  // Layer 2: clip background
+  if (bgMode === 'camera' && videoSnap) {
+    octx.drawImage(videoSnap, clipXpx, clipYpx);
+  } else if (bgMode === 'color' && bgColor) {
+    octx.fillStyle = bgColor;
+    octx.fillRect(clipXpx, clipYpx, cWpx, cHpx);
+  } else {
+    octx.fillStyle = document.body.classList.contains('party') ? document.body.style.backgroundColor : '#ffffff';
+    octx.fillRect(clipXpx, clipYpx, cWpx, cHpx);
+  }
 
   // Layer 3: nav/footer/controls (glass panels + placed emojis hidden in html2canvas)
   if (uiLayer) {
