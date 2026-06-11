@@ -862,15 +862,16 @@ document.addEventListener('mousemove', e => {
   }
 
   const z  = getZone(e.clientX, e.clientY);
-  hoverDir = z;
+  document.body.style.cursor = 'none';
 
   if (z === null) {
+    // Center zone: show dot (click navigates to project page), never show OS cursor
     cursorWrap.style.display = 'none';
-    cursorDot.style.display  = 'none';
-    document.body.style.cursor = 'pointer';
+    cursorDot.style.left = e.clientX + 'px'; cursorDot.style.top = e.clientY + 'px';
+    cursorDot.style.display = 'block';
+    hoverDir = null;
     return;
   }
-  document.body.style.cursor = 'none';
 
   const op = navOpacity(z);
 
@@ -881,6 +882,7 @@ document.addEventListener('mousemove', e => {
       cursorSvg.style.transform = 'rotate(' + DIRS[z].rot + 'deg)';
       cursorWrap.style.opacity = '0.15';
       cursorWrap.style.display = 'block';
+      hoverDir = z;
     } else {
       cursorWrap.style.display = 'none';
       cursorDot.style.left = e.clientX + 'px'; cursorDot.style.top = e.clientY + 'px';
@@ -890,10 +892,22 @@ document.addEventListener('mousemove', e => {
     return;
   }
 
+  // For partially-blocked diagonal (op===0.5), remap to the free axis so the
+  // arrow points where you can actually go, not the blocked diagonal.
+  let displayDir = z;
+  if (op === 0.5) {
+    const { dr, dc } = DIRS[z];
+    const rowOk = dr < 0 ? focusRow > 0 : focusRow < ROWS - 1;
+    const colOk = dc < 0 ? focusCol > 0 : focusCol < COLS - 1;
+    if (rowOk && !colOk) displayDir = dr < 0 ? 'up'    : 'down';
+    if (!rowOk && colOk) displayDir = dc < 0 ? 'left'  : 'right';
+  }
+  hoverDir = displayDir;
+
   cursorDot.style.display = 'none';
   cursorWrap.style.left = e.clientX + 'px'; cursorWrap.style.top = e.clientY + 'px';
-  cursorSvg.style.transform = 'rotate(' + DIRS[z].rot + 'deg)';
-  cursorWrap.style.opacity = op === 1 ? '1' : '0.5';
+  cursorSvg.style.transform = 'rotate(' + DIRS[displayDir].rot + 'deg)';
+  cursorWrap.style.opacity = '1';
   cursorWrap.style.display = 'block';
 });
 
