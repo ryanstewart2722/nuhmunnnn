@@ -755,11 +755,14 @@ function _brushStep(dir) {
 }
 
 document.addEventListener('keydown', e => {
-  if ((e.key === '[' || e.key === ']') && !e.repeat) {
-    const dir = e.key === '[' ? -1 : 1;
-    _brushHeld = 0;
-    _brushStep(dir);
-    _brushInterval = setInterval(() => { _brushHeld += 40; _brushStep(dir); }, 40);
+  if (e.key === '[' || e.key === ']') {
+    if (!e.repeat) {
+      clearInterval(_brushInterval);
+      const dir = e.key === '[' ? -1 : 1;
+      _brushHeld = 0;
+      _brushStep(dir);
+      _brushInterval = setInterval(() => { _brushHeld += 40; _brushStep(dir); }, 40);
+    }
   }
   if (e.key === 'i' || e.key === 'I') { setEyedropperMode(!eyedropperMode); }
 });

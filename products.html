@@ -121,10 +121,13 @@ body {
 .card-meta .m-client { flex: 0 0 auto; }
 
 /* Cursors */
+body.no-cursor,    body.no-cursor *    { cursor: none !important; }
+body.link-cursor,  body.link-cursor *  { cursor: pointer !important; }
 #cursor-wrap {
   position: absolute; pointer-events: none; z-index: 999;
   transform: translate(-50%,-50%); display: none;
   width: 28px; height: 28px;
+  mix-blend-mode: exclusion; color: #fff;
 }
 #cursor-wrap svg { width: 28px; height: 28px; display: block; }
 
@@ -483,7 +486,7 @@ body {
       <rect width="30" height="30" fill="#D9D9D9"/>
     </mask>
     <g mask="url(#cmask)">
-      <path d="M9.21625 15.9375L16.3366 23.0578L15 24.375L5.625 15L15 5.625L16.3366 6.94219L9.21625 14.0625H24.375V15.9375H9.21625Z" fill="#1C1B1F"/>
+      <path d="M9.21625 15.9375L16.3366 23.0578L15 24.375L5.625 15L15 5.625L16.3366 6.94219L9.21625 14.0625H24.375V15.9375H9.21625Z" fill="#ffffff"/>
     </g>
   </svg>
 </div>
@@ -581,7 +584,9 @@ function buildGrid() {
 
     const link = document.createElement('a');
     link.className = 'card-link';
-    link.href = (p.client && p.client.includes('Pax')) ? 'pax-project.html' : 'flaus-project.html';
+    if (p.name !== 'Confidential') {
+      link.href = (p.client && p.client.includes('Pax')) ? 'pax-project.html' : 'flaus-project.html';
+    }
     link.id = 'cl' + i;
     card.appendChild(link);
 
@@ -672,7 +677,7 @@ function getZone(mx, my) {
   const r  = clip.getBoundingClientRect();
   const dx = mx - (r.left + r.width  / 2);
   const dy = my - (r.top  + r.height / 2);
-  if (Math.sqrt(dx*dx + dy*dy) < Math.min(r.width, r.height) * 0.18) return null;
+  if (Math.sqrt(dx*dx + dy*dy) < Math.min(r.width, r.height) * 0.04) return null;
   const a = Math.atan2(dy, dx) * 180 / Math.PI;
   if (a > -15  && a <= 15)   return 'right';
   if (a > 15   && a <= 50)   return 'down-right';
@@ -839,75 +844,55 @@ document.addEventListener('mousemove', e => {
 
   const r   = clip.getBoundingClientRect();
   const ins = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-  if (!ins) {
-    cursorWrap.style.display = 'none'; cursorDot.style.display = 'none';
-    if (e.target.closest && e.target.closest('#minimap')) document.body.style.cursor = 'auto';
-    return;
-  }
 
-  if (e.target.closest && e.target.closest('#minimap')) {
+  // Outside clip or over UI chrome — restore normal OS cursor
+  if (!ins || e.target.closest('#minimap') || e.target.closest('#view-mode-tabs') || e.target.closest('#zoom-shortcut')) {
     cursorWrap.style.display = 'none';
-    cursorDot.style.display  = 'none';
-    document.body.style.cursor = 'auto';
+    document.body.classList.remove('no-cursor', 'link-cursor');
     hoverDir = null;
     return;
   }
 
-  if (e.target.closest && e.target.closest('#view-mode-tabs')) {
-    cursorWrap.style.display = 'none';
-    cursorDot.style.display  = 'none';
-    document.body.style.cursor = 'auto';
-    hoverDir = null;
-    return;
-  }
-
-  const z  = getZone(e.clientX, e.clientY);
-  document.body.style.cursor = 'none';
-
-  if (z === null) {
-    // Center zone: show dot (click navigates to project page), never show OS cursor
-    cursorWrap.style.display = 'none';
-    cursorDot.style.left = e.clientX + 'px'; cursorDot.style.top = e.clientY + 'px';
-    cursorDot.style.display = 'block';
-    hoverDir = null;
-    return;
-  }
-
-  const op = navOpacity(z);
-
-  if (op === 0) {
-    if (nearScreenEdge(e.clientX, e.clientY, z)) {
-      cursorDot.style.display = 'none';
-      cursorWrap.style.left = e.clientX + 'px'; cursorWrap.style.top = e.clientY + 'px';
-      cursorSvg.style.transform = 'rotate(' + DIRS[z].rot + 'deg)';
-      cursorWrap.style.opacity = '0.15';
-      cursorWrap.style.display = 'block';
-      hoverDir = z;
-    } else {
+  // Check if over the focused card (full bounds) for a linked product
+  const focusedProject = projects[focusRow * COLS + focusCol];
+  const isLink = focusedProject && focusedProject.name !== 'Confidential';
+  if (isLink) {
+    const cr = canvas.getBoundingClientRect();
+    const cardL = cr.left + focusCol * (cardW + GAP);
+    const cardT = cr.top  + focusRow * (cardH + GAP);
+    if (e.clientX >= cardL && e.clientX <= cardL + cardW && e.clientY >= cardT && e.clientY <= cardT + cardH) {
+      document.body.classList.remove('no-cursor');
+      document.body.classList.add('link-cursor');
       cursorWrap.style.display = 'none';
-      cursorDot.style.left = e.clientX + 'px'; cursorDot.style.top = e.clientY + 'px';
-      cursorDot.style.display = 'block';
       hoverDir = null;
+      return;
     }
-    return;
   }
 
-  // For partially-blocked diagonal (op===0.5), remap to the free axis so the
-  // arrow points where you can actually go, not the blocked diagonal.
+  // Everywhere else: show directional arrow, hide OS cursor
+  document.body.classList.remove('link-cursor');
+  document.body.classList.add('no-cursor');
+
+  const z = getZone(e.clientX, e.clientY);
+
+  // Resolve direction — for null (dead center) pick the closest real zone
   let displayDir = z;
-  if (op === 0.5) {
+  if (z === null) {
+    displayDir = 'up'; // fallback for tiny dead-center; rarely reached
+  } else if (navOpacity(z) === 0.5) {
     const { dr, dc } = DIRS[z];
     const rowOk = dr < 0 ? focusRow > 0 : focusRow < ROWS - 1;
     const colOk = dc < 0 ? focusCol > 0 : focusCol < COLS - 1;
-    if (rowOk && !colOk) displayDir = dr < 0 ? 'up'    : 'down';
-    if (!rowOk && colOk) displayDir = dc < 0 ? 'left'  : 'right';
+    if (rowOk && !colOk) displayDir = dr < 0 ? 'up'   : 'down';
+    if (!rowOk && colOk) displayDir = dc < 0 ? 'left' : 'right';
   }
-  hoverDir = displayDir;
 
-  cursorDot.style.display = 'none';
-  cursorWrap.style.left = e.clientX + 'px'; cursorWrap.style.top = e.clientY + 'px';
+  const op = z === null ? 1 : navOpacity(z);
+  hoverDir = displayDir;
+  cursorWrap.style.left    = e.clientX + 'px';
+  cursorWrap.style.top     = e.clientY + 'px';
   cursorSvg.style.transform = 'rotate(' + DIRS[displayDir].rot + 'deg)';
-  cursorWrap.style.opacity = '1';
+  cursorWrap.style.opacity = op === 0 ? '0.20' : '1';
   cursorWrap.style.display = 'block';
 });
 
@@ -916,15 +901,14 @@ clip.addEventListener('click', e => {
   if (catMode) return;
   if (e.target.closest && e.target.closest('#minimap')) return;
   if (e.target.closest && e.target.closest('#view-mode-tabs')) return;
-  if (hoverDir === null) { const l = document.getElementById('cl' + (focusRow*COLS + focusCol)); if (l) window.location.href = l.href; }
+  if (hoverDir === null) { const l = document.getElementById('cl' + (focusRow*COLS + focusCol)); if (l && l.href) window.location.href = l.href; }
   else navTo(hoverDir);
 });
 
 document.addEventListener('mouseleave', () => {
   cursorWrap.style.display = 'none';
-  cursorDot.style.display  = 'none';
   catCursor.style.display  = 'none';
-  document.body.style.cursor = 'none';
+  document.body.classList.remove('no-cursor', 'link-cursor');
 });
 
 document.addEventListener('keydown', e => {
@@ -933,7 +917,7 @@ document.addEventListener('keydown', e => {
   if (catMode) return;
   const m = { ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down' };
   if (m[e.key]) { navTo(m[e.key]); updateMinimap(); }
-  if (e.key === 'Enter') { const l = document.getElementById('cl' + (focusRow*COLS + focusCol)); if (l) window.location.href = l.href; }
+  if (e.key === 'Enter') { const l = document.getElementById('cl' + (focusRow*COLS + focusCol)); if (l && l.href) window.location.href = l.href; }
 });
 
 // ── Trackpad swipe navigation ─────────────────────────────
