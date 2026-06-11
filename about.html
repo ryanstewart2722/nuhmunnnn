@@ -91,8 +91,9 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
   font-family: 'ABCDiatype', Arial, sans-serif;
   font-size: 12px; color: #fff; mix-blend-mode: exclusion;
   pointer-events: none;
+  cursor: pointer;
 }
-#cam-denied.visible { display: flex; }
+#cam-denied.visible { display: flex; pointer-events: auto; }
 
 /* ── Drawing canvas — transparent strokes layer ── */
 #draw-canvas { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
@@ -561,7 +562,11 @@ async function startCamera() {
     }, { once: true });
   } catch (err) {
     const denied = document.getElementById('cam-denied');
-    if (denied) { denied.textContent = 'Click & Allow Camera Access'; denied.classList.add('visible'); }
+    if (denied) {
+      denied.textContent = 'Click to Allow Camera Access';
+      denied.classList.add('visible');
+      denied.onclick = () => { denied.classList.remove('visible'); startCamera(); };
+    }
   }
 }
 
