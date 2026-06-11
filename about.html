@@ -1052,9 +1052,13 @@ async function captureDrawing() {
 
   // Panel bounds (computed before async)
   const colorBarWrap = document.getElementById('color-bar-wrap');
+  const controlsWrap = document.getElementById('controls-wrap');
+  const modeTabs     = document.getElementById('mode-tabs');
   const clipBCR = clip.getBoundingClientRect();
   const cardBCR = card.getBoundingClientRect();
   const barBCR  = colorBarWrap.getBoundingClientRect();
+  const ctrlBCR = controlsWrap ? controlsWrap.getBoundingClientRect() : null;
+  const tabsBCR = modeTabs ? modeTabs.getBoundingClientRect() : null;
 
   function toPx(bcr) {
     return {
@@ -1066,10 +1070,12 @@ async function captureDrawing() {
   }
   const cardPx = toPx(cardBCR);
   const barPx  = toPx(barBCR);
+  const ctrlPx = ctrlBCR ? toPx(ctrlBCR) : null;
+  const tabsPx = tabsBCR ? toPx(tabsBCR) : null;
 
-  let uiLayer = null, cardLayer = null, barLayer = null;
+  let uiLayer = null, cardLayer = null, barLayer = null, ctrlLayer = null, tabsLayer = null;
   try {
-    [uiLayer, cardLayer, barLayer] = await Promise.all([
+    [uiLayer, cardLayer, barLayer, ctrlLayer, tabsLayer] = await Promise.all([
       Promise.race([
         html2canvas(document.body, {
           useCORS: true, allowTaint: false, scale: dpr, logging: false,
@@ -1081,6 +1087,11 @@ async function captureDrawing() {
             doc.body.style.background = 'transparent';
             const c = doc.getElementById('clip');
             if (c) { c.style.background = 'transparent'; c.style.backgroundColor = 'transparent'; }
+            // Hide glass panels — drawn separately
+            const ac = doc.getElementById('about-card');
+            if (ac) ac.style.visibility = 'hidden';
+            const cb = doc.getElementById('color-bar-wrap');
+            if (cb) cb.style.visibility = 'hidden';
             const lo = doc.getElementById('load-overlay');
             if (lo) lo.remove();
           },
@@ -1095,6 +1106,14 @@ async function captureDrawing() {
         html2canvas(colorBarWrap, { useCORS: true, allowTaint: false, scale: dpr, logging: false, backgroundColor: null }),
         new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
       ]),
+      controlsWrap ? Promise.race([
+        html2canvas(controlsWrap, { useCORS: true, allowTaint: false, scale: dpr, logging: false, backgroundColor: null }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
+      ]) : Promise.resolve(null),
+      modeTabs ? Promise.race([
+        html2canvas(modeTabs, { useCORS: true, allowTaint: false, scale: dpr, logging: false, backgroundColor: null }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
+      ]) : Promise.resolve(null),
     ]);
   } catch (err) {
     console.warn('html2canvas failed:', err);
@@ -1105,29 +1124,39 @@ async function captureDrawing() {
   out.height = outH;
   const octx = out.getContext('2d');
 
+  // Capture party color now (body bg animates, grab current value)
+  const isParty   = document.body.classList.contains('party');
+  const partyColor = isParty ? document.body.style.backgroundColor : null;
+
   // Layer 1: grey frame base
   octx.fillStyle = '#D9D9D9';
   octx.fillRect(0, 0, outW, outH);
 
   // Layer 2: clip background
-  if (bgMode === 'camera' && videoSnap) {
+  if (bgMode === 'camera' && videoSnap && !isParty) {
     octx.drawImage(videoSnap, clipXpx, clipYpx);
-  } else if ((bgMode === 'drawing1' || bgMode === 'drawing2') && bgCanvas.width > 0) {
-    octx.drawImage(bgCanvas, clipXpx, clipYpx, cWpx, cHpx);
-  } else if (bgMode === 'color' && bgColor) {
-    octx.fillStyle = bgColor;
-    octx.fillRect(clipXpx, clipYpx, cWpx, cHpx);
   } else {
-    octx.fillStyle = '#ffffff';
+    // Base fill: party color, bg color, or white
+    if (isParty && partyColor) {
+      octx.fillStyle = partyColor;
+    } else if (bgMode === 'color' && bgColor) {
+      octx.fillStyle = bgColor;
+    } else {
+      octx.fillStyle = '#ffffff';
+    }
     octx.fillRect(clipXpx, clipYpx, cWpx, cHpx);
+    // Draw illustration on top if in drawing mode
+    if ((bgMode === 'drawing1' || bgMode === 'drawing2') && bgCanvas.width > 0) {
+      octx.drawImage(bgCanvas, clipXpx, clipYpx, cWpx, cHpx);
+    }
   }
 
-  // Layer 3: strokes (early pass — visible through glass panels)
+  // Layer 3: strokes early pass — so glass blur includes them
   if (strokesSnap.width > 0 && strokesSnap.height > 0) {
     octx.drawImage(strokesSnap, clipXpx, clipYpx, cWpx, cHpx);
   }
 
-  // Layer 4: UI chrome — nav, footer, controls (clip area transparent)
+  // Layer 4: UI chrome — nav, footer, controls, mode tabs (clip area transparent, glass panels hidden)
   if (uiLayer) octx.drawImage(uiLayer, 0, 0);
 
   function applyGlass(px) {
@@ -1145,13 +1174,13 @@ async function captureDrawing() {
     octx.drawImage(blurred, l, t);
   }
 
-  // Layer 5: glass sim for about-card
+  // Layer 4: glass sim for about-card
   applyGlass(cardPx);
 
-  // Layer 6: glass sim for color-bar-wrap
+  // Layer 5: glass sim for color-bar-wrap
   applyGlass(barPx);
 
-  // Layer 7: card text/borders on top of glass sim
+  // Layer 6: card text/borders on top of glass sim
   if (cardLayer) {
     octx.save();
     octx.beginPath();
@@ -1161,7 +1190,7 @@ async function captureDrawing() {
     octx.restore();
   }
 
-  // Layer 8: color bar on top of glass sim
+  // Layer 7: color bar on top of glass sim
   if (barLayer) {
     octx.save();
     octx.beginPath();
@@ -1171,7 +1200,7 @@ async function captureDrawing() {
     octx.restore();
   }
 
-  // Layer 9: strokes drawn LAST — evenodd excludes both panels
+  // Layer 8: strokes drawn LAST — evenodd excludes both panels
   if (strokesSnap.width > 0 && strokesSnap.height > 0) {
     octx.save();
     octx.beginPath();
