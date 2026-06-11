@@ -65,20 +65,16 @@ body {
   background: #ffffff;
 }
 
-/* Canvas — absolute within clip, moved by left/top (no transform, no GPU layer) */
+/* Canvas — absolute within clip, moved by left/top */
 #canvas {
   position: absolute;
   background: #ffffff;
   transition: left 0.55s cubic-bezier(0.77,0,0.175,1),
-              top  0.55s cubic-bezier(0.77,0,0.175,1);
+              top  0.55s cubic-bezier(0.77,0,0.175,1),
+              transform 0.55s cubic-bezier(0.77,0,0.175,1);
 }
 #canvas.instant { transition: none; }
 
-/*
-  Cards: transparent background. They are absolutely positioned blocks.
-  A transparent card has NO element boundary visible — the white canvas
-  background shows through uniformly. Zero compositing artifacts.
-*/
 .card {
   position: absolute;
   background: transparent;
@@ -91,14 +87,6 @@ body {
 }
 .card-link.active { display: block; cursor: pointer; }
 
-/*
-  Image: CSS background-image.
-  background-size is expanded by 4px (2px per side) so that any
-  sub-pixel interpolation artifacts at the scaled image edges are
-  pushed outside the element bounds and clipped by overflow:hidden.
-  overflow:hidden here is safe — no absolutely-positioned or moving
-  children inside, so no GPU compositing layer is created.
-*/
 .card-img {
   position: absolute;
   top: 0; left: 0;
@@ -139,6 +127,106 @@ body {
   width: 28px; height: 28px;
 }
 #cursor-wrap svg { width: 28px; height: 28px; display: block; }
+
+/* ── Gallery | Catalogue tab toggle ── */
+#view-mode-tabs {
+  position: absolute; top: 20px; left: 20px;
+  z-index: 300; display: inline-flex; align-items: stretch;
+  border: 1px solid rgb(209,209,209);
+  background: rgba(236,236,236,0.60);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  user-select: none; -webkit-user-select: none; cursor: auto;
+}
+.vm-tab {
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px; color: #1a1a1a;
+  padding: 4px 9px; cursor: pointer; white-space: nowrap;
+}
+.vm-tab.active { background: rgba(255,255,255,0.72); cursor: default; }
+.vm-tab:not(.active) { color: rgba(26,26,26,0.40); }
+.vm-tab:not(.active):hover { color: rgba(26,26,26,0.70); }
+.vm-tab + .vm-tab { border-left: 1px solid rgb(209,209,209); }
+
+/* ── Zoom shortcut label (Gallery mode only) ── */
+#zoom-shortcut {
+  position: absolute; top: 52px; left: 20px;
+  z-index: 300;
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid rgb(209,209,209);
+  background: rgba(236,236,236,0.60);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  padding: 4px 9px;
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px;
+  color: rgba(0,0,0,0.45);
+  user-select: none; -webkit-user-select: none; cursor: auto;
+  white-space: nowrap;
+}
+.zoom-key {
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(0,0,0,0.25); border-radius: 2px;
+  min-width: 18px; height: 16px; padding: 0 3px;
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 11px;
+  color: rgba(0,0,0,0.6);
+}
+
+/* ── Catalogue view ── */
+#catalogue {
+  position: absolute; inset: 0;
+  overflow-y: scroll; overflow-x: hidden;
+  scrollbar-width: none; -ms-overflow-style: none;
+  display: none; z-index: 100;
+  background: #fff;
+}
+#catalogue::-webkit-scrollbar { display: none; }
+#cat-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  padding: 60px 20px 40px;
+  min-height: 100%;
+}
+.cat-card {
+  display: block; text-decoration: none; color: inherit;
+  cursor: none;
+  transition: opacity 0.3s ease;
+}
+.cat-img {
+  width: 100%;
+  aspect-ratio: 1043 / 1399;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  border: none;
+  filter: blur(40px); opacity: 0;
+  transition: filter 1.4s cubic-bezier(0.25,0,0.1,1), opacity 1.2s ease;
+}
+.cat-img.loaded { filter: blur(0); opacity: 1; }
+.cat-img.loaded.confidential { filter: blur(10px); }
+
+/* Confidential blur — gallery view */
+.card-img.confidential-img { filter: blur(10px); background-color: transparent; }
+.cat-rule { width: 100%; height: 1px; background: #000; display: block; margin-top: 4px; }
+.cat-meta {
+  display: flex; align-items: baseline;
+  font-family: 'ABCDiatype', Arial, sans-serif;
+  font-size: 12px; color: #1a1a1a;
+  line-height: 1; white-space: nowrap;
+  padding: 4px 0 0;
+}
+.cat-meta .m-name   { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
+.cat-meta .m-year   { flex: 0 0 auto; margin-right: 14px; }
+.cat-meta .m-client { flex: 0 0 auto; }
+
+/* ── "View" cursor for catalogue ── */
+#cat-cursor {
+  position: absolute; pointer-events: none; z-index: 9999;
+  transform: translate(-50%, -50%); display: none;
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px;
+  color: #fff; mix-blend-mode: exclusion;
+  white-space: nowrap;
+  user-select: none; -webkit-user-select: none;
+}
+
 /* ── Minimap ── */
 #minimap {
   position: absolute;
@@ -181,7 +269,6 @@ body {
   transition: opacity 0.15s ease;
 }
 .mm-close:hover { opacity: 0.45; }
-/* 2-D panning dot grid — perspective enables spherical drag tilt */
 #mm-window {
   margin-top: 9px;
   height: 126px;
@@ -196,8 +283,8 @@ body {
 #mm-inner {
   position: absolute;
   top: 0; left: 0;
-  width: 320px;  /* 5 × 8 + 4 × 70 = 320 px */
-  height: 200px; /* 5 × 8 + 4 × 40 = 200 px */
+  width: 320px;
+  height: 200px;
   will-change: transform;
 }
 .mm-dot {
@@ -256,11 +343,8 @@ body {
   text-decoration: none;
   transition: opacity 0.2s ease;
 }
-/* Fade all siblings when strip is hovered; full opacity on the hovered one */
 #pv-strip:hover .pv-item         { opacity: 0.5; }
 #pv-strip:hover .pv-item:hover   { opacity: 1; }
-
-/* Label: name + rule + year — hidden until hover */
 .pv-label {
   position: absolute;
   top: calc(100% + 8px);
@@ -363,6 +447,14 @@ body {
 </nav>
 <div id="clip">
   <div id="canvas"></div>
+  <div id="view-mode-tabs">
+    <span class="vm-tab active" id="vm-gallery">Gallery</span>
+    <span class="vm-tab" id="vm-catalogue">Catalogue</span>
+  </div>
+  <div id="zoom-shortcut">View Shortcut&nbsp;&nbsp;<span class="zoom-key">[</span><span class="zoom-key">]</span></div>
+  <div id="catalogue">
+    <div id="cat-grid"></div>
+  </div>
   <div id="pv-overlay">
     <div id="pv-strip"></div>
   </div>
@@ -396,19 +488,40 @@ body {
   </svg>
 </div>
 <div id="cursor-dot"></div>
+<div id="cat-cursor">View</div>
 
 <script>
 const COLS=5, ROWS=5, GAP=50, IMG_RATIO=1.341, META_H=20;
-const projects=[
-  {name:'Metal & Strainer',        year:'2023',client:'Made In',          img:'./images/product-1.png'},
-  {name:'Metal & Strainer II',     year:'2023',client:'Made In',          img:'./images/product-2.png'},
-  {name:'Metal & Silicon Spatula', year:'2023',client:'Pax Technologies', img:'./images/product-3.png'},
-  {name:'Metal Whisk',             year:'2023',client:'Made In',          img:'./images/product-4.png'},
-  {name:'Pax Accessories',         year:'2023',client:'Pax Technologies', img:'./images/product-5.png'},
-  {name:'Flausy Showerhead',       year:'2023',client:'Canopy',           img:'./images/product-6.png'},
-  {name:'Metal & Silicon Tongs',   year:'2023',client:'Made In',          img:'./images/product-7.png'},
-  {name:'Portable Speaker',        year:'2022',client:'Pax Technologies', img:'./images/product-8.png'},
+
+// Full 25-card explicit list — 5 confidential images interspersed, no adjacent duplicates
+const projects = [
+  {name:'Wire Skimmer',          year:'2023', client:'Made In',          img:'./images/product-1.png'},
+  {name:'Basket Strainer',       year:'2023', client:'Made In',          img:'./images/product-2.png'},
+  {name:'Balloon Whisk',         year:'2023', client:'Made In',          img:'./images/product-4.png'},
+  {name:'Confidential',          year:'2023', client:'Loftie',           img:'./images/Product-Confidential-1.png'},
+  {name:'Storage Tin',           year:'2023', client:'Pax Technologies', img:'./images/product-5.png'},
+  {name:'Filtered Showerhead',   year:'2023', client:'Canopy',           img:'./images/product-6.png'},
+  {name:'Silicone Tongs',        year:'2023', client:'Made In',          img:'./images/product-7.png'},
+  {name:'Grip Spatula',          year:'2023', client:'Pax Technologies', img:'./images/product-3.png'},
+  {name:'Confidential',          year:'2023', client:'Amazon',           img:'./images/Product-Confidential-2.png'},
+  {name:'Portable Speaker',      year:'2022', client:'Pax Technologies', img:'./images/product-8.png'},
+  {name:'Wire Skimmer',          year:'2023', client:'Made In',          img:'./images/product-1.png'},
+  {name:'Balloon Whisk',         year:'2023', client:'Made In',          img:'./images/product-4.png'},
+  {name:'Basket Strainer',       year:'2023', client:'Made In',          img:'./images/product-2.png'},
+  {name:'Confidential',          year:'2023', client:'Curology',         img:'./images/Product-Confidential-3.png'},
+  {name:'Silicone Tongs',        year:'2023', client:'Made In',          img:'./images/product-7.png'},
+  {name:'Storage Tin',           year:'2023', client:'Pax Technologies', img:'./images/product-5.png'},
+  {name:'Filtered Showerhead',   year:'2023', client:'Canopy',           img:'./images/product-6.png'},
+  {name:'Grip Spatula',          year:'2023', client:'Pax Technologies', img:'./images/product-3.png'},
+  {name:'Confidential',          year:'2023', client:'Canopy',           img:'./images/Product-Confidential-4.png'},
+  {name:'Portable Speaker',      year:'2022', client:'Pax Technologies', img:'./images/product-8.png'},
+  {name:'Basket Strainer',       year:'2023', client:'Made In',          img:'./images/product-2.png'},
+  {name:'Wire Skimmer',          year:'2023', client:'Made In',          img:'./images/product-1.png'},
+  {name:'Balloon Whisk',         year:'2023', client:'Made In',          img:'./images/product-4.png'},
+  {name:'Confidential',          year:'2023', client:'',                 img:'./images/Product-Confidential-5.png'},
+  {name:'Silicone Tongs',        year:'2023', client:'Made In',          img:'./images/product-7.png'},
 ];
+
 const pvProjects=[
   {name:'Flaus Flosser',   year:'2023', img:'./images/01 - flaus.png',   url:'flaus-project.html'},
   {name:'Grinder',         year:'2023', img:'./images/02 - grinder.png', url:'pax-project.html'},
@@ -419,7 +532,6 @@ const pvProjects=[
   {name:'Pax Accessories', year:'2023', img:'./images/07 - pax.png',     url:'pax-project.html'},
 ];
 // 8 directions: rotation for the SVG arrow (which points LEFT at 0°)
-// dr = row delta (-1=up, 0=none, 1=down), dc = col delta
 const DIRS = {
   'left':       { rot: 0,   dr: 0,  dc: -1 },
   'up-left':    { rot: 45,  dr: -1, dc: -1 },
@@ -436,11 +548,14 @@ const canvas     = document.getElementById('canvas');
 const cursorWrap = document.getElementById('cursor-wrap');
 const cursorDot  = document.getElementById('cursor-dot');
 const cursorSvg  = document.getElementById('cursor-svg');
+const catCursor  = document.getElementById('cat-cursor');
 
-let VW,VH,cardW,imgH,cardH;
-let focusCol=1, focusRow=2, hoverDir=null;
+let VW, VH, cardW, imgH, cardH;
+let focusCol = 1, focusRow = 2, hoverDir = null;
+let zoomLevel = 1.0;
+let catMode = false;
 
-function measure(){
+function measure() {
   VW = clip.clientWidth;
   VH = clip.clientHeight;
   cardW = Math.floor((VW - 60*2 - GAP*4) / 3);
@@ -448,13 +563,13 @@ function measure(){
   cardH = imgH + 1 + META_H;
 }
 
-function buildGrid(){
+function buildGrid() {
   canvas.innerHTML = '';
   canvas.style.width  = (COLS*cardW + (COLS-1)*GAP) + 'px';
   canvas.style.height = (ROWS*cardH + (ROWS-1)*GAP) + 'px';
 
-  for(let i=0; i<COLS*ROWS; i++){
-    const p   = projects[i % projects.length];
+  for (let i = 0; i < COLS*ROWS; i++) {
+    const p   = projects[i];
     const col = i % COLS;
     const row = Math.floor(i / COLS);
     const L   = col*(cardW+GAP);
@@ -464,30 +579,26 @@ function buildGrid(){
     card.className = 'card';
     card.style.cssText = 'left:'+L+'px;top:'+T+'px;width:'+cardW+'px;height:'+cardH+'px;';
 
-    // Link overlay — Pax products go to pax page, others to project page
     const link = document.createElement('a');
     link.className = 'card-link';
     link.href = (p.client && p.client.includes('Pax')) ? 'pax-project.html' : 'flaus-project.html';
-    link.id='cl'+i;
+    link.id = 'cl' + i;
     card.appendChild(link);
 
-    // Image via CSS background-image — no img element, no element boundary
     const imgDiv = document.createElement('div');
-    imgDiv.className = 'card-img';
+    imgDiv.className = 'card-img' + (p.name === 'Confidential' ? ' confidential-img' : '');
     imgDiv.style.cssText = 'width:'+cardW+'px;height:'+imgH+'px;background-image:url('+JSON.stringify(p.img)+');';
     card.appendChild(imgDiv);
 
-    // 1px rule below image
     const rule = document.createElement('div');
     rule.className = 'card-rule';
-    rule.style.top = imgH+'px';
+    rule.style.top = imgH + 'px';
     card.appendChild(rule);
 
-    // Meta text below rule
     const meta = document.createElement('div');
     meta.className = 'card-meta';
-    meta.style.top = (imgH+1)+'px';
-    meta.style.height = META_H+'px';
+    meta.style.top = (imgH+1) + 'px';
+    meta.style.height = META_H + 'px';
     meta.innerHTML = '<span class="m-name">'+p.name+'</span><span class="m-year">'+p.year+'</span><span class="m-client">'+p.client+'</span>';
     card.appendChild(meta);
 
@@ -496,31 +607,40 @@ function buildGrid(){
   updateLink();
 }
 
-function updateLink(){
-  document.querySelectorAll('.card-link').forEach(l=>l.classList.remove('active'));
-  const l=document.getElementById('cl'+(focusRow*COLS+focusCol));
-  if(l)l.classList.add('active');
+function updateLink() {
+  document.querySelectorAll('.card-link').forEach(l => l.classList.remove('active'));
+  const l = document.getElementById('cl' + (focusRow*COLS + focusCol));
+  if (l) l.classList.add('active');
 }
 
-function getPos(){
+function getPos() {
   const xC = focusCol*(cardW+GAP) + cardW/2;
   const tx  = Math.round(VW/2 - xC);
   const ty  = Math.round(VH/2 - (focusRow*(cardH+GAP) + imgH/2));
-  return{tx,ty};
+  return { tx, ty };
 }
 
-function applyPos(animated){
-  const{tx,ty}=getPos();
+function applyPos(animated) {
+  const { tx, ty } = getPos();
   canvas.classList.toggle('instant', !animated);
-  if(!animated) canvas.offsetHeight; // flush
-  canvas.style.left = tx+'px';
-  canvas.style.top  = ty+'px';
+  if (!animated) canvas.offsetHeight; // flush
+  canvas.style.left = tx + 'px';
+  canvas.style.top  = ty + 'px';
+  // Transform origin = focused card center in canvas space = viewport center in canvas space
+  const xC = focusCol*(cardW+GAP) + cardW/2;
+  const yC = focusRow*(cardH+GAP) + imgH/2;
+  canvas.style.transformOrigin = xC + 'px ' + yC + 'px';
+  canvas.style.transform = 'scale(' + zoomLevel + ')';
 }
 
-function navTo(dir){
+function setZoom(level) {
+  zoomLevel = level;
+  applyPos(true);
+}
+
+function navTo(dir) {
   if (!dir) return;
-  const {dr, dc} = DIRS[dir];
-  // Each axis moves independently — handles partial diagonal (one axis blocked)
+  const { dr, dc } = DIRS[dir];
   if (dr < 0 && focusRow > 0)      focusRow--;
   if (dr > 0 && focusRow < ROWS-1) focusRow++;
   if (dc < 0 && focusCol > 0)      focusCol--;
@@ -528,20 +648,18 @@ function navTo(dir){
   applyPos(true); updateLink(); updateMinimap();
 }
 
-// Returns 1=fully open, 0.5=diagonal partially blocked, 0=fully blocked
-function navOpacity(dir){
-  const {dr, dc} = DIRS[dir];
+function navOpacity(dir) {
+  const { dr, dc } = DIRS[dir];
   const rowOk = (dr === 0) || (dr < 0 ? focusRow > 0 : focusRow < ROWS-1);
   const colOk = (dc === 0) || (dc < 0 ? focusCol > 0 : focusCol < COLS-1);
   if (rowOk && colOk) return 1;
-  if (dr !== 0 && dc !== 0 && (rowOk || colOk)) return 0.5; // diagonal, one axis free
-  return 0; // fully blocked
+  if (dr !== 0 && dc !== 0 && (rowOk || colOk)) return 0.5;
+  return 0;
 }
 
-// True if cursor is physically near the viewport edge for this direction
-function nearScreenEdge(mx, my, dir){
+function nearScreenEdge(mx, my, dir) {
   const r = clip.getBoundingClientRect();
-  const {dr, dc} = DIRS[dir];
+  const { dr, dc } = DIRS[dir];
   const T = 0.12;
   if (dr < 0 && (my - r.top)    < r.height * T) return true;
   if (dr > 0 && (r.bottom - my) < r.height * T) return true;
@@ -550,13 +668,12 @@ function nearScreenEdge(mx, my, dir){
   return false;
 }
 
-function getZone(mx, my){
+function getZone(mx, my) {
   const r  = clip.getBoundingClientRect();
   const dx = mx - (r.left + r.width  / 2);
   const dy = my - (r.top  + r.height / 2);
   if (Math.sqrt(dx*dx + dy*dy) < Math.min(r.width, r.height) * 0.18) return null;
   const a = Math.atan2(dy, dx) * 180 / Math.PI;
-  // right/left = 30° zones, up/down = 80° zones, diagonals = 35° zones
   if (a > -15  && a <= 15)   return 'right';
   if (a > 15   && a <= 50)   return 'down-right';
   if (a > 50   && a <= 130)  return 'down';
@@ -564,10 +681,92 @@ function getZone(mx, my){
   if (a > 165  || a <= -165) return 'left';
   if (a > -165 && a <= -130) return 'up-left';
   if (a > -130 && a <= -50)  return 'up';
-  return 'up-right'; // -50 to -15
+  return 'up-right';
 }
 
-// ── View mode ────────────────────────────────────────────
+// ── Catalogue view ────────────────────────────────────────────
+let catObserver = null;
+
+function buildCatalogue() {
+  const grid = document.getElementById('cat-grid');
+  grid.innerHTML = '';
+
+  if (catObserver) { catObserver.disconnect(); catObserver = null; }
+
+  const catalogue = document.getElementById('catalogue');
+  catObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const el = entry.target;
+        el.classList.add('loaded');
+        if (el.dataset.confidential) el.classList.add('confidential');
+        catObserver.unobserve(el);
+      }
+    });
+  }, { threshold: 0.05, root: catalogue });
+
+  projects.forEach(p => {
+    const isConf = p.name === 'Confidential';
+    const a = document.createElement('a');
+    a.className = 'cat-card';
+    a.href = (p.client && p.client.includes('Pax')) ? 'pax-project.html' : 'flaus-project.html';
+
+    const imgDiv = document.createElement('div');
+    imgDiv.className = 'cat-img';
+    if (isConf) imgDiv.dataset.confidential = '1';
+    imgDiv.style.backgroundImage = 'url(' + JSON.stringify(p.img) + ')';
+
+    const rule = document.createElement('div');
+    rule.className = 'cat-rule';
+
+    const meta = document.createElement('div');
+    meta.className = 'cat-meta';
+    meta.innerHTML =
+      '<span class="m-name">'   + p.name   + '</span>' +
+      '<span class="m-year">'   + p.year   + '</span>' +
+      '<span class="m-client">' + p.client + '</span>';
+
+    a.appendChild(imgDiv);
+    a.appendChild(rule);
+    a.appendChild(meta);
+    grid.appendChild(a);
+
+    catObserver.observe(imgDiv);
+  });
+
+  // Hover fade — only dims when cursor is over a card, not the grid gap
+  grid.addEventListener('mouseover', e => {
+    const card = e.target.closest('.cat-card');
+    grid.querySelectorAll('.cat-card').forEach(c => {
+      c.style.opacity = card && c !== card ? '0.25' : '1';
+    });
+  });
+  grid.addEventListener('mouseleave', () => {
+    grid.querySelectorAll('.cat-card').forEach(c => c.style.opacity = '1');
+  });
+}
+
+function setViewMode(mode) {
+  catMode = (mode === 'catalogue');
+
+  canvas.style.display          = catMode ? 'none' : '';
+  document.getElementById('catalogue').style.display   = catMode ? 'block' : 'none';
+  document.getElementById('minimap').style.display     = catMode ? 'none' : '';
+  document.getElementById('vm-gallery').classList.toggle('active', !catMode);
+  document.getElementById('vm-catalogue').classList.toggle('active',  catMode);
+
+  if (catMode) {
+    buildCatalogue();
+    document.body.style.cursor = 'none';
+    cursorWrap.style.display = 'none';
+    cursorDot.style.display  = 'none';
+  } else {
+    catCursor.style.display  = 'none';
+    document.body.style.cursor = 'none';
+  }
+}
+
+// ── View mode (Product / Project overlay) ─────────────────────
 let pvMode = false;
 
 function buildProjectView() {
@@ -580,7 +779,6 @@ function buildProjectView() {
     a.className = 'pv-item';
     a.style.backgroundImage = 'url(' + JSON.stringify(p.img) + ')';
 
-    // Hover label: name + rule + year
     const label = document.createElement('div');
     label.className = 'pv-label';
     label.innerHTML =
@@ -598,14 +796,13 @@ function buildProjectView() {
 function layoutPv() {
   const strip = document.getElementById('pv-strip');
   if (!strip) return;
-  // Scale from Figma: images 182px tall in 903px clip height, gap 19px in 1440px width
-  const pvH = Math.round(VH * 182 / 903);
-  const pvW = Math.round(pvH / IMG_RATIO);
+  const pvH   = Math.round(VH * 182 / 903);
+  const pvW   = Math.round(pvH / IMG_RATIO);
   const pvGap = Math.round(VW * 19 / 1440);
   strip.style.gap = pvGap + 'px';
   strip.querySelectorAll('.pv-item').forEach(el => {
-    el.style.width  = pvW  + 'px';
-    el.style.height = pvH  + 'px';
+    el.style.width  = pvW + 'px';
+    el.style.height = pvH + 'px';
   });
 }
 
@@ -615,24 +812,39 @@ function setPvMode(on) {
   if (overlay) overlay.classList.toggle('visible', on);
   document.getElementById('vt-product').classList.toggle('active', !on);
   document.getElementById('vt-project').classList.toggle('active',  on);
-  // Cursor: restore none on canvas, let overlay/items use their own CSS cursors
   document.body.style.cursor = on ? '' : 'none';
   cursorWrap.style.display = 'none';
   cursorDot.style.display  = 'none';
 }
 
 document.addEventListener('mousemove', e => {
-  if (pvMode) return; // overlay has its own cursor behaviour
-  const r = clip.getBoundingClientRect();
-  const ins = e.clientX>=r.left && e.clientX<=r.right && e.clientY>=r.top && e.clientY<=r.bottom;
-  if (!ins) {
-    cursorWrap.style.display='none'; cursorDot.style.display='none';
-    // Restore cursor when hovering minimap (lives outside #clip)
-    if (e.target.closest && e.target.closest('#minimap')) document.body.style.cursor='auto';
+  if (pvMode) return;
+
+  if (catMode) {
+    const r = clip.getBoundingClientRect();
+    const ins = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    if (!ins || e.target.closest('#view-mode-tabs')) {
+      catCursor.style.display  = 'none';
+      document.body.style.cursor = ins ? 'auto' : 'none';
+    } else {
+      catCursor.style.left = e.clientX + 'px';
+      catCursor.style.top  = e.clientY + 'px';
+      catCursor.style.display = 'block';
+      document.body.style.cursor = 'none';
+    }
+    cursorWrap.style.display = 'none';
+    cursorDot.style.display  = 'none';
     return;
   }
 
-  // Minimap handles its own cursor — don't show directional cursor over it
+  const r   = clip.getBoundingClientRect();
+  const ins = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+  if (!ins) {
+    cursorWrap.style.display = 'none'; cursorDot.style.display = 'none';
+    if (e.target.closest && e.target.closest('#minimap')) document.body.style.cursor = 'auto';
+    return;
+  }
+
   if (e.target.closest && e.target.closest('#minimap')) {
     cursorWrap.style.display = 'none';
     cursorDot.style.display  = 'none';
@@ -641,12 +853,20 @@ document.addEventListener('mousemove', e => {
     return;
   }
 
-  const z   = getZone(e.clientX, e.clientY);
-  hoverDir  = z;
+  if (e.target.closest && e.target.closest('#view-mode-tabs')) {
+    cursorWrap.style.display = 'none';
+    cursorDot.style.display  = 'none';
+    document.body.style.cursor = 'auto';
+    hoverDir = null;
+    return;
+  }
+
+  const z  = getZone(e.clientX, e.clientY);
+  hoverDir = z;
 
   if (z === null) {
     cursorWrap.style.display = 'none';
-    cursorDot.style.display = 'none';
+    cursorDot.style.display  = 'none';
     document.body.style.cursor = 'pointer';
     return;
   }
@@ -655,55 +875,61 @@ document.addEventListener('mousemove', e => {
   const op = navOpacity(z);
 
   if (op === 0) {
-    // Fully blocked: only show greyed arrow if cursor is forced to that screen edge
     if (nearScreenEdge(e.clientX, e.clientY, z)) {
       cursorDot.style.display = 'none';
-      cursorWrap.style.left = e.clientX+'px'; cursorWrap.style.top = e.clientY+'px';
-      cursorSvg.style.transform = 'rotate('+DIRS[z].rot+'deg)';
+      cursorWrap.style.left = e.clientX + 'px'; cursorWrap.style.top = e.clientY + 'px';
+      cursorSvg.style.transform = 'rotate(' + DIRS[z].rot + 'deg)';
       cursorWrap.style.opacity = '0.15';
       cursorWrap.style.display = 'block';
     } else {
-      // Not at screen edge and can't go that way — show dot, no navigation
       cursorWrap.style.display = 'none';
-      cursorDot.style.left = e.clientX+'px'; cursorDot.style.top = e.clientY+'px';
+      cursorDot.style.left = e.clientX + 'px'; cursorDot.style.top = e.clientY + 'px';
       cursorDot.style.display = 'block';
       hoverDir = null;
     }
     return;
   }
 
-  // Navigable (fully or partially)
   cursorDot.style.display = 'none';
-  cursorWrap.style.left = e.clientX+'px'; cursorWrap.style.top = e.clientY+'px';
-  cursorSvg.style.transform = 'rotate('+DIRS[z].rot+'deg)';
+  cursorWrap.style.left = e.clientX + 'px'; cursorWrap.style.top = e.clientY + 'px';
+  cursorSvg.style.transform = 'rotate(' + DIRS[z].rot + 'deg)';
   cursorWrap.style.opacity = op === 1 ? '1' : '0.5';
   cursorWrap.style.display = 'block';
 });
 
 clip.addEventListener('click', e => {
   if (pvMode) return;
-  if (e.target.closest && e.target.closest('#minimap')) return; // handled by minimap
-  if(hoverDir===null){const l=document.getElementById('cl'+(focusRow*COLS+focusCol));if(l)window.location.href=l.href;}
+  if (catMode) return;
+  if (e.target.closest && e.target.closest('#minimap')) return;
+  if (e.target.closest && e.target.closest('#view-mode-tabs')) return;
+  if (hoverDir === null) { const l = document.getElementById('cl' + (focusRow*COLS + focusCol)); if (l) window.location.href = l.href; }
   else navTo(hoverDir);
 });
 
-document.addEventListener('mouseleave',()=>{cursorWrap.style.display='none';cursorDot.style.display='none';document.body.style.cursor='none';});
-document.addEventListener('keydown',e=>{
-  const m={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down'};
-  if(m[e.key]) { navTo(m[e.key]); updateMinimap(); }
-  if(e.key==='Enter'){const l=document.getElementById('cl'+(focusRow*COLS+focusCol));if(l)window.location.href=l.href;}
+document.addEventListener('mouseleave', () => {
+  cursorWrap.style.display = 'none';
+  cursorDot.style.display  = 'none';
+  catCursor.style.display  = 'none';
+  document.body.style.cursor = 'none';
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === '[') { e.preventDefault(); setViewMode('catalogue'); return; }
+  if (e.key === ']') { e.preventDefault(); setViewMode('gallery');   return; }
+  if (catMode) return;
+  const m = { ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down' };
+  if (m[e.key]) { navTo(m[e.key]); updateMinimap(); }
+  if (e.key === 'Enter') { const l = document.getElementById('cl' + (focusRow*COLS + focusCol)); if (l) window.location.href = l.href; }
 });
 
 // ── Trackpad swipe navigation ─────────────────────────────
-// Accumulate wheel delta; fire once per swipe then cool down
-// to match the 0.55s CSS canvas transition.
 let swipeLocked = false;
 let swipeAccX = 0, swipeAccY = 0;
 const SWIPE_THRESHOLD = 80;
 
 clip.addEventListener('wheel', e => {
   e.preventDefault();
-  if (pvMode) return;
+  if (pvMode || catMode) return;
 
   swipeAccX += e.deltaX;
   swipeAccY += e.deltaY;
@@ -713,7 +939,6 @@ clip.addEventListener('wheel', e => {
   const ax = Math.abs(swipeAccX), ay = Math.abs(swipeAccY);
   if (ax < SWIPE_THRESHOLD && ay < SWIPE_THRESHOLD) return;
 
-  // Pick dominant axis
   let dir;
   if (ax >= ay) {
     dir = swipeAccX > 0 ? 'right' : 'left';
@@ -728,29 +953,21 @@ clip.addEventListener('wheel', e => {
 }, { passive: false });
 
 // ════════════════════════════════════════════
-//  MINIMAP — 2-D panning dot grid
-//  Card 290 px · content 258 px
-//  Dot 10 px · col period 78 px · row period 48 px
-//  Window 258×92 px · inner 322×202 px
+//  MINIMAP
 // ════════════════════════════════════════════
 const MM_DOT   = 8;
-const MM_COL_P = 78;    // 8 + 70 gap
-const MM_ROW_P = 48;    // 8 + 40 gap
+const MM_COL_P = 78;
+const MM_ROW_P = 48;
 const MM_WIN_W = 258;
 const MM_WIN_H = 126;
-const MM_INN_W = COLS * MM_DOT + (COLS-1) * (MM_COL_P - MM_DOT); // 320 px
-const MM_INN_H = ROWS * MM_DOT + (ROWS-1) * (MM_ROW_P - MM_DOT); // 200 px
+const MM_INN_W = COLS * MM_DOT + (COLS-1) * (MM_COL_P - MM_DOT);
+const MM_INN_H = ROWS * MM_DOT + (ROWS-1) * (MM_ROW_P - MM_DOT);
 
-// Rendered position (what's actually on screen)
 let mmX = 0, mmY = 0;
-// Spherical tilt (degrees)
 let mmTiltX = 0, mmTiltY = 0;
-// Target position (where we're animating toward)
 let mmTX = 0, mmTY = 0;
-// RAF handle + drag state
 let mmRAF = null, mmMoved = false;
 
-// ── apply combined transform ─────────────────
 function mmApply() {
   const inner = document.getElementById('mm-inner');
   if (inner) inner.style.transform =
@@ -758,13 +975,12 @@ function mmApply() {
     `rotateX(${mmTiltX.toFixed(2)}deg) rotateY(${mmTiltY.toFixed(2)}deg)`;
 }
 
-// ── lerp animation loop ──────────────────────
 function mmStep() {
-  const LP = 0.068, LT = 0.13;   // slow smooth pos, quicker tilt spring
-  mmX      += (mmTX - mmX)      * LP;
-  mmY      += (mmTY - mmY)      * LP;
-  mmTiltX  += (0 - mmTiltX)     * LT;
-  mmTiltY  += (0 - mmTiltY)     * LT;
+  const LP = 0.068, LT = 0.13;
+  mmX      += (mmTX - mmX)  * LP;
+  mmY      += (mmTY - mmY)  * LP;
+  mmTiltX  += (0 - mmTiltX) * LT;
+  mmTiltY  += (0 - mmTiltY) * LT;
   mmApply();
   const settled = Math.abs(mmTX - mmX) < 0.06 && Math.abs(mmTY - mmY) < 0.06
                && Math.abs(mmTiltX) < 0.02    && Math.abs(mmTiltY) < 0.02;
@@ -781,7 +997,6 @@ function mmGoto(tx, ty) {
   if (!mmRAF) mmRAF = requestAnimationFrame(mmStep);
 }
 
-// ── build (called once) ──────────────────────
 function buildMinimap() {
   const win   = document.getElementById('mm-window');
   const inner = document.getElementById('mm-inner');
@@ -800,7 +1015,6 @@ function buildMinimap() {
     }
   }
 
-  // ── click dot → navigate ──
   inner.addEventListener('click', e => {
     if (mmMoved) return;
     const dot = e.target.closest('.mm-dot');
@@ -810,7 +1024,6 @@ function buildMinimap() {
     applyPos(true); updateLink(); updateMinimap();
   });
 
-  // ── 2-D drag with spherical tilt ──
   win.addEventListener('mousedown', e => {
     if (e.target.closest('#mm-close')) return;
     if (mmRAF) { cancelAnimationFrame(mmRAF); mmRAF = null; }
@@ -823,13 +1036,10 @@ function buildMinimap() {
     const onMove = ev => {
       const dx = ev.clientX - sx0, dy = ev.clientY - sy0;
       if (Math.abs(dx) + Math.abs(dy) > 2) mmMoved = true;
-      // Velocity for tilt
       const vx = ev.clientX - prevCX, vy = ev.clientY - prevCY;
       prevCX = ev.clientX; prevCY = ev.clientY;
-      // Position (free — blank space allowed)
       mmX = mmTX = x0 + dx;
       mmY = mmTY = y0 + dy;
-      // Spherical tilt — max ±8°, snappier response
       const MT = 8;
       mmTiltY = Math.max(-MT, Math.min(MT, mmTiltY * 0.65 + vx * 0.35));
       mmTiltX = Math.max(-MT, Math.min(MT, mmTiltX * 0.65 + (-vy) * 0.35));
@@ -839,7 +1049,6 @@ function buildMinimap() {
     const onUp = () => {
       win.classList.remove('dragging');
       setTimeout(() => { mmMoved = false; }, 0);
-      // Spring tilt back to flat
       if (!mmRAF && (Math.abs(mmTiltX) > 0.05 || Math.abs(mmTiltY) > 0.05))
         mmRAF = requestAnimationFrame(mmStep);
       document.removeEventListener('mousemove', onMove);
@@ -850,7 +1059,6 @@ function buildMinimap() {
     e.preventDefault();
   });
 
-  // ── close collapses window, keeps header ──
   const closeBtn = document.getElementById('mm-close');
   if (closeBtn) {
     closeBtn.addEventListener('click', e => {
@@ -861,10 +1069,9 @@ function buildMinimap() {
     });
   }
 
-  updateMinimap(false); // instant snap on first build
+  updateMinimap(false);
 }
 
-// ── update: smooth centre on active dot ──────
 function updateMinimap(animate = true) {
   document.querySelectorAll('.mm-dot').forEach(d =>
     d.classList.toggle('active', +d.dataset.row === focusRow && +d.dataset.col === focusCol));
@@ -880,7 +1087,12 @@ function updateMinimap(animate = true) {
 function buildMobileLayout() {
   const container = document.getElementById('mobile-layout');
   container.innerHTML = '';
+  // Use unique products only for mobile (skip duplicates)
+  const seen = new Set();
   projects.forEach(p => {
+    if (seen.has(p.img)) return;
+    seen.add(p.img);
+
     const link = document.createElement('a');
     link.className = 'm-card';
     link.href = (p.client && p.client.includes('Pax')) ? 'pax-project.html' : 'flaus-project.html';
@@ -907,7 +1119,7 @@ function buildMobileLayout() {
 }
 
 let minimapBuilt = false;
-function init(){
+function init() {
   const isMobile = window.matchMedia('(max-width: 768px)').matches;
   if (isMobile) { buildMobileLayout(); return; }
   measure(); buildGrid(); applyPos(false);
@@ -917,15 +1129,19 @@ function init(){
     minimapBuilt = true;
   } else {
     updateMinimap();
-    layoutPv(); // reflow image sizes on resize
+    layoutPv();
   }
 }
-window.addEventListener('resize',init);
+window.addEventListener('resize', init);
 init();
 
-// ── View toggle listeners — wired at parse time, independent of viewport ──
+// ── View toggle listeners ──
 document.getElementById('vt-product').addEventListener('click', () => setPvMode(false));
 document.getElementById('vt-project').addEventListener('click', () => setPvMode(true));
+
+// ── Gallery | Catalogue toggle ──
+document.getElementById('vm-gallery').addEventListener('click', () => { if (catMode) setViewMode('gallery'); });
+document.getElementById('vm-catalogue').addEventListener('click', () => { if (!catMode) setViewMode('catalogue'); });
 </script>
 </body>
 </html>
