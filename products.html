@@ -175,6 +175,8 @@ body {
   scrollbar-width: none; -ms-overflow-style: none;
   display: none; z-index: 100;
   background: #fff;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 60px, black calc(100% - 60px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0px, black 60px, black calc(100% - 60px), transparent 100%);
 }
 #catalogue::-webkit-scrollbar { display: none; }
 #cat-grid {
@@ -731,7 +733,7 @@ function buildCatalogue() {
   grid.addEventListener('mouseover', e => {
     const card = e.target.closest('.cat-card');
     grid.querySelectorAll('.cat-card').forEach(c => {
-      c.style.opacity = card && c !== card ? '0.65' : '1';
+      c.style.opacity = card && c !== card ? '0.70' : '1';
     });
   });
   grid.addEventListener('mouseleave', () => {
