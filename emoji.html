@@ -1908,8 +1908,8 @@ async function captureCollage() {
   octx.fillStyle = '#D9D9D9';
   octx.fillRect(0, 0, outW, outH);
 
-  // Layer 2: white clip background
-  octx.fillStyle = '#ffffff';
+  // Layer 2: clip background (party color or white)
+  octx.fillStyle = document.body.classList.contains('party') ? document.body.style.backgroundColor : '#ffffff';
   octx.fillRect(clipXpx, clipYpx, cWpx, cHpx);
 
   // Layer 3: nav/footer/controls (glass panels + placed emojis hidden in html2canvas)
