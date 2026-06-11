@@ -725,22 +725,19 @@ function buildCatalogue() {
     a.appendChild(imgDiv);
     a.appendChild(rule);
     a.appendChild(meta);
+    // Hover fade: enter dims others, leave resets all (including gap areas)
+    a.addEventListener('mouseenter', () => {
+      grid.querySelectorAll('.cat-card').forEach(c => {
+        c.style.opacity = c !== a ? '0.20' : '1';
+      });
+    });
+    a.addEventListener('mouseleave', () => {
+      grid.querySelectorAll('.cat-card').forEach(c => c.style.opacity = '1');
+    });
+
     grid.appendChild(a);
 
     catObserver.observe(imgDiv);
-  });
-
-  // Hover fade — mousemove is more reliable than mouseover with mask-image
-  const catDiv = document.getElementById('catalogue');
-  catDiv.addEventListener('mousemove', e => {
-    const card = e.target.closest('.cat-card');
-    if (!card) return; // in a gap — keep current state, no flicker
-    grid.querySelectorAll('.cat-card').forEach(c => {
-      c.style.opacity = c !== card ? '0.20' : '1';
-    });
-  });
-  catDiv.addEventListener('mouseleave', () => {
-    grid.querySelectorAll('.cat-card').forEach(c => c.style.opacity = '1');
   });
 }
 
