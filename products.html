@@ -150,7 +150,7 @@ body {
 #zoom-shortcut {
   position: absolute; top: 52px; left: 20px;
   z-index: 300;
-  display: inline-flex; align-items: center; gap: 8px;
+  display: inline-flex; align-items: center; gap: 10px;
   border: 1px solid rgb(209,209,209);
   background: rgba(236,236,236,0.60);
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
@@ -162,10 +162,10 @@ body {
 }
 .zoom-key {
   display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid rgba(0,0,0,0.25); border-radius: 2px;
-  min-width: 18px; height: 16px; padding: 0 3px;
-  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 11px;
-  color: rgba(0,0,0,0.6);
+  width: 25px; height: 13px; flex-shrink: 0;
+  background: rgba(236,236,236,0.60);
+  border: 1px solid rgb(209,209,209);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
 }
 
 /* ── Catalogue view ── */
@@ -192,7 +192,8 @@ body {
 .cat-img {
   width: 100%;
   aspect-ratio: 1043 / 1399;
-  background-size: cover;
+  overflow: hidden;
+  background-size: calc(100% + 4px) calc(100% + 4px);
   background-position: center;
   background-repeat: no-repeat;
   background-color: transparent;
@@ -730,7 +731,7 @@ function buildCatalogue() {
   grid.addEventListener('mouseover', e => {
     const card = e.target.closest('.cat-card');
     grid.querySelectorAll('.cat-card').forEach(c => {
-      c.style.opacity = card && c !== card ? '0.25' : '1';
+      c.style.opacity = card && c !== card ? '0.65' : '1';
     });
   });
   grid.addEventListener('mouseleave', () => {
@@ -920,8 +921,9 @@ let swipeAccX = 0, swipeAccY = 0;
 const SWIPE_THRESHOLD = 80;
 
 clip.addEventListener('wheel', e => {
+  if (catMode) return; // let native scroll reach #catalogue
   e.preventDefault();
-  if (pvMode || catMode) return;
+  if (pvMode) return;
 
   swipeAccX += e.deltaX;
   swipeAccY += e.deltaY;
