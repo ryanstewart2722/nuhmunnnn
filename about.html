@@ -745,10 +745,29 @@ function setEyedropperMode(on) {
   }
 }
 
+// Brush size keys — immediate step on first press, accelerating on hold
+let _brushInterval = null, _brushHeld = 0;
+
+function _brushStep(dir) {
+  const step = _brushHeld < 600 ? 1 : _brushHeld < 1400 ? 3 : 8;
+  brushRadius = Math.max(MIN_BRUSH, Math.min(MAX_BRUSH, brushRadius + dir * step));
+  updateCursor();
+}
+
 document.addEventListener('keydown', e => {
-  if (e.key === '[') { brushRadius = Math.max(MIN_BRUSH, brushRadius - 1); updateCursor(); }
-  if (e.key === ']') { brushRadius = Math.min(MAX_BRUSH, brushRadius + 1); updateCursor(); }
+  if ((e.key === '[' || e.key === ']') && !e.repeat) {
+    const dir = e.key === '[' ? -1 : 1;
+    _brushHeld = 0;
+    _brushStep(dir);
+    _brushInterval = setInterval(() => { _brushHeld += 40; _brushStep(dir); }, 40);
+  }
   if (e.key === 'i' || e.key === 'I') { setEyedropperMode(!eyedropperMode); }
+});
+
+document.addEventListener('keyup', e => {
+  if (e.key === '[' || e.key === ']') {
+    clearInterval(_brushInterval); _brushInterval = null; _brushHeld = 0;
+  }
 });
 
 function airbrush(x, y) {
