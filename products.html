@@ -182,7 +182,7 @@ body {
 #cat-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 17px;
+  gap: 20px;
   padding: 60px 20px 40px;
   min-height: 100%;
 }
@@ -733,7 +733,7 @@ function buildCatalogue() {
   grid.addEventListener('mouseover', e => {
     const card = e.target.closest('.cat-card');
     grid.querySelectorAll('.cat-card').forEach(c => {
-      c.style.opacity = card && c !== card ? '0.70' : '1';
+      c.style.opacity = card && c !== card ? '0.80' : '1';
     });
   });
   grid.addEventListener('mouseleave', () => {
