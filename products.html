@@ -733,8 +733,9 @@ function buildCatalogue() {
   const catDiv = document.getElementById('catalogue');
   catDiv.addEventListener('mousemove', e => {
     const card = e.target.closest('.cat-card');
+    if (!card) return; // in a gap — keep current state, no flicker
     grid.querySelectorAll('.cat-card').forEach(c => {
-      c.style.opacity = card && c !== card ? '0.20' : '1';
+      c.style.opacity = c !== card ? '0.20' : '1';
     });
   });
   catDiv.addEventListener('mouseleave', () => {
