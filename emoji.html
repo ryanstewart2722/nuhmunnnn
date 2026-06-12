@@ -30,13 +30,14 @@ body {
 }
 
 /* ── Frame strips ── */
-#bl { position: fixed; top: 0; left: 0; bottom: 0; width: 15px; background: #D9D9D9; z-index: 950; pointer-events: none; }
-#br { position: fixed; top: 0; right: 0; bottom: 0; width: 15px; background: #D9D9D9; z-index: 950; pointer-events: none; }
+#bl { position: fixed; top: 0; left: 0; bottom: 0; width: 15px; background: #D9D9D9; z-index: 950; pointer-events: none; transition: background-color 1.2s ease; }
+#br { position: fixed; top: 0; right: 0; bottom: 0; width: 15px; background: #D9D9D9; z-index: 950; pointer-events: none; transition: background-color 1.2s ease; }
 
 #nav {
   position: fixed; top: 0; left: 0; right: 0; height: 28px;
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 15px; background: #D9D9D9; z-index: 200; cursor: auto;
+  transition: background-color 1.2s ease;
 }
 #nav a { font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px; color: #1a1a1a; text-decoration: none; }
 #nav a:hover { opacity: 0.5; }
@@ -48,17 +49,19 @@ body {
 @keyframes hue-cycle { 0% { color: hsl(0,42%,67%); } 44% { color: hsl(158,42%,67%); } 55% { color: hsl(222,42%,67%); } 100% { color: hsl(360,42%,67%); } }
 #nav-center:hover { animation: hue-cycle 1.5s linear infinite; opacity: 1 !important; }
 body { transition: background-color 0.8s ease; }
-body.party #clip { background: transparent !important; }
-#party-toggle { background: none; border: none; padding: 0; cursor: pointer; color: #1a1a1a; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); line-height: 0; }
-#party-toggle:hover { animation: hue-cycle 1.5s linear infinite; }
-body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
+#party-toggle { background: none; border: none; padding: 0; cursor: pointer; color: #1a1a1a; opacity: 0.45; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); line-height: 0; }
+#party-toggle:hover { animation: hue-cycle 1.5s linear infinite; opacity: 1; }
+body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; opacity: 1; }
 
 #footer {
   position: fixed; bottom: 0; left: 0; right: 0; height: 28px;
-  display: flex; align-items: center; justify-content: center;
+  display: flex; align-items: center; justify-content: flex-start; padding-left: 20px;
   background: #D9D9D9; z-index: 200; cursor: auto;
   font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px; color: #1a1a1a;
+  transition: background-color 1.2s ease;
 }
+#status-copy { opacity: 0.45; }
+#status-bar { position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; }
 
 /* ── Clip ── */
 #clip {
@@ -446,7 +449,7 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; }
   <span id="nav-right">About</span>
 </nav>
 
-<footer id="footer">© 2026 All Rights Reserved<button id="party-toggle" title="Party Mode"><svg width="51" height="30" viewBox="0 0 51 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M39.0565 20H38.3481C39.4399 18.3361 39.9873 16.6694 39.9873 15C39.9873 14.3472 39.9082 13.7 39.7502 13.0583C39.6272 12.5389 39.4516 12.0389 39.2292 11.5611C39.0857 11.25 38.793 10.7278 38.3452 10H39.0535C39.7414 10.8694 40.2478 11.7444 40.5785 12.6222C40.8595 13.3778 41 14.1694 41 14.9944C41 15.9306 40.8097 16.8361 40.4322 17.7111C40.0546 18.5861 39.595 19.3472 39.0535 20H39.0565ZM34.2825 12.4611C34.6835 12.4611 35.0787 12.5611 35.4679 12.7583C35.8572 12.9556 36.1558 13.2389 36.3724 13.6056C36.589 13.9722 36.6973 14.3556 36.6973 14.75C36.6973 15.3861 36.4602 15.925 35.989 16.3722C35.5177 16.8194 34.9499 17.0444 34.2825 17.0444C33.6151 17.0444 33.0444 16.8194 32.5731 16.3722C32.1019 15.925 31.8648 15.3833 31.8648 14.75C31.8648 14.35 31.9731 13.9694 32.1897 13.6028C32.4063 13.2361 32.7078 12.9556 33.0941 12.7583C33.4805 12.5611 33.8786 12.4611 34.2825 12.4611ZM29.491 12.8306L29.2393 11.4056V10.1306H30.3632V11.4056L30.0998 12.8306H29.491ZM22.0183 14.9889H22.6886C22.6886 15.9667 23.1335 16.7 24.0262 17.1833C24.4712 17.4306 24.919 17.5528 25.3639 17.5528C25.8088 17.5528 26.2566 17.4306 26.7015 17.1833C27.5972 16.6944 28.045 15.9611 28.045 14.9889H28.7153C28.7153 16.2111 28.1563 17.125 27.0381 17.7361C26.4791 18.0417 25.923 18.1944 25.3668 18.1944C24.8107 18.1944 24.2516 18.0417 23.6955 17.7361C22.5803 17.125 22.0242 16.2111 22.0242 14.9889H22.0183ZM20.587 12.8306L20.3353 11.4056V10.1306H21.4593V11.4056L21.1958 12.8306H20.587ZM16.4541 12.4611C16.8551 12.4611 17.2502 12.5611 17.6395 12.7583C18.0259 12.9556 18.3274 13.2389 18.544 13.6056C18.7606 13.9722 18.8688 14.3556 18.8688 14.75C18.8688 15.3861 18.6318 15.925 18.1605 16.3722C17.6893 16.8194 17.1214 17.0444 16.4541 17.0444C15.7867 17.0444 15.2159 16.8194 14.7447 16.3722C14.2734 15.925 14.0364 15.3833 14.0364 14.75C14.0364 14.35 14.1447 13.9694 14.3612 13.6028C14.5778 13.2361 14.8793 12.9556 15.2657 12.7583C15.6521 12.5611 16.0501 12.4611 16.4541 12.4611ZM11.9465 20C11.402 19.3472 10.9425 18.5861 10.5649 17.7111C10.1873 16.8361 10 15.9306 10 14.9944C10 14.1694 10.1405 13.3778 10.4215 12.6222C10.7522 11.7444 11.2586 10.8694 11.9465 10H12.6548C12.2128 10.7222 11.9201 11.2361 11.7767 11.5444C11.5542 12.0222 11.3786 12.5222 11.2498 13.0417C11.0918 13.6917 11.0127 14.3417 11.0127 14.9972C11.0127 16.6667 11.5601 18.3333 12.6519 19.9972H11.9435L11.9465 20Z" fill="currentColor"/></svg></button></footer>
+<footer id="footer"><span id="status-copy">© 2026 All Rights Reserved</span><span id="status-bar"></span><button id="party-toggle" title="Party Mode"><svg width="51" height="30" viewBox="0 0 51 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M39.0565 20H38.3481C39.4399 18.3361 39.9873 16.6694 39.9873 15C39.9873 14.3472 39.9082 13.7 39.7502 13.0583C39.6272 12.5389 39.4516 12.0389 39.2292 11.5611C39.0857 11.25 38.793 10.7278 38.3452 10H39.0535C39.7414 10.8694 40.2478 11.7444 40.5785 12.6222C40.8595 13.3778 41 14.1694 41 14.9944C41 15.9306 40.8097 16.8361 40.4322 17.7111C40.0546 18.5861 39.595 19.3472 39.0535 20H39.0565ZM34.2825 12.4611C34.6835 12.4611 35.0787 12.5611 35.4679 12.7583C35.8572 12.9556 36.1558 13.2389 36.3724 13.6056C36.589 13.9722 36.6973 14.3556 36.6973 14.75C36.6973 15.3861 36.4602 15.925 35.989 16.3722C35.5177 16.8194 34.9499 17.0444 34.2825 17.0444C33.6151 17.0444 33.0444 16.8194 32.5731 16.3722C32.1019 15.925 31.8648 15.3833 31.8648 14.75C31.8648 14.35 31.9731 13.9694 32.1897 13.6028C32.4063 13.2361 32.7078 12.9556 33.0941 12.7583C33.4805 12.5611 33.8786 12.4611 34.2825 12.4611ZM29.491 12.8306L29.2393 11.4056V10.1306H30.3632V11.4056L30.0998 12.8306H29.491ZM22.0183 14.9889H22.6886C22.6886 15.9667 23.1335 16.7 24.0262 17.1833C24.4712 17.4306 24.919 17.5528 25.3639 17.5528C25.8088 17.5528 26.2566 17.4306 26.7015 17.1833C27.5972 16.6944 28.045 15.9611 28.045 14.9889H28.7153C28.7153 16.2111 28.1563 17.125 27.0381 17.7361C26.4791 18.0417 25.923 18.1944 25.3668 18.1944C24.8107 18.1944 24.2516 18.0417 23.6955 17.7361C22.5803 17.125 22.0242 16.2111 22.0242 14.9889H22.0183ZM20.587 12.8306L20.3353 11.4056V10.1306H21.4593V11.4056L21.1958 12.8306H20.587ZM16.4541 12.4611C16.8551 12.4611 17.2502 12.5611 17.6395 12.7583C18.0259 12.9556 18.3274 13.2389 18.544 13.6056C18.7606 13.9722 18.8688 14.3556 18.8688 14.75C18.8688 15.3861 18.6318 15.925 18.1605 16.3722C17.6893 16.8194 17.1214 17.0444 16.4541 17.0444C15.7867 17.0444 15.2159 16.8194 14.7447 16.3722C14.2734 15.925 14.0364 15.3833 14.0364 14.75C14.0364 14.35 14.1447 13.9694 14.3612 13.6028C14.5778 13.2361 14.8793 12.9556 15.2657 12.7583C15.6521 12.5611 16.0501 12.4611 16.4541 12.4611ZM11.9465 20C11.402 19.3472 10.9425 18.5861 10.5649 17.7111C10.1873 16.8361 10 15.9306 10 14.9944C10 14.1694 10.1405 13.3778 10.4215 12.6222C10.7522 11.7444 11.2586 10.8694 11.9465 10H12.6548C12.2128 10.7222 11.9201 11.2361 11.7767 11.5444C11.5542 12.0222 11.3786 12.5222 11.2498 13.0417C11.0918 13.6917 11.0127 14.3417 11.0127 14.9972C11.0127 16.6667 11.5601 18.3333 12.6519 19.9972H11.9435L11.9465 20Z" fill="currentColor"/></svg></button></footer>
 
 <div id="clip">
 
@@ -2056,7 +2059,7 @@ async function captureCollage() {
     octx.fillStyle = bgColor;
     octx.fillRect(clipXpx, clipYpx, cWpx, cHpx);
   } else {
-    octx.fillStyle = document.body.classList.contains('party') ? document.body.style.backgroundColor : '#ffffff';
+    octx.fillStyle = document.body.classList.contains('party') ? _partyColor : '#ffffff';
     octx.fillRect(clipXpx, clipYpx, cWpx, cHpx);
   }
 
@@ -2143,6 +2146,7 @@ async function captureCollage() {
 }
 
 // ── Party mode ──
+let _partyColor = '';
 (function() {
   const KEY = 'naman-party';
   const BANNED = [[160, 220]];
@@ -2158,15 +2162,25 @@ async function captureCollage() {
     document.body.classList.toggle('party', on);
     localStorage.setItem(KEY, on ? '1' : '0');
     if (on) {
-      document.body.style.backgroundColor = nextPastel();
-      _interval = setInterval(() => { document.body.style.backgroundColor = nextPastel(); }, 2000);
+      const applyColor = () => { _partyColor = nextPastel(); ['bl','br','nav','footer'].forEach(id => { const el = document.getElementById(id); if (el) el.style.backgroundColor = _partyColor; }); };
+      applyColor();
+      _interval = setInterval(applyColor, 2000);
     } else {
       clearInterval(_interval); _interval = null;
-      document.body.style.backgroundColor = '';
+      _partyColor = '';
+      ['bl','br','nav','footer'].forEach(id => { const el = document.getElementById(id); if (el) el.style.backgroundColor = ''; });
     }
   }
+  if (localStorage.getItem(KEY) === '1') { setParty(true); }
   document.getElementById('party-toggle').addEventListener('click', () => setParty(!document.body.classList.contains('party')));
 })();
 </script>
+<script>
+window.STATUS_HINTS = [
+  { selector: '#party-toggle', label: 'Party Mode', animate: true },
+  { selector: '#cam-placeholder', label: 'Click & Allow Camera Access' }
+];
+</script>
+<script src="./status.js"></script>
 </body>
 </html>
