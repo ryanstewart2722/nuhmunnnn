@@ -207,6 +207,7 @@ body.link-cursor,  body.link-cursor *  { cursor: pointer !important; }
   gap: 20px;
   padding: 60px 20px 40px;
   min-height: 100%;
+  align-items: start;
 }
 .cat-card {
   display: block; text-decoration: none; color: inherit;
@@ -473,7 +474,7 @@ body.link-cursor,  body.link-cursor *  { cursor: pointer !important; }
     <span class="vm-tab active" id="vm-gallery">Gallery</span>
     <span class="vm-tab" id="vm-catalogue">Catalogue</span>
   </div>
-  <div id="zoom-shortcut"><span>View Mode Keyboard Shortcut</span><span style="display:inline-flex;gap:5px;"><span class="zoom-key" id="zk-out" style="cursor:pointer;"><svg width="3" height="7" viewBox="0 0 3 7" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 0V7H3V6.45465H0.764151V0.545349H3V0H0Z" fill="rgba(0,0,0,0.45)"/></svg></span><span class="zoom-key" id="zk-in" style="cursor:pointer;"><svg width="3" height="7" viewBox="0 0 3 7" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 0V7H0V6.45465H2.23585V0.545349H0V0H3Z" fill="rgba(0,0,0,0.45)"/></svg></span></span></div>
+  <div id="zoom-shortcut"><span>View Mode Keyboard Shortcut</span><span style="display:inline-flex;gap:5px;"><span class="zoom-key" id="zk-out" style="cursor:pointer;">-</span><span class="zoom-key" id="zk-in" style="cursor:pointer;">+</span></span></div>
   <div id="catalogue">
     <div id="cat-grid"></div>
   </div>
@@ -943,8 +944,8 @@ document.addEventListener('mouseleave', () => {
 });
 
 document.addEventListener('keydown', e => {
-  if (e.key === '[') { e.preventDefault(); setViewMode('catalogue'); return; }
-  if (e.key === ']') { e.preventDefault(); setViewMode('gallery');   return; }
+  if (e.key === '-') { e.preventDefault(); setViewMode('gallery');   return; }
+  if (e.key === '+' || e.key === '=') { e.preventDefault(); setViewMode('catalogue'); return; }
   if (catMode) return;
   const m = { ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down' };
   if (m[e.key]) { navTo(m[e.key]); updateMinimap(); }
