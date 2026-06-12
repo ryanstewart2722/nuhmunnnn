@@ -227,13 +227,8 @@ function zoneAt(cx, cy) {
   return row * 5 + col;
 }
 
-// Easter egg: triple-click → products page
-let clickCount = 0, clickTimer = null;
 clip.addEventListener('click', () => {
-  clickCount++;
-  clearTimeout(clickTimer);
-  if (clickCount >= 2) { clickCount = 0; window.location.href = 'products.html'; return; }
-  clickTimer = setTimeout(() => { clickCount = 0; }, 400);
+  window.location.href = 'products.html';
 });
 
 document.addEventListener('mousemove', (e) => {
