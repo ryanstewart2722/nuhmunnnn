@@ -86,9 +86,10 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; opacity: 1
 #canvas {
   position: absolute;
   background: #ffffff;
-  transition: left 0.55s cubic-bezier(0.77,0,0.175,1),
-              top  0.55s cubic-bezier(0.77,0,0.175,1),
-              transform 0.55s cubic-bezier(0.77,0,0.175,1);
+  transition: left 0.55s cubic-bezier(0.25,0.46,0.45,0.94),
+              top  0.55s cubic-bezier(0.25,0.46,0.45,0.94),
+              transform 0.5s  cubic-bezier(0.25,0.46,0.45,0.94),
+              opacity 0.35s ease;
 }
 #canvas.instant { transition: none; }
 
@@ -143,52 +144,28 @@ body.link-cursor,  body.link-cursor *  { cursor: pointer !important; }
 #cursor-wrap {
   position: absolute; pointer-events: none; z-index: 999;
   transform: translate(-50%,-50%); display: none;
-  width: 28px; height: 28px;
-  mix-blend-mode: exclusion; color: #fff;
+  font-family: 'ABCDiatype', Arial, sans-serif;
+  font-size: 12px; line-height: 1; color: rgba(0,0,0,0.75);
+  background: rgba(236,236,236,0.72);
+  border: 1px solid #d1d1d1;
+  border-radius: 100px;
+  padding: 5px 11px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  white-space: nowrap;
+  user-select: none; -webkit-user-select: none;
 }
-#cursor-wrap svg { width: 28px; height: 28px; display: block; }
+/* ── "View" cursor for catalogue ── */
+#cat-cursor {
+  position: absolute; pointer-events: none; z-index: 9999;
+  transform: translate(-50%, -50%); display: none;
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 20px;
+  color: #fff; mix-blend-mode: exclusion;
+  white-space: nowrap; line-height: 1;
+  user-select: none; -webkit-user-select: none;
+}
 
 /* ── Gallery | Catalogue tab toggle ── */
-#view-mode-tabs {
-  position: absolute; top: 20px; left: 20px;
-  z-index: 300; display: inline-flex; align-items: stretch;
-  border: 1px solid rgb(209,209,209);
-  background: rgba(236,236,236,0.60);
-  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-  user-select: none; -webkit-user-select: none; cursor: auto;
-}
-.vm-tab {
-  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px; color: #1a1a1a;
-  padding: 4px 9px; cursor: pointer; white-space: nowrap;
-}
-.vm-tab.active { background: rgba(255,255,255,0.72); cursor: default; }
-.vm-tab:not(.active) { color: rgba(26,26,26,0.40); }
-.vm-tab:not(.active):hover { color: rgba(26,26,26,0.70); }
-.vm-tab + .vm-tab { border-left: 1px solid rgb(209,209,209); }
-
-/* ── Zoom shortcut label (Gallery mode only) ── */
-#zoom-shortcut {
-  position: absolute; top: 57px; left: 20px;
-  z-index: 300;
-  display: inline-flex; align-items: center; gap: 10px;
-  border: 1px solid rgb(209,209,209);
-  background: rgba(236,236,236,0.60);
-  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-  padding: 4px 9px;
-  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px;
-  color: rgba(0,0,0,0.45);
-  user-select: none; -webkit-user-select: none; cursor: default;
-  white-space: nowrap;
-}
-.zoom-key {
-  cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 22px; height: 14px; flex-shrink: 0;
-  font-size: 9px;
-  background: rgba(236,236,236,0.60);
-  border: 1px solid rgb(209,209,209);
-  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-}
 
 /* ── Catalogue view ── */
 #catalogue {
@@ -238,15 +215,6 @@ body.link-cursor,  body.link-cursor *  { cursor: pointer !important; }
 .cat-meta .m-year   { flex: 0 0 auto; margin-right: 14px; }
 .cat-meta .m-client { flex: 0 0 auto; }
 
-/* ── "View" cursor for catalogue ── */
-#cat-cursor {
-  position: absolute; pointer-events: none; z-index: 9999;
-  transform: translate(-50%, -50%); display: none;
-  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 12px;
-  color: #fff; mix-blend-mode: exclusion;
-  white-space: nowrap;
-  user-select: none; -webkit-user-select: none;
-}
 
 /* ── Minimap ── */
 #minimap {
@@ -320,17 +288,27 @@ body.link-cursor,  body.link-cursor *  { cursor: pointer !important; }
 .mm-dot:hover  { background: rgba(0,0,0,0.28); }
 .mm-dot.active { background: rgba(0,0,0,0.58); }
 
-/* ── View toggle (bottom-left of footer) ── */
+/* ── View toggle (fixed top-left, aligned to grid margin) ── */
 #view-toggle {
-  position: absolute;
-  left: 20px; top: 50%; transform: translateY(-50%);
-  display: flex; gap: 10px; align-items: center;
+  position: fixed;
+  left: calc(15px + 1.7vw); top: 50px;
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(236,236,236,0.6);
+  border: 1px solid #d1d1d1;
+  border-radius: 100px;
+  padding: 4px 10px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 500;
+  cursor: pointer;
+  user-select: none; -webkit-user-select: none;
 }
 .vt-label {
   font-family: 'ABCDiatype', Arial, sans-serif;
-  font-size: 12px; color: rgba(0,0,0,0.25);
-  cursor: pointer; user-select: none; -webkit-user-select: none;
+  font-size: 12px; color: rgba(0,0,0,0.45);
+  cursor: pointer;
   transition: color 0.15s ease;
+  white-space: nowrap;
 }
 .vt-label.active { color: #000; }
 .vt-label:hover  { opacity: 0.7; }
@@ -338,59 +316,58 @@ body.link-cursor,  body.link-cursor *  { cursor: pointer !important; }
 /* ── Project view overlay ── */
 #pv-overlay {
   position: absolute; inset: 0;
-  background: rgba(255,255,255,0.30);
-  backdrop-filter: blur(28px) saturate(150%);
-  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  background: #fff;
   display: none;
-  align-items: center; justify-content: center;
-  z-index: 400; overflow: hidden;
-  cursor: auto;
+  overflow-y: scroll; overflow-x: hidden;
+  scrollbar-width: none; -ms-overflow-style: none;
+  z-index: 400; cursor: auto;
 }
-#pv-overlay.visible { display: flex; }
-#pv-strip {
-  display: flex; align-items: center;
-  flex-wrap: nowrap;
+#pv-overlay::-webkit-scrollbar { display: none; }
+#pv-overlay.visible { display: block; }
+#pv-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  column-gap: 1.42%;
+  row-gap: 130px;
+  padding: 95px 1.7% 0;
 }
-.pv-item {
-  flex-shrink: 0;
-  display: block;
+.pv-slot {
   position: relative;
-  overflow: visible;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-color: transparent;
-  cursor: pointer;
-  text-decoration: none;
-  transition: opacity 0.2s ease;
-}
-#pv-strip:hover .pv-item         { opacity: 0.5; }
-#pv-strip:hover .pv-item:hover   { opacity: 1; }
-.pv-label {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0; right: 0;
+  min-width: 0;
   opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
+  transition: opacity 0.5s ease;
 }
-.pv-item:hover .pv-label { opacity: 1; }
-.pv-l-rule {
+.pv-img-wrap {
+  position: relative;
   width: 100%;
-  height: 1px;
-  background: #000;
-  margin-bottom: 5px;
+  overflow: hidden;
 }
-.pv-l-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+.pv-img-default {
+  width: 100%;
+  display: block;
+  background-size: cover;
+  background-position: center;
+}
+.pv-img-hover-layer {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.pv-slot:hover .pv-img-hover-layer { opacity: 1; }
+.pv-rule { width: 100%; height: 1px; background: #000; display: block; margin-top: 9px; }
+.pv-meta {
+  display: flex; align-items: baseline;
   font-family: 'ABCDiatype', Arial, sans-serif;
-  font-size: 12px;
-  color: #000;
-  white-space: nowrap;
-  line-height: 1;
+  font-size: 12px; color: #1a1a1a;
+  line-height: 1; white-space: nowrap; overflow: hidden;
+  padding: 4px 0 0;
 }
+.pv-meta .m-name   { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
+.pv-meta .m-year   { flex: 0 0 auto; margin-right: 14px; }
+.pv-meta .m-client { flex: 0 0 auto; }
 
 /* ── Mobile: simple single-column scroll ── */
 #mobile-layout { display: none; }
@@ -471,16 +448,11 @@ body.link-cursor,  body.link-cursor *  { cursor: pointer !important; }
 </nav>
 <div id="clip">
   <div id="canvas"></div>
-  <div id="view-mode-tabs">
-    <span class="vm-tab active" id="vm-gallery">Gallery</span>
-    <span class="vm-tab" id="vm-catalogue">Catalogue</span>
-  </div>
-  <div id="zoom-shortcut"><span>View Mode Keyboard Shortcut</span><span style="display:inline-flex;gap:5px;"><span class="zoom-key" id="zk-out" style="cursor:pointer;">-</span><span class="zoom-key" id="zk-in" style="cursor:pointer;">+</span></span></div>
   <div id="catalogue">
     <div id="cat-grid"></div>
   </div>
   <div id="pv-overlay">
-    <div id="pv-strip"></div>
+    <div id="pv-grid"></div>
   </div>
 </div>
 <div id="minimap">
@@ -494,26 +466,17 @@ body.link-cursor,  body.link-cursor *  { cursor: pointer !important; }
   </div>
 </div>
 <div id="mobile-layout"></div>
+<div id="view-toggle">
+  <span class="vt-label"        id="vt-project">Project</span>
+  <span class="vt-label active" id="vt-product">Product</span>
+</div>
 <div id="footer">
-  <div id="view-toggle">
-    <span class="vt-label active" id="vt-product">Product</span>
-    <span class="vt-label"        id="vt-project">Project</span>
-  </div>
   <span id="status-bar"></span>
   <button id="party-toggle" title="Party Mode"><svg width="51" height="30" viewBox="0 0 51 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M39.0565 20H38.3481C39.4399 18.3361 39.9873 16.6694 39.9873 15C39.9873 14.3472 39.9082 13.7 39.7502 13.0583C39.6272 12.5389 39.4516 12.0389 39.2292 11.5611C39.0857 11.25 38.793 10.7278 38.3452 10H39.0535C39.7414 10.8694 40.2478 11.7444 40.5785 12.6222C40.8595 13.3778 41 14.1694 41 14.9944C41 15.9306 40.8097 16.8361 40.4322 17.7111C40.0546 18.5861 39.595 19.3472 39.0535 20H39.0565ZM34.2825 12.4611C34.6835 12.4611 35.0787 12.5611 35.4679 12.7583C35.8572 12.9556 36.1558 13.2389 36.3724 13.6056C36.589 13.9722 36.6973 14.3556 36.6973 14.75C36.6973 15.3861 36.4602 15.925 35.989 16.3722C35.5177 16.8194 34.9499 17.0444 34.2825 17.0444C33.6151 17.0444 33.0444 16.8194 32.5731 16.3722C32.1019 15.925 31.8648 15.3833 31.8648 14.75C31.8648 14.35 31.9731 13.9694 32.1897 13.6028C32.4063 13.2361 32.7078 12.9556 33.0941 12.7583C33.4805 12.5611 33.8786 12.4611 34.2825 12.4611ZM29.491 12.8306L29.2393 11.4056V10.1306H30.3632V11.4056L30.0998 12.8306H29.491ZM22.0183 14.9889H22.6886C22.6886 15.9667 23.1335 16.7 24.0262 17.1833C24.4712 17.4306 24.919 17.5528 25.3639 17.5528C25.8088 17.5528 26.2566 17.4306 26.7015 17.1833C27.5972 16.6944 28.045 15.9611 28.045 14.9889H28.7153C28.7153 16.2111 28.1563 17.125 27.0381 17.7361C26.4791 18.0417 25.923 18.1944 25.3668 18.1944C24.8107 18.1944 24.2516 18.0417 23.6955 17.7361C22.5803 17.125 22.0242 16.2111 22.0242 14.9889H22.0183ZM20.587 12.8306L20.3353 11.4056V10.1306H21.4593V11.4056L21.1958 12.8306H20.587ZM16.4541 12.4611C16.8551 12.4611 17.2502 12.5611 17.6395 12.7583C18.0259 12.9556 18.3274 13.2389 18.544 13.6056C18.7606 13.9722 18.8688 14.3556 18.8688 14.75C18.8688 15.3861 18.6318 15.925 18.1605 16.3722C17.6893 16.8194 17.1214 17.0444 16.4541 17.0444C15.7867 17.0444 15.2159 16.8194 14.7447 16.3722C14.2734 15.925 14.0364 15.3833 14.0364 14.75C14.0364 14.35 14.1447 13.9694 14.3612 13.6028C14.5778 13.2361 14.8793 12.9556 15.2657 12.7583C15.6521 12.5611 16.0501 12.4611 16.4541 12.4611ZM11.9465 20C11.402 19.3472 10.9425 18.5861 10.5649 17.7111C10.1873 16.8361 10 15.9306 10 14.9944C10 14.1694 10.1405 13.3778 10.4215 12.6222C10.7522 11.7444 11.2586 10.8694 11.9465 10H12.6548C12.2128 10.7222 11.9201 11.2361 11.7767 11.5444C11.5542 12.0222 11.3786 12.5222 11.2498 13.0417C11.0918 13.6917 11.0127 14.3417 11.0127 14.9972C11.0127 16.6667 11.5601 18.3333 12.6519 19.9972H11.9435L11.9465 20Z" fill="currentColor"/></svg></button>
 </div>
-<div id="cursor-wrap">
-  <svg id="cursor-svg" width="28" height="28" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <mask id="cmask" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="30" height="30">
-      <rect width="30" height="30" fill="#D9D9D9"/>
-    </mask>
-    <g mask="url(#cmask)">
-      <path d="M9.21625 15.9375L16.3366 23.0578L15 24.375L5.625 15L15 5.625L16.3366 6.94219L9.21625 14.0625H24.375V15.9375H9.21625Z" fill="#ffffff"/>
-    </g>
-  </svg>
-</div>
+<div id="cursor-wrap">×</div>
 <div id="cursor-dot"></div>
-<div id="cat-cursor">View</div>
+<div id="cat-cursor">+</div>
 
 <script>
 const COLS=5, ROWS=6, GAP=50, IMG_RATIO=1.341, META_H=20;
@@ -552,14 +515,25 @@ const projects = [
   {name:'Storage Tin',           year:'2023', client:'Pax Technologies', img:'./images/product-5.png'},
 ];
 
-const pvProjects=[
-  {name:'Flaus Flosser',   year:'2023', img:'./images/01 - flaus.png',   url:'flaus-project.html'},
-  {name:'Grinder',         year:'2023', img:'./images/02 - grinder.png', url:'pax-project.html'},
-  {name:'Metal Spoon',     year:'2023', img:'./images/03 - spoon.png',   url:'flaus-project.html'},
-  {name:'Showerhead',      year:'2023', img:'./images/04 - canopy.png',  url:'flaus-project.html'},
-  {name:'Metal Whisk',     year:'2023', img:'./images/05 - wisk.png',    url:'flaus-project.html'},
-  {name:'Tushy',           year:'2023', img:'./images/06 - tushy.png',   url:'flaus-project.html'},
-  {name:'Pax Accessories', year:'2023', img:'./images/07 - pax.png',     url:'pax-project.html'},
+const pvImages = [
+  { src: './images/Pax_Pax Accessories.png',           hover: './images/Hover/Pax_Pax Accessories_Hover.png',           name: 'Pax Accessories',      client: 'Pax Technologies', year: '2023' },
+  { src: './images/Canopy_Portable Humidifier.png',    hover: './images/Hover/Canopy_Portable Humidifier_Hover.png',    name: 'Portable Humidifier',  client: 'Canopy',           year: '2023' },
+  { src: './images/Flaus_Electric Flosser.png',        hover: './images/Hover/Flaus_Electric Flosser_Hover.png',        name: 'Electric Flosser',     client: 'Flaus',            year: '2023' },
+  { src: './images/Saintly_Toiler Foam Dispenser.png', hover: './images/Hover/Saintly_Toiler Foam Dispenser_Hover.png', name: 'Foam Dispenser',       client: 'Saintly',          year: '2023' },
+  { src: './images/Made In_Untensils Set.png',         hover: './images/Hover/Made In_Untensils Set_Hover.png',         name: 'Utensils Set',         client: 'Made In',          year: '2023' },
+  { src: './images/Canopy_Faucet Filter.png',          hover: './images/Hover/Canopy_Faucet Filter_Hover.png',          name: 'Faucet Filter',        client: 'Canopy',           year: '2023' },
+  { src: './images/Canopy_Filtered Showerhead.png',    hover: './images/Hover/Canopy_Filtered Shower Head_Hover.png',   name: 'Filtered Showerhead',  client: 'Canopy',           year: '2023' },
+  { src: './images/Arber_Plant Care Packaging.png',    hover: './images/Hover/Arber_Plant Care Packaging_Hover.png',    name: 'Plant Care Packaging', client: 'Arber',            year: '2023' },
+];
+
+// Layout config: each row is an array of slots.
+// { i: imageIndex, cols: grid columns to span, ratio: height/width }
+// Omit i for an empty spacer slot.
+const pvLayout = [
+  [{ i:0, cols:6, ratio:430/696 }, { cols:2 }, { i:1, cols:3, ratio:430/343 }, { cols:1 }],
+  [{ cols:1 }, { i:2, cols:3, ratio:430/343 }, { cols:3 }, { i:3, cols:3, ratio:224/342 }, { cols:2 }],
+  [{ i:4, cols:3, ratio:225/342 }, { cols:2 }, { i:5, cols:3, ratio:430/343 }, { cols:4 }],
+  [{ cols:3 }, { i:6, cols:3, ratio:430/342 }, { cols:4 }, { i:7, cols:2, ratio:284/225 }],
 ];
 // 8 directions: rotation for the SVG arrow (which points LEFT at 0°)
 const DIRS = {
@@ -611,7 +585,9 @@ function buildGrid() {
 
     const link = document.createElement('a');
     link.className = 'card-link';
-    if (p.name !== 'Confidential') {
+    if (p.name === 'Confidential') {
+      link.href = Math.random() < 0.5 ? 'flaus-project.html' : 'pax-project.html';
+    } else {
       link.href = (p.client && p.client.includes('Pax')) ? 'pax-project.html' : 'flaus-project.html';
     }
     link.id = 'cl' + i;
@@ -735,14 +711,13 @@ function buildCatalogue() {
     });
   }, { threshold: 0.05, root: catalogue });
 
-  projects.forEach(p => {
+  projects.forEach((p, idx) => {
     const a = document.createElement('a');
     a.className = 'cat-card';
+    a.dataset.index = idx;
     const isConfidential = p.name === 'Confidential';
-    if (!isConfidential) {
-      a.href = (p.client && p.client.includes('Pax')) ? 'pax-project.html' : 'flaus-project.html';
-    }
     if (isConfidential) a.dataset.confidential = '1';
+    a.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); zoomToGallery(idx); });
 
     const imgDiv = document.createElement('div');
     imgDiv.className = 'cat-img';
@@ -761,15 +736,6 @@ function buildCatalogue() {
     a.appendChild(imgDiv);
     a.appendChild(rule);
     a.appendChild(meta);
-    // Hover fade: enter dims others, leave resets all (including gap areas)
-    a.addEventListener('mouseenter', () => {
-      grid.querySelectorAll('.cat-card').forEach(c => {
-        c.style.opacity = c !== a ? '0.50' : '1';
-      });
-    });
-    a.addEventListener('mouseleave', () => {
-      grid.querySelectorAll('.cat-card').forEach(c => c.style.opacity = '1');
-    });
 
     grid.appendChild(a);
 
@@ -783,8 +749,10 @@ function setViewMode(mode) {
   canvas.style.display          = catMode ? 'none' : '';
   document.getElementById('catalogue').style.display   = catMode ? 'block' : 'none';
   document.getElementById('minimap').style.display     = catMode ? 'none' : '';
-  document.getElementById('vm-gallery').classList.toggle('active', !catMode);
-  document.getElementById('vm-catalogue').classList.toggle('active',  catMode);
+  const vmg = document.getElementById('vm-gallery');
+  const vmc = document.getElementById('vm-catalogue');
+  if (vmg) vmg.classList.toggle('active', !catMode);
+  if (vmc) vmc.classList.toggle('active',  catMode);
 
   if (catMode) {
     buildCatalogue();
@@ -798,45 +766,114 @@ function setViewMode(mode) {
   }
 }
 
+function zoomToGallery(index) {
+  focusRow = Math.floor(index / COLS);
+  focusCol = index % COLS;
+  catMode  = false;
+  const cat = document.getElementById('catalogue');
+  // Set initial state: positioned, tiny, invisible — no transitions
+  canvas.style.transition = 'none';
+  canvas.style.display    = 'block';
+  applyPos(false); // sets left/top/transformOrigin instantly
+  canvas.style.opacity   = '0';
+  canvas.style.transform = 'scale(0.75)';
+  canvas.offsetHeight; // force browser to commit initial state
+  // Re-enable transitions then animate in
+  setTimeout(() => {
+    canvas.style.transition = '';
+    canvas.classList.remove('instant');
+    requestAnimationFrame(() => {
+      cat.style.transition   = 'opacity 0.32s ease';
+      cat.style.opacity      = '0';
+      canvas.style.opacity   = '1';
+      canvas.style.transform = 'scale(1)';
+    });
+  }, 20);
+  setTimeout(() => {
+    cat.style.display    = 'none';
+    cat.style.opacity    = '';
+    cat.style.transition = '';
+    canvas.style.opacity = '';
+    document.getElementById('minimap').style.display = '';
+    catCursor.style.display  = 'none';
+    document.body.style.cursor = 'none';
+    updateLink();
+    updateMinimap();
+  }, 600);
+}
+
+function zoomToCatalogue() {
+  const cat = document.getElementById('catalogue');
+  buildCatalogue();
+  cat.style.opacity = '0';
+  cat.style.display = 'block';
+  requestAnimationFrame(normalizeCatHeights);
+  setTimeout(() => {
+    requestAnimationFrame(() => {
+      canvas.style.opacity   = '0';
+      canvas.style.transform = 'scale(1.25)';
+      cat.style.transition   = 'opacity 0.32s ease';
+      cat.style.opacity      = '1';
+    });
+  }, 20);
+  setTimeout(() => {
+    canvas.style.display   = 'none';
+    canvas.style.opacity   = '';
+    canvas.style.transform = 'scale(1)'; // reset for next zoom-in
+    cat.style.opacity      = '';
+    cat.style.transition   = '';
+    catMode = true;
+    document.getElementById('minimap').style.display = 'none';
+    cursorWrap.style.display = 'none';
+    document.body.style.cursor = 'none';
+  }, 600);
+}
+
 // ── View mode (Product / Project overlay) ─────────────────────
 let pvMode = false;
 
 function buildProjectView() {
-  const strip = document.getElementById('pv-strip');
-  if (!strip) return;
-  strip.innerHTML = '';
-  pvProjects.forEach(p => {
-    const a = document.createElement('a');
-    a.href = p.url || 'flaus-project.html';
-    a.className = 'pv-item';
-    a.style.backgroundImage = 'url(' + JSON.stringify(p.img) + ')';
-
-    const label = document.createElement('div');
-    label.className = 'pv-label';
-    label.innerHTML =
-      '<div class="pv-l-rule"></div>' +
-      '<div class="pv-l-meta">' +
-        '<span class="pv-l-name">' + p.name + '</span>' +
-        '<span class="pv-l-year">' + p.year + '</span>' +
-      '</div>';
-    a.appendChild(label);
-    strip.appendChild(a);
+  const grid = document.getElementById('pv-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  const oldEnd = document.getElementById('pv-end');
+  if (oldEnd) oldEnd.remove();
+  pvLayout.forEach(function(row) {
+    row.forEach(function(slot) {
+      const el = document.createElement('div');
+      el.style.gridColumn = 'span ' + slot.cols;
+      if (slot.i === undefined) { grid.appendChild(el); return; }
+      const p = pvImages[slot.i];
+      el.className = 'pv-slot';
+      const wrap = document.createElement('div');
+      wrap.className = 'pv-img-wrap';
+      const def = document.createElement('div');
+      def.className = 'pv-img-default';
+      def.style.paddingBottom = (slot.ratio * 100).toFixed(2) + '%';
+      def.style.backgroundImage = 'url(' + JSON.stringify(p.src) + ')';
+      const hov = document.createElement('div');
+      hov.className = 'pv-img-hover-layer';
+      hov.style.backgroundImage = 'url(' + JSON.stringify(p.hover) + ')';
+      wrap.appendChild(def);
+      wrap.appendChild(hov);
+      const rule = document.createElement('div');
+      rule.className = 'pv-rule';
+      const meta = document.createElement('div');
+      meta.className = 'pv-meta';
+      meta.innerHTML = '<span class="m-name">' + p.name + '</span><span class="m-year">' + p.year + '</span><span class="m-client">' + p.client + '</span>';
+      el.appendChild(wrap);
+      el.appendChild(rule);
+      el.appendChild(meta);
+      grid.appendChild(el);
+    });
   });
-  layoutPv();
+  const end = document.createElement('div');
+  end.id = 'pv-end';
+  end.style.height = '60px';
+  grid.parentNode.appendChild(end);
 }
 
-function layoutPv() {
-  const strip = document.getElementById('pv-strip');
-  if (!strip) return;
-  const pvH   = Math.round(VH * 182 / 903);
-  const pvW   = Math.round(pvH / IMG_RATIO);
-  const pvGap = Math.round(VW * 19 / 1440);
-  strip.style.gap = pvGap + 'px';
-  strip.querySelectorAll('.pv-item').forEach(el => {
-    el.style.width  = pvW + 'px';
-    el.style.height = pvH + 'px';
-  });
-}
+function layoutPv() {}
 
 function setPvMode(on) {
   pvMode = on;
@@ -847,6 +884,20 @@ function setPvMode(on) {
   document.body.style.cursor = on ? '' : 'none';
   cursorWrap.style.display = 'none';
   cursorDot.style.display  = 'none';
+  if (on) {
+    const slots = document.querySelectorAll('.pv-slot');
+    slots.forEach(function(slot) {
+      slot.style.opacity = '0';
+      slot.style.transitionDelay = '0ms';
+    });
+    requestAnimationFrame(function() {
+      slots.forEach(function(slot) {
+        const delay = Math.random() * 600;
+        slot.style.transitionDelay = delay + 'ms';
+        slot.style.opacity = '1';
+      });
+    });
+  }
 }
 
 document.addEventListener('mousemove', e => {
@@ -856,16 +907,11 @@ document.addEventListener('mousemove', e => {
     const r = clip.getBoundingClientRect();
     const ins = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
     const onCard = !!e.target.closest('.cat-card');
-    const onUI   = !!(e.target.closest('#view-mode-tabs') || e.target.closest('#zoom-shortcut'));
-    if (!ins || onUI) {
+    if (!ins || !onCard) {
       catCursor.style.display  = 'none';
-      document.body.style.cursor = ins ? 'auto' : 'none';
-    } else if (!onCard) {
-      catCursor.style.display  = 'none';
-      document.body.style.cursor = 'default';
+      document.body.style.cursor = 'none';
     } else {
-      const card = e.target.closest('.cat-card');
-      catCursor.textContent = card && card.dataset.confidential ? 'Confidential' : 'View';
+      catCursor.textContent = '+';
       catCursor.style.left = e.clientX + 'px';
       catCursor.style.top  = e.clientY + 'px';
       catCursor.style.display = 'block';
@@ -880,53 +926,66 @@ document.addEventListener('mousemove', e => {
   const ins = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
 
   // Outside clip or over UI chrome — restore normal OS cursor
-  if (!ins || e.target.closest('#minimap') || e.target.closest('#view-mode-tabs') || e.target.closest('#zoom-shortcut')) {
+  if (!ins || e.target.closest('#minimap')) {
     cursorWrap.style.display = 'none';
     document.body.classList.remove('no-cursor', 'link-cursor');
     hoverDir = null;
     return;
   }
 
-  // Check if over the focused card (full bounds) for a linked product
+  // Check if over the focused card (tighter hit zone — 10% inset)
   const focusedProject = projects[focusRow * COLS + focusCol];
   const isLink = focusedProject && focusedProject.name !== 'Confidential';
   if (isLink) {
     const cr = canvas.getBoundingClientRect();
     const cardL = cr.left + focusCol * (cardW + GAP);
     const cardT = cr.top  + focusRow * (cardH + GAP);
-    if (e.clientX >= cardL && e.clientX <= cardL + cardW && e.clientY >= cardT && e.clientY <= cardT + cardH) {
-      document.body.classList.remove('no-cursor');
-      document.body.classList.add('link-cursor');
-      cursorWrap.style.display = 'none';
+    const mW = cardW * 0.10;
+    const mH = imgH  * 0.10;
+    if (e.clientX >= cardL + mW && e.clientX <= cardL + cardW - mW &&
+        e.clientY >= cardT + mH && e.clientY <= cardT + imgH  - mH) {
+      document.body.classList.add('no-cursor');
+      document.body.classList.remove('link-cursor');
+      cursorWrap.textContent = 'View More';
+      cursorWrap.style.left    = e.clientX + 'px';
+      cursorWrap.style.top     = e.clientY + 'px';
+      cursorWrap.style.opacity = '1';
+      cursorWrap.style.display = 'block';
       hoverDir = null;
       return;
     }
   }
 
-  // Everywhere else: show directional arrow, hide OS cursor
+  // Directional zone or gap — determine which
   document.body.classList.remove('link-cursor');
   document.body.classList.add('no-cursor');
 
+  const DIR_CHARS = {
+    'left': '←', 'up-left': '↖', 'up': '↑', 'up-right': '↗',
+    'right': '→', 'down-right': '↘', 'down': '↓', 'down-left': '↙',
+  };
+
   const z = getZone(e.clientX, e.clientY);
-
-  // Resolve direction — for null (dead center) pick the closest real zone
-  let displayDir = z;
-  if (z === null) {
-    displayDir = 'up'; // fallback for tiny dead-center; rarely reached
-  } else if (navOpacity(z) === 0.5) {
-    const { dr, dc } = DIRS[z];
-    const rowOk = dr < 0 ? focusRow > 0 : focusRow < ROWS - 1;
-    const colOk = dc < 0 ? focusCol > 0 : focusCol < COLS - 1;
-    if (rowOk && !colOk) displayDir = dr < 0 ? 'up'   : 'down';
-    if (!rowOk && colOk) displayDir = dc < 0 ? 'left' : 'right';
+  if (z === null || navOpacity(z) === 0) {
+    // Gap / no valid nav target → exit cursor
+    cursorWrap.textContent = '×';
+    hoverDir = null;
+  } else {
+    // Valid nav direction → arrow
+    let displayDir = z;
+    if (navOpacity(z) === 0.5) {
+      const { dr, dc } = DIRS[z];
+      const rowOk = dr < 0 ? focusRow > 0 : focusRow < ROWS - 1;
+      const colOk = dc < 0 ? focusCol > 0 : focusCol < COLS - 1;
+      if (rowOk && !colOk) displayDir = dr < 0 ? 'up'   : 'down';
+      if (!rowOk && colOk) displayDir = dc < 0 ? 'left' : 'right';
+    }
+    cursorWrap.textContent = DIR_CHARS[displayDir] || '↑';
+    hoverDir = displayDir;
   }
-
-  const op = z === null ? 1 : navOpacity(z);
-  hoverDir = displayDir;
   cursorWrap.style.left    = e.clientX + 'px';
   cursorWrap.style.top     = e.clientY + 'px';
-  cursorSvg.style.transform = 'rotate(' + DIRS[displayDir].rot + 'deg)';
-  cursorWrap.style.opacity = op === 0 ? '0.20' : '1';
+  cursorWrap.style.opacity = '1';
   cursorWrap.style.display = 'block';
 });
 
@@ -934,9 +993,25 @@ clip.addEventListener('click', e => {
   if (pvMode) return;
   if (catMode) return;
   if (e.target.closest && e.target.closest('#minimap')) return;
-  if (e.target.closest && e.target.closest('#view-mode-tabs')) return;
-  if (hoverDir === null) { const l = document.getElementById('cl' + (focusRow*COLS + focusCol)); if (l && l.href) window.location.href = l.href; }
-  else navTo(hoverDir);
+  // Check focused card hit zone first
+  const focusedProject = projects[focusRow * COLS + focusCol];
+  const isLink = focusedProject && focusedProject.name !== 'Confidential';
+  if (isLink) {
+    const cr = canvas.getBoundingClientRect();
+    const cardL = cr.left + focusCol * (cardW + GAP);
+    const cardT = cr.top  + focusRow * (cardH + GAP);
+    const mW = cardW * 0.10;
+    const mH = imgH  * 0.10;
+    if (e.clientX >= cardL + mW && e.clientX <= cardL + cardW - mW &&
+        e.clientY >= cardT + mH && e.clientY <= cardT + imgH  - mH) {
+      const l = document.getElementById('cl' + (focusRow * COLS + focusCol));
+      if (l && l.href) { window.location.href = l.href; return; }
+    }
+  }
+  // Directional arrow zone → navigate
+  if (hoverDir !== null) { navTo(hoverDir); return; }
+  // Gap / exit zone → back to catalogue
+  zoomToCatalogue();
 });
 
 document.addEventListener('mouseleave', () => {
@@ -960,9 +1035,9 @@ let swipeAccX = 0, swipeAccY = 0;
 const SWIPE_THRESHOLD = 80;
 
 clip.addEventListener('wheel', e => {
-  if (catMode) return; // let native scroll reach #catalogue
-  e.preventDefault();
+  if (catMode) return;
   if (pvMode) return;
+  e.preventDefault();
 
   swipeAccX += e.deltaX;
   swipeAccY += e.deltaY;
@@ -1178,18 +1253,15 @@ function normalizeCatHeights() {
 }
 window.addEventListener('resize', function() { init(); if (document.getElementById('catalogue').style.display !== 'none') normalizeCatHeights(); });
 init();
+setViewMode('catalogue');
 
 // ── View toggle listeners ──
 document.getElementById('vt-product').addEventListener('click', () => setPvMode(false));
 document.getElementById('vt-project').addEventListener('click', () => setPvMode(true));
 
 // ── Gallery | Catalogue toggle ──
-document.getElementById('vm-gallery').addEventListener('click', () => { if (catMode) setViewMode('gallery'); });
-document.getElementById('vm-catalogue').addEventListener('click', () => { if (!catMode) setViewMode('catalogue'); });
 
 // ── Zoom shortcut click ──
-document.getElementById('zk-out').addEventListener('click', () => setViewMode('catalogue'));
-document.getElementById('zk-in').addEventListener('click',  () => setViewMode('gallery'));
 
 // ── Party mode ──
 (function() {
