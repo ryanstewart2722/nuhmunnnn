@@ -94,9 +94,11 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; opacity: 1
 }
 #canvas.instant { transition: none; }
 
-/* In overview (cat) mode: show meta for all cards */
+/* In overview (cat) mode: hide meta by default, show on hover */
 #canvas.cat-view .card-rule,
-#canvas.cat-view .card-meta  { opacity: 1; }
+#canvas.cat-view .card-meta  { opacity: 0; }
+#canvas.cat-view .card.hovered .card-rule,
+#canvas.cat-view .card.hovered .card-meta { opacity: 1; }
 #canvas.cat-view .card-link  { display: none !important; }
 
 .card {
@@ -128,13 +130,12 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; opacity: 1
   height: 1px;
   background: #000;
   transform-origin: 0 0;
-  transition: transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94);
 }
 
 /* Meta text */
 .card-meta {
   position: absolute;
-  left: 0; right: 0;
+  left: 0;
   display: flex; align-items: baseline;
   font-family: 'ABCDiatype', Arial, sans-serif;
   font-size: 12px; color: #1a1a1a;
@@ -142,22 +143,26 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; opacity: 1
   padding-top: 5px;
   background: transparent;
   transform-origin: 0 0;
-  transition: transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94);
 }
 .card-meta .m-name   { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
 .card-meta .m-year   { flex: 0 0 auto; margin-right: 14px; }
 .card-meta .m-client { flex: 0 0 auto; }
 
 /* Gallery: only focused card shows rule + meta */
-#canvas .card-rule,
+#canvas .card-rule {
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94);
+}
 #canvas .card-meta {
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94), width 0.55s cubic-bezier(0.25,0.46,0.45,0.94);
 }
 #canvas .card.focused .card-rule,
 #canvas .card.focused .card-meta {
   opacity: 1;
 }
+#canvas.instant .card-rule,
+#canvas.instant .card-meta { transition: none !important; }
 
 /* Cursors */
 body, body * { cursor: none !important; }
@@ -180,7 +185,7 @@ body.pv-active, body.pv-active * { cursor: auto !important; }
 #cat-cursor {
   position: absolute; pointer-events: none; z-index: 9999;
   transform: translate(-50%, -50%); display: none;
-  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 24px;
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 40px;
   color: #fff; mix-blend-mode: exclusion;
   white-space: nowrap; line-height: 1;
   user-select: none; -webkit-user-select: none;
@@ -450,6 +455,7 @@ let focusCol = 1, focusRow = 2, hoverDir = null;
 let zoomLevel = 1.5;
 let catMode = true;
 let catScrollY = 0;
+let catHoverCard = null;
 
 function measure() {
   VW = clip.clientWidth;
@@ -537,8 +543,8 @@ function applyPos(animated) {
   if (!animated) canvas.offsetHeight;
   canvas.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
   const inv = 1 / scale;
-  canvas.querySelectorAll('.card-rule').forEach(el => { el.style.transform = `scale(${inv})`; });
-  canvas.querySelectorAll('.card-meta').forEach(el => { el.style.transform = `scale(${inv})`; });
+  canvas.querySelectorAll('.card-rule').forEach(el => { el.style.transform = `scaleY(${inv})`; });
+  canvas.querySelectorAll('.card-meta').forEach(el => { el.style.width = (cardW * scale) + 'px'; el.style.transform = `scale(${inv})`; });
 }
 
 function setZoom(level) {
@@ -614,6 +620,7 @@ function zoomToGallery(index) {
 function zoomToCatalogue() {
   catScrollY = 0;
   catMode = true;
+  if (catHoverCard) { catHoverCard.classList.remove('hovered'); catHoverCard = null; }
   canvas.classList.add('cat-view');
   applyPos(true);
   updateLink();
@@ -723,7 +730,14 @@ document.addEventListener('mousemove', e => {
     const col = Math.floor(cx / (cardW+GAP));
     const row = Math.floor(cy / (cardH+VGAP));
     const onCard = col >= 0 && col < COLS && row >= 0 && row < ROWS &&
-                   (cx - col*(cardW+GAP)) <= cardW && (cy - row*(cardH+VGAP)) <= imgH;
+                   (cx - col*(cardW+GAP)) <= cardW && (cy - row*(cardH+VGAP)) <= cardH;
+    const cards = canvas.querySelectorAll('.card');
+    const hovCard = onCard ? cards[row * COLS + col] : null;
+    if (hovCard !== catHoverCard) {
+      if (catHoverCard) catHoverCard.classList.remove('hovered');
+      catHoverCard = hovCard;
+      if (catHoverCard) catHoverCard.classList.add('hovered');
+    }
     if (onCard) {
       catCursor.textContent = '+';
       catCursor.style.transform = 'translate(-50%,-50%) rotate(0deg)';
@@ -755,10 +769,10 @@ document.addEventListener('mousemove', e => {
   const isConfidential = focusedProject && focusedProject.name === 'Confidential';
   if (isLink || isConfidential) {
     const cr = canvas.getBoundingClientRect();
-    const cardL = cr.left + focusCol * (cardW + GAP);
-    const cardT = cr.top  + focusRow * (cardH + GAP);
-    if (e.clientX >= cardL && e.clientX <= cardL + cardW &&
-        e.clientY >= cardT && e.clientY <= cardT + imgH) {
+    const cardL = cr.left + focusCol * (cardW + GAP) * zoomLevel;
+    const cardT = cr.top  + focusRow * (cardH + VGAP) * zoomLevel;
+    if (e.clientX >= cardL && e.clientX <= cardL + cardW * zoomLevel &&
+        e.clientY >= cardT && e.clientY <= cardT + cardH * zoomLevel) {
       cursorWrap.textContent = isConfidential ? 'Confidential' : 'View More';
       cursorWrap.style.left    = e.clientX + 'px';
       cursorWrap.style.top     = e.clientY + 'px';
@@ -773,20 +787,24 @@ document.addEventListener('mousemove', e => {
   // Edge-proximity arrows or × in center
 
   const r2    = clip.getBoundingClientRect();
-  const EDGE  = 20;
+  const EDGE  = 320;
   const nearL = (e.clientX - r2.left)   < EDGE && focusCol > 0;
   const nearR = (r2.right  - e.clientX) < EDGE && focusCol < COLS - 1;
   const nearT = (e.clientY - r2.top)    < EDGE && focusRow > 0;
   const nearB = (r2.bottom - e.clientY) < EDGE && focusRow < ROWS - 1;
 
   let arrowDir = null;
-  if      (nearL) arrowDir = 'left';
-  else if (nearR) arrowDir = 'right';
-  else if (nearT) arrowDir = 'up';
-  else if (nearB) arrowDir = 'down';
+  if      (nearL && nearT) arrowDir = 'up-left';
+  else if (nearR && nearT) arrowDir = 'up-right';
+  else if (nearR && nearB) arrowDir = 'down-right';
+  else if (nearL && nearB) arrowDir = 'down-left';
+  else if (nearL)          arrowDir = 'left';
+  else if (nearR)          arrowDir = 'right';
+  else if (nearT)          arrowDir = 'up';
+  else if (nearB)          arrowDir = 'down';
 
   hoverDir = arrowDir;
-  const ARROW_CHARS = { left: '←', right: '→', up: '↑', down: '↓' };
+  const ARROW_CHARS = { left: '←', right: '→', up: '↑', down: '↓', 'up-left': '↖', 'up-right': '↗', 'down-right': '↘', 'down-left': '↙' };
   catCursor.textContent = arrowDir ? ARROW_CHARS[arrowDir] : '+';
   catCursor.style.transform = arrowDir
     ? 'translate(-50%, -50%)'
@@ -807,7 +825,7 @@ clip.addEventListener('click', e => {
     const col = Math.floor(cx / (cardW+GAP));
     const row = Math.floor(cy / (cardH+VGAP));
     if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return;
-    if ((cx - col*(cardW+GAP)) > cardW || (cy - row*(cardH+VGAP)) > imgH) return;
+    if ((cx - col*(cardW+GAP)) > cardW || (cy - row*(cardH+VGAP)) > cardH) return;
     const idx = row * COLS + col;
     if (idx < projects.length) zoomToGallery(idx);
     return;
@@ -818,10 +836,10 @@ clip.addEventListener('click', e => {
   const isConfidential = focusedProject && focusedProject.name === 'Confidential';
   if (isLink || isConfidential) {
     const cr = canvas.getBoundingClientRect();
-    const cardL = cr.left + focusCol * (cardW + GAP);
-    const cardT = cr.top  + focusRow * (cardH + GAP);
-    if (e.clientX >= cardL && e.clientX <= cardL + cardW &&
-        e.clientY >= cardT && e.clientY <= cardT + imgH) {
+    const cardL = cr.left + focusCol * (cardW + GAP) * zoomLevel;
+    const cardT = cr.top  + focusRow * (cardH + VGAP) * zoomLevel;
+    if (e.clientX >= cardL && e.clientX <= cardL + cardW * zoomLevel &&
+        e.clientY >= cardT && e.clientY <= cardT + cardH * zoomLevel) {
       if (isLink) {
         const l = document.getElementById('cl' + (focusRow * COLS + focusCol));
         if (l && l.href) { window.location.href = l.href; }
