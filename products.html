@@ -671,6 +671,7 @@ function setPvMode(on) {
   document.getElementById('vt-project').classList.toggle('active',  on);
   cursorWrap.style.display = 'none';
   cursorDot.style.display  = 'none';
+  catCursor.style.display  = 'none';
   if (on) {
     const slots = document.querySelectorAll('.pv-slot');
     slots.forEach(function(slot) {
@@ -688,7 +689,21 @@ function setPvMode(on) {
 }
 
 document.addEventListener('mousemove', e => {
-  if (pvMode) return;
+  if (pvMode) {
+    catCursor.style.display = 'none';
+    const el   = document.elementFromPoint(e.clientX, e.clientY);
+    const slot = el && el.closest('.pv-slot');
+    if (slot) {
+      cursorWrap.textContent = 'View Project';
+      cursorWrap.style.left    = e.clientX + 'px';
+      cursorWrap.style.top     = e.clientY + 'px';
+      cursorWrap.style.opacity = '1';
+      cursorWrap.style.display = 'block';
+    } else {
+      cursorWrap.style.display = 'none';
+    }
+    return;
+  }
 
   if (catMode) {
     const r = clip.getBoundingClientRect();
@@ -702,26 +717,15 @@ document.addEventListener('mousemove', e => {
     const onCard = col >= 0 && col < COLS && row >= 0 && row < ROWS &&
                    (cx - col*(cardW+GAP)) <= cardW && (cy - row*(cardH+GAP)) <= imgH;
     if (onCard) {
-      const hoveredProject = projects[row * COLS + col];
-      if (hoveredProject && hoveredProject.name === 'Confidential') {
-        cursorWrap.textContent = 'Confidential';
-        cursorWrap.style.left    = e.clientX + 'px';
-        cursorWrap.style.top     = e.clientY + 'px';
-        cursorWrap.style.opacity = '1';
-        cursorWrap.style.display = 'block';
-        catCursor.style.display  = 'none';
-      } else {
-        catCursor.textContent = '+';
-        catCursor.style.transform = 'translate(-50%,-50%) rotate(0deg)';
-        catCursor.style.left = e.clientX + 'px';
-        catCursor.style.top  = e.clientY + 'px';
-        catCursor.style.display = 'block';
-        cursorWrap.style.display = 'none';
-      }
+      catCursor.textContent = '+';
+      catCursor.style.transform = 'translate(-50%,-50%) rotate(0deg)';
+      catCursor.style.left = e.clientX + 'px';
+      catCursor.style.top  = e.clientY + 'px';
+      catCursor.style.display = 'block';
     } else {
-      catCursor.style.display  = 'none';
-      cursorWrap.style.display = 'none';
+      catCursor.style.display = 'none';
     }
+    cursorWrap.style.display = 'none';
     cursorDot.style.display  = 'none';
     return;
   }
