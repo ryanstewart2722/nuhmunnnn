@@ -381,36 +381,36 @@ const COLS=6, ROWS=5, GAP=30, VGAP=8, IMG_RATIO=1.341, META_H=20, CAT_TOP_PAD=22
 
 // Full 25-card explicit list — 5 confidential images interspersed, no adjacent duplicates
 const projects = [
-  {name:'Wire Skimmer',          year:'2023', client:'Made In',          img:'./images/product-1.png'},
-  {name:'Pax Grinder',           year:'2023', client:'Pax Technologies', img:'./images/product-9.png'},
-  {name:'Balloon Whisk',         year:'2023', client:'Made In',          img:'./images/product-4.png'},
-  {name:'Confidential',          year:'2023', client:'Loftie',           img:'./images/Product-Confidential-1.png'},
-  {name:'Storage Tin',           year:'2023', client:'Pax Technologies', img:'./images/product-5.png'},
-  {name:'Filtered Showerhead',   year:'2023', client:'Canopy',           img:'./images/product-6.png'},
-  {name:'Silicone Tongs',        year:'2023', client:'Made In',          img:'./images/product-7.png'},
-  {name:'Grip Spatula',          year:'2023', client:'Pax Technologies', img:'./images/product-3.png'},
-  {name:'Confidential',          year:'2023', client:'Amazon',           img:'./images/Product-Confidential-2.png'},
-  {name:'Portable Speaker',      year:'2022', client:'Pax Technologies', img:'./images/product-8.png'},
-  {name:'Wire Skimmer',          year:'2023', client:'Made In',          img:'./images/product-1.png'},
-  {name:'Pax Grinder',           year:'2023', client:'Pax Technologies', img:'./images/product-9.png'},
-  {name:'Basket Strainer',       year:'2023', client:'Made In',          img:'./images/product-2.png'},
-  {name:'Confidential',          year:'2023', client:'Curology',         img:'./images/Product-Confidential-3.png'},
-  {name:'Pax Grinder',           year:'2023', client:'Pax Technologies', img:'./images/product-9.png'},
-  {name:'Storage Tin',           year:'2023', client:'Pax Technologies', img:'./images/product-5.png'},
-  {name:'Filtered Showerhead',   year:'2023', client:'Canopy',           img:'./images/product-6.png'},
-  {name:'Grip Spatula',          year:'2023', client:'Pax Technologies', img:'./images/product-3.png'},
-  {name:'Confidential',          year:'2023', client:'Canopy',           img:'./images/Product-Confidential-4.png'},
-  {name:'Portable Speaker',      year:'2022', client:'Pax Technologies', img:'./images/product-8.png'},
-  {name:'Basket Strainer',       year:'2023', client:'Made In',          img:'./images/product-2.png'},
-  {name:'Pax Grinder',           year:'2023', client:'Pax Technologies', img:'./images/product-9.png'},
-  {name:'Balloon Whisk',         year:'2023', client:'Made In',          img:'./images/product-4.png'},
-  {name:'Confidential',          year:'2023', client:'Amazon',           img:'./images/Product-Confidential-5.png'},
-  {name:'Silicone Tongs',        year:'2023', client:'Made In',          img:'./images/product-7.png'},
-  {name:'Filtered Showerhead',   year:'2023', client:'Canopy',           img:'./images/product-6.png'},
-  {name:'Grip Spatula',          year:'2023', client:'Pax Technologies', img:'./images/product-3.png'},
-  {name:'Wire Skimmer',          year:'2023', client:'Made In',          img:'./images/product-1.png'},
-  {name:'Portable Speaker',      year:'2022', client:'Pax Technologies', img:'./images/product-8.png'},
-  {name:'Storage Tin',           year:'2023', client:'Pax Technologies', img:'./images/product-5.png'},
+  {name:'Wire Skimmer',          year:'2023', client:'Made In',          img:'./images/product-1.png',              hasPage:false, confidential:false, href:null},
+  {name:'Pax Grinder',           year:'2023', client:'Pax Technologies', img:'./images/product-9.png',              hasPage:true,  confidential:false, href:'pax-project.html'},
+  {name:'Balloon Whisk',         year:'2023', client:'Made In',          img:'./images/product-4.png',              hasPage:false, confidential:false, href:null},
+  {name:'Confidential',          year:'2023', client:'Loftie',           img:'./images/Product-Confidential-1.png', hasPage:false, confidential:true,  href:null},
+  {name:'Storage Tin',           year:'2023', client:'Pax Technologies', img:'./images/product-5.png',              hasPage:true,  confidential:false, href:'pax-project.html'},
+  {name:'Filtered Showerhead',   year:'2023', client:'Canopy',           img:'./images/product-6.png',              hasPage:false, confidential:false, href:null},
+  {name:'Silicone Tongs',        year:'2023', client:'Made In',          img:'./images/product-7.png',              hasPage:false, confidential:false, href:null},
+  {name:'Grip Spatula',          year:'2023', client:'Pax Technologies', img:'./images/product-3.png',              hasPage:true,  confidential:false, href:'pax-project.html'},
+  {name:'Confidential',          year:'2023', client:'Amazon',           img:'./images/Product-Confidential-2.png', hasPage:false, confidential:true,  href:null},
+  {name:'Portable Speaker',      year:'2022', client:'Pax Technologies', img:'./images/product-8.png',              hasPage:true,  confidential:false, href:'pax-project.html'},
+  {name:'Wire Skimmer',          year:'2023', client:'Made In',          img:'./images/product-1.png',              hasPage:false, confidential:false, href:null},
+  {name:'Pax Grinder',           year:'2023', client:'Pax Technologies', img:'./images/product-9.png',              hasPage:true,  confidential:false, href:'pax-project.html'},
+  {name:'Basket Strainer',       year:'2023', client:'Made In',          img:'./images/product-2.png',              hasPage:false, confidential:false, href:null},
+  {name:'Confidential',          year:'2023', client:'Curology',         img:'./images/Product-Confidential-3.png', hasPage:false, confidential:true,  href:null},
+  {name:'Pax Grinder',           year:'2023', client:'Pax Technologies', img:'./images/product-9.png',              hasPage:true,  confidential:false, href:'pax-project.html'},
+  {name:'Storage Tin',           year:'2023', client:'Pax Technologies', img:'./images/product-5.png',              hasPage:true,  confidential:false, href:'pax-project.html'},
+  {name:'Filtered Showerhead',   year:'2023', client:'Canopy',           img:'./images/product-6.png',              hasPage:false, confidential:false, href:null},
+  {name:'Grip Spatula',          year:'2023', client:'Pax Technologies', img:'./images/product-3.png',              hasPage:true,  confidential:false, href:'pax-project.html'},
+  {name:'Confidential',          year:'2023', client:'Canopy',           img:'./images/Product-Confidential-4.png', hasPage:false, confidential:true,  href:null},
+  {name:'Portable Speaker',      year:'2022', client:'Pax Technologies', img:'./images/product-8.png',              hasPage:true,  confidential:false, href:'pax-project.html'},
+  {name:'Basket Strainer',       year:'2023', client:'Made In',          img:'./images/product-2.png',              hasPage:false, confidential:false, href:null},
+  {name:'Pax Grinder',           year:'2023', client:'Pax Technologies', img:'./images/product-9.png',              hasPage:true,  confidential:false, href:'pax-project.html'},
+  {name:'Balloon Whisk',         year:'2023', client:'Made In',          img:'./images/product-4.png',              hasPage:false, confidential:false, href:null},
+  {name:'Confidential',          year:'2023', client:'Amazon',           img:'./images/Product-Confidential-5.png', hasPage:false, confidential:true,  href:null},
+  {name:'Silicone Tongs',        year:'2023', client:'Made In',          img:'./images/product-7.png',              hasPage:false, confidential:false, href:null},
+  {name:'Filtered Showerhead',   year:'2023', client:'Canopy',           img:'./images/product-6.png',              hasPage:false, confidential:false, href:null},
+  {name:'Grip Spatula',          year:'2023', client:'Pax Technologies', img:'./images/product-3.png',              hasPage:true,  confidential:false, href:'pax-project.html'},
+  {name:'Wire Skimmer',          year:'2023', client:'Made In',          img:'./images/product-1.png',              hasPage:false, confidential:false, href:null},
+  {name:'Portable Speaker',      year:'2022', client:'Pax Technologies', img:'./images/product-8.png',              hasPage:true,  confidential:false, href:'pax-project.html'},
+  {name:'Storage Tin',           year:'2023', client:'Pax Technologies', img:'./images/product-5.png',              hasPage:true,  confidential:false, href:'pax-project.html'},
 ];
 
 const pvImages = [
@@ -458,6 +458,7 @@ let zoomLevel = 1.5;
 let catMode = true;
 let catScrollY = 0;
 let catHoverCard = null;
+let pillTimer = null;
 
 function measure() {
   VW = clip.clientWidth;
@@ -486,9 +487,7 @@ function buildGrid() {
 
     const link = document.createElement('a');
     link.className = 'card-link';
-    if (p.name !== 'Confidential') {
-      link.href = (p.client && p.client.includes('Pax')) ? 'pax-project.html' : 'flaus-project.html';
-    }
+    if (p.href) link.href = p.href;
     link.id = 'cl' + i;
     card.appendChild(link);
 
@@ -607,6 +606,7 @@ function setViewMode(mode) {
 }
 
 function zoomToGallery(index) {
+  clearTimeout(pillTimer); pillTimer = null;
   focusRow = Math.floor(index / COLS);
   focusCol = index % COLS;
   catMode  = false;
@@ -620,6 +620,7 @@ function zoomToGallery(index) {
 }
 
 function zoomToCatalogue() {
+  clearTimeout(pillTimer); pillTimer = null;
   // Keep focused card vertically centered after scale change
   const cH = ROWS*cardH + (ROWS-1)*VGAP;
   const maxScroll = Math.max(0, Math.ceil(cH + CAT_TOP_PAD + CAT_BOT_PAD) - VH);
@@ -763,17 +764,14 @@ document.addEventListener('mousemove', e => {
   const r   = clip.getBoundingClientRect();
   const ins = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
 
-  const focusedProject = projects[focusRow * COLS + focusCol];
-  const isLink         = focusedProject && focusedProject.name !== 'Confidential';
-  const isConfidential = focusedProject && focusedProject.name === 'Confidential';
-  const cr = canvas.getBoundingClientRect();
-  const cardL = cr.left + focusCol * (cardW + GAP) * zoomLevel;
-  const cardT = cr.top  + focusRow * (cardH + VGAP) * zoomLevel;
-  const overCard = (isLink || isConfidential) &&
+  const fp      = projects[focusRow * COLS + focusCol];
+  const cr      = canvas.getBoundingClientRect();
+  const cardL   = cr.left + focusCol * (cardW + GAP) * zoomLevel;
+  const cardT   = cr.top  + focusRow * (cardH + VGAP) * zoomLevel;
+  const overCard = fp &&
     e.clientX >= cardL && e.clientX <= cardL + cardW * zoomLevel &&
     e.clientY >= cardT && e.clientY <= cardT + cardH * zoomLevel;
 
-  // UI exclusion: check if cursor is over a native interactive element
   const elUnder = document.elementFromPoint(e.clientX, e.clientY);
   const overUI  = !!(elUnder && elUnder.closest('#view-toggle, #nav, #footer'));
 
@@ -795,46 +793,72 @@ document.addEventListener('mousemove', e => {
 
   // ── All DOM writes after reads ───────────────────────────────────────────
 
-  // Outside clip — hide and yield
   if (!ins) {
+    clearTimeout(pillTimer); pillTimer = null;
     cursorWrap.style.display = 'none';
     catCursor.style.display  = 'none';
     hoverDir = null;
     return;
   }
 
-  // Over native UI — hide custom cursor, yield to OS pointer
   if (overUI) {
+    clearTimeout(pillTimer); pillTimer = null;
     cursorWrap.style.display = 'none';
     catCursor.style.display  = 'none';
     hoverDir = null;
     return;
   }
 
-  // Over focused card — show pill cursor
-  if (overCard) {
-    cursorWrap.textContent   = isConfidential ? 'Confidential' : 'View Project →';
-    cursorWrap.classList.toggle('confidential', !!isConfidential);
-    cursorWrap.style.left    = e.clientX + 'px';
-    cursorWrap.style.top     = e.clientY + 'px';
-    cursorWrap.style.opacity = '1';
-    cursorWrap.style.display = 'block';
-    catCursor.style.display  = 'none';
+  // Over focused card with pill destination (hasPage or confidential)
+  if (overCard && fp && (fp.hasPage || fp.confidential)) {
+    // Always track position
+    cursorWrap.style.left = e.clientX + 'px';
+    cursorWrap.style.top  = e.clientY + 'px';
+    // Show × immediately while pill is pending
+    if (cursorWrap.style.display !== 'block') {
+      catCursor.textContent = '+';
+      catCursor.style.transform = 'translate(-50%, -50%) rotate(45deg)';
+      catCursor.style.left = e.clientX + 'px';
+      catCursor.style.top  = e.clientY + 'px';
+      catCursor.style.display = 'block';
+    }
+    if (!pillTimer) {
+      pillTimer = setTimeout(() => {
+        pillTimer = null;
+        cursorWrap.textContent = fp.confidential ? 'Confidential' : 'View Project →';
+        cursorWrap.classList.toggle('confidential', !!fp.confidential);
+        cursorWrap.style.opacity = '1';
+        cursorWrap.style.display = 'block';
+        catCursor.style.display  = 'none';
+      }, 200);
+    }
     hoverDir = null;
     return;
   }
 
-  // Edge-proximity arrows or × in center
+  // Over dead-end card (no page, not confidential) — show × immediately
+  if (overCard && fp && !fp.hasPage && !fp.confidential) {
+    clearTimeout(pillTimer); pillTimer = null;
+    cursorWrap.style.display = 'none';
+    catCursor.textContent = '+';
+    catCursor.style.transform = 'translate(-50%, -50%) rotate(45deg)';
+    catCursor.style.left = e.clientX + 'px';
+    catCursor.style.top  = e.clientY + 'px';
+    catCursor.style.display = 'block';
+    hoverDir = null;
+    return;
+  }
+
+  // Off card — cancel any pending pill, show arrow or ×
+  clearTimeout(pillTimer); pillTimer = null;
+  cursorWrap.style.display = 'none';
   hoverDir = arrowDir;
-  const ARROW_CHARS = { left: '←', right: '→', up: '↑', down: '↓', 'up-left': '↖', 'up-right': '↗', 'down-right': '↘', 'down-left': '↙' };
+  const ARROW_CHARS = { left:'←', right:'→', up:'↑', down:'↓', 'up-left':'↖', 'up-right':'↗', 'down-right':'↘', 'down-left':'↙' };
   catCursor.textContent = arrowDir ? ARROW_CHARS[arrowDir] : '+';
-  catCursor.style.transform = arrowDir
-    ? 'translate(-50%, -50%)'
-    : 'translate(-50%, -50%) rotate(45deg)';
+  catCursor.style.transform = arrowDir ? 'translate(-50%, -50%)' : 'translate(-50%, -50%) rotate(45deg)';
   catCursor.style.left    = e.clientX + 'px';
   catCursor.style.top     = e.clientY + 'px';
   catCursor.style.display = 'block';
-  cursorWrap.style.display = 'none';
 });
 
 clip.addEventListener('click', e => {
@@ -852,20 +876,17 @@ clip.addEventListener('click', e => {
     if (idx < projects.length) zoomToGallery(idx);
     return;
   }
-  // Check focused card hit zone first (full image area)
-  const focusedProject = projects[focusRow * COLS + focusCol];
-  const isLink         = focusedProject && focusedProject.name !== 'Confidential';
-  const isConfidential = focusedProject && focusedProject.name === 'Confidential';
-  if (isLink || isConfidential) {
-    const cr = canvas.getBoundingClientRect();
-    const cardL = cr.left + focusCol * (cardW + GAP) * zoomLevel;
-    const cardT = cr.top  + focusRow * (cardH + VGAP) * zoomLevel;
-    if (e.clientX >= cardL && e.clientX <= cardL + cardW * zoomLevel &&
-        e.clientY >= cardT && e.clientY <= cardT + cardH * zoomLevel) {
-      if (isLink) {
-        const l = document.getElementById('cl' + (focusRow * COLS + focusCol));
-        if (l && l.href) { window.location.href = l.href; }
-      }
+  // Check focused card hit zone
+  const fp2 = projects[focusRow * COLS + focusCol];
+  if (fp2) {
+    const cr2  = canvas.getBoundingClientRect();
+    const cL2  = cr2.left + focusCol * (cardW + GAP) * zoomLevel;
+    const cT2  = cr2.top  + focusRow * (cardH + VGAP) * zoomLevel;
+    const hit  = e.clientX >= cL2 && e.clientX <= cL2 + cardW * zoomLevel &&
+                 e.clientY >= cT2 && e.clientY <= cT2 + cardH * zoomLevel;
+    if (hit) {
+      if (fp2.hasPage && fp2.href) { window.location.href = fp2.href; }
+      // confidential and dead-end cards do nothing on click (stay in place)
       return;
     }
   }
@@ -876,6 +897,7 @@ clip.addEventListener('click', e => {
 });
 
 document.addEventListener('mouseleave', () => {
+  clearTimeout(pillTimer); pillTimer = null;
   cursorWrap.style.display = 'none';
   catCursor.style.display  = 'none';
 });
