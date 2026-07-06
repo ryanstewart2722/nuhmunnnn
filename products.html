@@ -82,16 +82,21 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; opacity: 1
   background: #ffffff;
 }
 
-/* Canvas — absolute within clip, moved by left/top */
+/* Canvas — positioned at 0,0; all movement via transform translate+scale */
 #canvas {
   position: absolute;
+  left: 0; top: 0;
+  transform-origin: 0 0;
   background: #ffffff;
-  transition: left 0.55s cubic-bezier(0.25,0.46,0.45,0.94),
-              top  0.55s cubic-bezier(0.25,0.46,0.45,0.94),
-              transform 0.5s  cubic-bezier(0.25,0.46,0.45,0.94),
+  transition: transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94),
               opacity 0.35s ease;
 }
 #canvas.instant { transition: none; }
+
+/* In overview (cat) mode: show meta for all cards */
+#canvas.cat-view .card-rule,
+#canvas.cat-view .card-meta  { opacity: 1; }
+#canvas.cat-view .card-link  { display: none !important; }
 
 .card {
   position: absolute;
@@ -103,7 +108,7 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; opacity: 1
   position: absolute; top: 0; left: 0; right: 0; bottom: 0;
   z-index: 10; display: none; cursor: none;
 }
-.card-link.active { display: block; cursor: pointer; }
+.card-link.active { display: block; cursor: none; }
 
 .card-img {
   position: absolute;
@@ -144,14 +149,13 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; opacity: 1
   opacity: 0;
   transition: opacity 0.2s ease;
 }
-#canvas .card:has(.card-link.active) .card-rule,
-#canvas .card:has(.card-link.active) .card-meta {
+#canvas .card.focused .card-rule,
+#canvas .card.focused .card-meta {
   opacity: 1;
 }
 
 /* Cursors */
-body.no-cursor,    body.no-cursor *    { cursor: none !important; }
-body.link-cursor,  body.link-cursor *  { cursor: pointer !important; }
+body, body * { cursor: none !important; }
 #cursor-wrap {
   position: absolute; pointer-events: none; z-index: 999;
   transform: translate(-50%,-50%); display: none;
@@ -170,61 +174,15 @@ body.link-cursor,  body.link-cursor *  { cursor: pointer !important; }
 #cat-cursor {
   position: absolute; pointer-events: none; z-index: 9999;
   transform: translate(-50%, -50%); display: none;
-  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 20px;
+  font-family: 'ABCDiatype', Arial, sans-serif; font-size: 24px;
   color: #fff; mix-blend-mode: exclusion;
   white-space: nowrap; line-height: 1;
   user-select: none; -webkit-user-select: none;
+  transition: transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
 }
 
 /* ── Gallery | Catalogue tab toggle ── */
 
-/* ── Catalogue view ── */
-#catalogue {
-  position: absolute; inset: 0;
-  overflow-y: scroll; overflow-x: hidden;
-  scrollbar-width: none; -ms-overflow-style: none;
-  display: none; z-index: 100;
-  background: #fff;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 60px, black calc(100% - 60px), transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0px, black 60px, black calc(100% - 60px), transparent 100%);
-}
-#catalogue::-webkit-scrollbar { display: none; }
-#cat-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 20px;
-  padding: 60px 30px 40px;
-  min-height: 100%;
-}
-.cat-card {
-  display: block; text-decoration: none; color: inherit;
-  cursor: none;
-  transition: opacity 0.3s ease;
-}
-.cat-img {
-  width: 100%;
-  aspect-ratio: 1043 / 1399;
-  overflow: hidden;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-color: transparent;
-  border: none;
-  filter: blur(40px); opacity: 0;
-  transition: filter 1.4s cubic-bezier(0.25,0,0.1,1), opacity 1.2s ease;
-}
-.cat-img.loaded { filter: blur(0); opacity: 1; }
-.cat-rule { width: 100%; height: 1px; background: #000; display: block; margin-top: 4px; }
-.cat-meta {
-  display: flex; align-items: baseline;
-  font-family: 'ABCDiatype', Arial, sans-serif;
-  font-size: 12px; color: #1a1a1a;
-  line-height: 1; white-space: nowrap; overflow: hidden;
-  padding: 4px 0 0;
-}
-.cat-meta .m-name   { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
-.cat-meta .m-year   { flex: 0 0 auto; margin-right: 14px; }
-.cat-meta .m-client { flex: 0 0 auto; }
 
 
 
@@ -388,9 +346,6 @@ body.link-cursor,  body.link-cursor *  { cursor: pointer !important; }
 </nav>
 <div id="clip">
   <div id="canvas"></div>
-  <div id="catalogue">
-    <div id="cat-grid"></div>
-  </div>
   <div id="pv-overlay">
     <div id="pv-grid"></div>
   </div>
@@ -409,7 +364,7 @@ body.link-cursor,  body.link-cursor *  { cursor: pointer !important; }
 <div id="cat-cursor">+</div>
 
 <script>
-const COLS=5, ROWS=6, GAP=50, IMG_RATIO=1.341, META_H=20;
+const COLS=5, ROWS=6, GAP=20, IMG_RATIO=1.341, META_H=20, CAT_PAD=40;
 
 // Full 25-card explicit list — 5 confidential images interspersed, no adjacent duplicates
 const projects = [
@@ -436,7 +391,7 @@ const projects = [
   {name:'Basket Strainer',       year:'2023', client:'Made In',          img:'./images/product-2.png'},
   {name:'Pax Grinder',           year:'2023', client:'Pax Technologies', img:'./images/product-9.png'},
   {name:'Balloon Whisk',         year:'2023', client:'Made In',          img:'./images/product-4.png'},
-  {name:'Confidential',          year:'2023', client:'',                 img:'./images/Product-Confidential-5.png'},
+  {name:'Confidential',          year:'2023', client:'Amazon',           img:'./images/Product-Confidential-5.png'},
   {name:'Silicone Tongs',        year:'2023', client:'Made In',          img:'./images/product-7.png'},
   {name:'Filtered Showerhead',   year:'2023', client:'Canopy',           img:'./images/product-6.png'},
   {name:'Grip Spatula',          year:'2023', client:'Pax Technologies', img:'./images/product-3.png'},
@@ -487,12 +442,12 @@ const catCursor  = document.getElementById('cat-cursor');
 let VW, VH, cardW, imgH, cardH;
 let focusCol = 1, focusRow = 2, hoverDir = null;
 let zoomLevel = 1.0;
-let catMode = false;
+let catMode = true;
 
 function measure() {
   VW = clip.clientWidth;
   VH = clip.clientHeight;
-  cardW = Math.floor((VW - 60*2 - GAP*4) / 3);
+  cardW = Math.floor((VW - (COLS-1)*GAP) / COLS);
   imgH  = Math.round(cardW * IMG_RATIO);
   cardH = imgH + 1 + META_H;
 }
@@ -547,28 +502,37 @@ function buildGrid() {
 
 function updateLink() {
   document.querySelectorAll('.card-link').forEach(l => l.classList.remove('active'));
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('focused'));
   const l = document.getElementById('cl' + (focusRow*COLS + focusCol));
-  if (l) l.classList.add('active');
+  if (l) {
+    l.classList.add('active');
+    if (l.parentElement) l.parentElement.classList.add('focused');
+  }
+}
+
+function getCatZoom() {
+  const cW = COLS*cardW + (COLS-1)*GAP;
+  const cH = ROWS*cardH + (ROWS-1)*GAP;
+  return Math.min((VW - 2*CAT_PAD) / cW, (VH - 2*CAT_PAD) / cH);
 }
 
 function getPos() {
+  if (catMode) {
+    const cW = COLS*cardW + (COLS-1)*GAP;
+    const cH = ROWS*cardH + (ROWS-1)*GAP;
+    const s  = getCatZoom();
+    return { tx: Math.round((VW - cW*s) / 2), ty: Math.round((VH - cH*s) / 2), scale: s };
+  }
   const xC = focusCol*(cardW+GAP) + cardW/2;
-  const tx  = Math.round(VW/2 - xC);
-  const ty  = Math.round(VH/2 - (focusRow*(cardH+GAP) + imgH/2));
-  return { tx, ty };
+  const yC = focusRow*(cardH+GAP) + imgH/2;
+  return { tx: Math.round(VW/2 - xC), ty: Math.round(VH/2 - yC), scale: zoomLevel };
 }
 
 function applyPos(animated) {
-  const { tx, ty } = getPos();
+  const { tx, ty, scale } = getPos();
   canvas.classList.toggle('instant', !animated);
-  if (!animated) canvas.offsetHeight; // flush
-  canvas.style.left = tx + 'px';
-  canvas.style.top  = ty + 'px';
-  // Transform origin = focused card center in canvas space = viewport center in canvas space
-  const xC = focusCol*(cardW+GAP) + cardW/2;
-  const yC = focusRow*(cardH+GAP) + imgH/2;
-  canvas.style.transformOrigin = xC + 'px ' + yC + 'px';
-  canvas.style.transform = 'scale(' + zoomLevel + ')';
+  if (!animated) canvas.offsetHeight;
+  canvas.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
 }
 
 function setZoom(level) {
@@ -622,137 +586,35 @@ function getZone(mx, my) {
   return 'up-right';
 }
 
-// ── Catalogue view ────────────────────────────────────────────
-let catObserver = null;
-
-function buildCatalogue() {
-  const grid = document.getElementById('cat-grid');
-  grid.innerHTML = '';
-
-  if (catObserver) { catObserver.disconnect(); catObserver = null; }
-
-  const catalogue = document.getElementById('catalogue');
-  catObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('loaded');
-        catObserver.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.05, root: catalogue });
-
-  projects.forEach((p, idx) => {
-    const a = document.createElement('a');
-    a.className = 'cat-card';
-    a.dataset.index = idx;
-    const isConfidential = p.name === 'Confidential';
-    if (isConfidential) a.dataset.confidential = '1';
-    a.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); zoomToGallery(idx); });
-
-    const imgDiv = document.createElement('div');
-    imgDiv.className = 'cat-img';
-    imgDiv.style.backgroundImage = 'url(' + JSON.stringify(p.img) + ')';
-
-    const rule = document.createElement('div');
-    rule.className = 'cat-rule';
-
-    const meta = document.createElement('div');
-    meta.className = 'cat-meta';
-    meta.innerHTML =
-      '<span class="m-name">'   + p.name   + '</span>' +
-      '<span class="m-year">'   + p.year   + '</span>' +
-      '<span class="m-client">' + p.client + '</span>';
-
-    a.appendChild(imgDiv);
-    a.appendChild(rule);
-    a.appendChild(meta);
-
-    grid.appendChild(a);
-
-    catObserver.observe(imgDiv);
-  });
-}
+// ── View mode switching ───────────────────────────────────────
 
 function setViewMode(mode) {
-  catMode = (mode === 'catalogue');
-
-  canvas.style.display          = catMode ? 'none' : '';
-  document.getElementById('catalogue').style.display   = catMode ? 'block' : 'none';
-  const vmg = document.getElementById('vm-gallery');
-  const vmc = document.getElementById('vm-catalogue');
-  if (vmg) vmg.classList.toggle('active', !catMode);
-  if (vmc) vmc.classList.toggle('active',  catMode);
-
-  if (catMode) {
-    buildCatalogue();
-    requestAnimationFrame(normalizeCatHeights);
-    document.body.style.cursor = 'none';
-    cursorWrap.style.display = 'none';
-    cursorDot.style.display  = 'none';
-  } else {
-    catCursor.style.display  = 'none';
-    document.body.style.cursor = 'none';
-  }
+  if (mode === 'catalogue') { zoomToCatalogue(); } else { zoomToGallery(focusRow * COLS + focusCol); }
 }
 
 function zoomToGallery(index) {
   focusRow = Math.floor(index / COLS);
   focusCol = index % COLS;
   catMode  = false;
-  const cat = document.getElementById('catalogue');
-  // Set initial state: positioned, tiny, invisible — no transitions
-  canvas.style.transition = 'none';
-  canvas.style.display    = 'block';
-  applyPos(false); // sets left/top/transformOrigin instantly
-  canvas.style.opacity   = '0';
-  canvas.style.transform = 'scale(0.75)';
-  canvas.offsetHeight; // force browser to commit initial state
-  // Re-enable transitions then animate in
-  setTimeout(() => {
-    canvas.style.transition = '';
-    canvas.classList.remove('instant');
-    requestAnimationFrame(() => {
-      cat.style.transition   = 'opacity 0.32s ease';
-      cat.style.opacity      = '0';
-      canvas.style.opacity   = '1';
-      canvas.style.transform = 'scale(1)';
-    });
-  }, 20);
-  setTimeout(() => {
-    cat.style.display    = 'none';
-    cat.style.opacity    = '';
-    cat.style.transition = '';
-    canvas.style.opacity = '';
-    catCursor.style.display  = 'none';
-    document.body.style.cursor = 'none';
-    updateLink();
-  }, 600);
+  canvas.classList.remove('cat-view');
+  applyPos(true);
+  updateLink();
+  catCursor.style.display = 'none';
+  requestAnimationFrame(() => {
+    catCursor.style.transform = 'translate(-50%,-50%) rotate(45deg)';
+  });
 }
 
 function zoomToCatalogue() {
-  const cat = document.getElementById('catalogue');
-  buildCatalogue();
-  cat.style.opacity = '0';
-  cat.style.display = 'block';
-  requestAnimationFrame(normalizeCatHeights);
-  setTimeout(() => {
-    requestAnimationFrame(() => {
-      canvas.style.opacity   = '0';
-      canvas.style.transform = 'scale(1.25)';
-      cat.style.transition   = 'opacity 0.32s ease';
-      cat.style.opacity      = '1';
-    });
-  }, 20);
-  setTimeout(() => {
-    canvas.style.display   = 'none';
-    canvas.style.opacity   = '';
-    canvas.style.transform = 'scale(1)'; // reset for next zoom-in
-    cat.style.opacity      = '';
-    cat.style.transition   = '';
-    catMode = true;
-    cursorWrap.style.display = 'none';
-    document.body.style.cursor = 'none';
-  }, 600);
+  catMode = true;
+  canvas.classList.add('cat-view');
+  applyPos(true);
+  updateLink();
+  cursorWrap.style.display = 'none';
+  catCursor.style.display  = 'none';
+  requestAnimationFrame(() => {
+    catCursor.style.transform = 'translate(-50%,-50%) rotate(0deg)';
+  });
 }
 
 // ── View mode (Product / Project overlay) ─────────────────────
@@ -807,7 +669,6 @@ function setPvMode(on) {
   if (overlay) overlay.classList.toggle('visible', on);
   document.getElementById('vt-product').classList.toggle('active', !on);
   document.getElementById('vt-project').classList.toggle('active',  on);
-  document.body.style.cursor = on ? '' : 'none';
   cursorWrap.style.display = 'none';
   cursorDot.style.display  = 'none';
   if (on) {
@@ -832,16 +693,22 @@ document.addEventListener('mousemove', e => {
   if (catMode) {
     const r = clip.getBoundingClientRect();
     const ins = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-    const onCard = !!e.target.closest('.cat-card');
-    if (!ins || !onCard) {
-      catCursor.style.display  = 'none';
-      document.body.style.cursor = 'none';
-    } else {
+    if (!ins) { catCursor.style.display = 'none'; return; }
+    const { tx, ty, scale } = getPos();
+    const cx = (e.clientX - r.left - tx) / scale;
+    const cy = (e.clientY - r.top  - ty) / scale;
+    const col = Math.floor(cx / (cardW+GAP));
+    const row = Math.floor(cy / (cardH+GAP));
+    const onCard = col >= 0 && col < COLS && row >= 0 && row < ROWS &&
+                   (cx - col*(cardW+GAP)) <= cardW && (cy - row*(cardH+GAP)) <= imgH;
+    if (onCard) {
       catCursor.textContent = '+';
+      catCursor.style.transform = 'translate(-50%,-50%) rotate(0deg)';
       catCursor.style.left = e.clientX + 'px';
       catCursor.style.top  = e.clientY + 'px';
       catCursor.style.display = 'block';
-      document.body.style.cursor = 'none';
+    } else {
+      catCursor.style.display = 'none';
     }
     cursorWrap.style.display = 'none';
     cursorDot.style.display  = 'none';
@@ -851,18 +718,19 @@ document.addEventListener('mousemove', e => {
   const r   = clip.getBoundingClientRect();
   const ins = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
 
-  // Outside clip or over UI chrome — restore normal OS cursor
+  // Outside clip — hide custom cursors but keep OS cursor hidden in gallery mode
   if (!ins) {
     cursorWrap.style.display = 'none';
-    document.body.classList.remove('no-cursor', 'link-cursor');
+    catCursor.style.display  = 'none';
     hoverDir = null;
     return;
   }
 
   // Check if over the focused card (tighter hit zone — 10% inset)
   const focusedProject = projects[focusRow * COLS + focusCol];
-  const isLink = focusedProject && focusedProject.name !== 'Confidential';
-  if (isLink) {
+  const isLink         = focusedProject && focusedProject.name !== 'Confidential';
+  const isConfidential = focusedProject && focusedProject.name === 'Confidential';
+  if (isLink || isConfidential) {
     const cr = canvas.getBoundingClientRect();
     const cardL = cr.left + focusCol * (cardW + GAP);
     const cardT = cr.top  + focusRow * (cardH + GAP);
@@ -870,54 +738,59 @@ document.addEventListener('mousemove', e => {
     const mH = imgH  * 0.10;
     if (e.clientX >= cardL + mW && e.clientX <= cardL + cardW - mW &&
         e.clientY >= cardT + mH && e.clientY <= cardT + imgH  - mH) {
-      document.body.classList.add('no-cursor');
-      document.body.classList.remove('link-cursor');
-      cursorWrap.textContent = 'View More';
+      cursorWrap.textContent = isConfidential ? 'Confidential' : 'View More';
       cursorWrap.style.left    = e.clientX + 'px';
       cursorWrap.style.top     = e.clientY + 'px';
       cursorWrap.style.opacity = '1';
       cursorWrap.style.display = 'block';
+      catCursor.style.display  = 'none';
       hoverDir = null;
       return;
     }
   }
 
-  // Directional zone or gap — determine which
-  document.body.classList.remove('link-cursor');
-  document.body.classList.add('no-cursor');
+  // Edge-proximity arrows or × in center
 
-  const DIR_CHARS = {
-    'left': '←', 'up-left': '↖', 'up': '↑', 'up-right': '↗',
-    'right': '→', 'down-right': '↘', 'down': '↓', 'down-left': '↙',
-  };
+  const r2    = clip.getBoundingClientRect();
+  const EDGE  = 20;
+  const nearL = (e.clientX - r2.left)   < EDGE && focusCol > 0;
+  const nearR = (r2.right  - e.clientX) < EDGE && focusCol < COLS - 1;
+  const nearT = (e.clientY - r2.top)    < EDGE && focusRow > 0;
+  const nearB = (r2.bottom - e.clientY) < EDGE && focusRow < ROWS - 1;
 
-  const z = getZone(e.clientX, e.clientY);
-  if (z === null || navOpacity(z) === 0) {
-    // Gap / no valid nav target → exit cursor
-    cursorWrap.textContent = '×';
-    hoverDir = null;
-  } else {
-    // Valid nav direction → arrow
-    let displayDir = z;
-    if (navOpacity(z) === 0.5) {
-      const { dr, dc } = DIRS[z];
-      const rowOk = dr < 0 ? focusRow > 0 : focusRow < ROWS - 1;
-      const colOk = dc < 0 ? focusCol > 0 : focusCol < COLS - 1;
-      if (rowOk && !colOk) displayDir = dr < 0 ? 'up'   : 'down';
-      if (!rowOk && colOk) displayDir = dc < 0 ? 'left' : 'right';
-    }
-    cursorWrap.textContent = DIR_CHARS[displayDir] || '↑';
-    hoverDir = displayDir;
-  }
-  cursorWrap.style.left    = e.clientX + 'px';
-  cursorWrap.style.top     = e.clientY + 'px';
-  cursorWrap.style.opacity = '1';
-  cursorWrap.style.display = 'block';
+  let arrowDir = null;
+  if      (nearL) arrowDir = 'left';
+  else if (nearR) arrowDir = 'right';
+  else if (nearT) arrowDir = 'up';
+  else if (nearB) arrowDir = 'down';
+
+  hoverDir = arrowDir;
+  const ARROW_CHARS = { left: '←', right: '→', up: '↑', down: '↓' };
+  catCursor.textContent = arrowDir ? ARROW_CHARS[arrowDir] : '+';
+  catCursor.style.transform = arrowDir
+    ? 'translate(-50%, -50%)'
+    : 'translate(-50%, -50%) rotate(45deg)';
+  catCursor.style.left    = e.clientX + 'px';
+  catCursor.style.top     = e.clientY + 'px';
+  catCursor.style.display = 'block';
+  cursorWrap.style.display = 'none';
 });
 
 clip.addEventListener('click', e => {
   if (pvMode) return;
-  if (catMode) return;
+  if (catMode) {
+    const r = clip.getBoundingClientRect();
+    const { tx, ty, scale } = getPos();
+    const cx = (e.clientX - r.left - tx) / scale;
+    const cy = (e.clientY - r.top  - ty) / scale;
+    const col = Math.floor(cx / (cardW+GAP));
+    const row = Math.floor(cy / (cardH+GAP));
+    if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return;
+    if ((cx - col*(cardW+GAP)) > cardW || (cy - row*(cardH+GAP)) > imgH) return;
+    const idx = row * COLS + col;
+    if (idx < projects.length) zoomToGallery(idx);
+    return;
+  }
   // Check focused card hit zone first
   const focusedProject = projects[focusRow * COLS + focusCol];
   const isLink = focusedProject && focusedProject.name !== 'Confidential';
@@ -942,7 +815,6 @@ clip.addEventListener('click', e => {
 document.addEventListener('mouseleave', () => {
   cursorWrap.style.display = 'none';
   catCursor.style.display  = 'none';
-  document.body.classList.remove('no-cursor', 'link-cursor');
 });
 
 document.addEventListener('keydown', e => {
@@ -1032,18 +904,9 @@ function init() {
     layoutPv();
   }
 }
-function normalizeCatHeights() {
-  const imgs = document.querySelectorAll('.cat-img');
-  if (!imgs.length) return;
-  imgs.forEach(img => img.style.height = '');
-  const w = imgs[0].getBoundingClientRect().width;
-  if (!w) return;
-  const h = Math.round(w * 1399 / 1043) + 'px';
-  imgs.forEach(img => img.style.height = h);
-}
-window.addEventListener('resize', function() { init(); if (document.getElementById('catalogue').style.display !== 'none') normalizeCatHeights(); });
+window.addEventListener('resize', init);
 init();
-setViewMode('catalogue');
+zoomToCatalogue();
 
 // ── View toggle listeners ──
 document.getElementById('vt-product').addEventListener('click', () => setPvMode(false));
