@@ -34,6 +34,17 @@ body {
   overflow: hidden;
   font-family: 'ABCDiatype', Arial, sans-serif;
   transition: background-color 0.8s ease;
+  cursor: none;
+}
+body * { cursor: none !important; }
+#glass-cursor {
+  position: fixed; pointer-events: none; z-index: 9990;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: rgba(236,236,236,0.6);
+  border: 1px solid #d1d1d1;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  transform: translate(-50%,-50%);
+  display: none;
 }
 
 /* ── Frame ── */
@@ -144,6 +155,7 @@ body.party #party-toggle { animation:hue-cycle 1.5s linear infinite; opacity:1; 
 </div>
 
 <div id="cursor"></div>
+<div id="glass-cursor"></div>
 
 <script>
 // 5×5 = 25 zones. Zone 12 (row 2, col 2) = center = Pax Grinder (image 13).
@@ -231,7 +243,12 @@ clip.addEventListener('click', () => {
   window.location.href = 'products.html';
 });
 
+const glassCursorEl = document.getElementById('glass-cursor');
 document.addEventListener('mousemove', (e) => {
+  glassCursorEl.style.left = e.clientX + 'px';
+  glassCursorEl.style.top  = e.clientY + 'px';
+  glassCursorEl.style.display = 'block';
+
   const r      = clip.getBoundingClientRect();
   const inClip = e.clientX >= r.left && e.clientX <= r.right &&
                   e.clientY >= r.top  && e.clientY <= r.bottom;
@@ -240,11 +257,13 @@ document.addEventListener('mousemove', (e) => {
     cursorEl.style.left    = e.clientX + 'px';
     cursorEl.style.top     = e.clientY + 'px';
     cursorEl.style.display = 'block';
+    glassCursorEl.style.display = 'none';
     crossfadeTo(zoneAt(e.clientX, e.clientY));
   } else {
     cursorEl.style.display = 'none';
   }
 });
+document.addEventListener('mouseleave', () => { glassCursorEl.style.display = 'none'; });
 
 // ── Party mode (auto-dismisses after 3s on home) ──
 (function() {

@@ -165,9 +165,16 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; opacity: 1
 
 /* Cursors */
 body, body * { cursor: none !important; }
-body.pv-active, body.pv-active * { cursor: auto !important; }
-body.pv-active .pv-slot, body.pv-active .pv-slot * { cursor: none !important; }
 #view-toggle, #view-toggle * { cursor: pointer !important; }
+#glass-cursor {
+  position: fixed; pointer-events: none; z-index: 9990;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: rgba(236,236,236,0.6);
+  border: 1px solid #d1d1d1;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  transform: translate(-50%,-50%);
+  display: none;
+}
 #cursor-wrap {
   position: absolute; pointer-events: none; z-index: 999;
   transform: translate(-50%,-50%); display: none;
@@ -375,6 +382,7 @@ body.pv-active .pv-slot, body.pv-active .pv-slot * { cursor: none !important; }
 <div id="cursor-wrap">×</div>
 <div id="cursor-dot"></div>
 <div id="cat-cursor">+</div>
+<div id="glass-cursor"></div>
 
 <script>
 const COLS=6, ROWS=5, GAP=30, VGAP=8, IMG_RATIO=1.341, META_H=20, CAT_TOP_PAD=22, CAT_BOT_PAD=60;
@@ -447,10 +455,11 @@ const DIRS = {
 
 const clip       = document.getElementById('clip');
 const canvas     = document.getElementById('canvas');
-const cursorWrap = document.getElementById('cursor-wrap');
-const cursorDot  = document.getElementById('cursor-dot');
-const cursorSvg  = document.getElementById('cursor-svg');
-const catCursor  = document.getElementById('cat-cursor');
+const cursorWrap  = document.getElementById('cursor-wrap');
+const cursorDot   = document.getElementById('cursor-dot');
+const cursorSvg   = document.getElementById('cursor-svg');
+const catCursor   = document.getElementById('cat-cursor');
+const glassCursor = document.getElementById('glass-cursor');
 
 let VW, VH, cardW, imgH, cardH;
 let focusCol = 1, focusRow = 2, hoverDir = null;
@@ -716,6 +725,9 @@ function setPvMode(on) {
 document.addEventListener('mousemove', e => {
   if (pvMode) {
     catCursor.style.display = 'none';
+    glassCursor.style.left = e.clientX + 'px';
+    glassCursor.style.top  = e.clientY + 'px';
+    glassCursor.style.display = 'block';
     const el   = document.elementFromPoint(e.clientX, e.clientY);
     const slot = el && el.closest('.pv-slot');
     if (slot) {
@@ -724,6 +736,7 @@ document.addEventListener('mousemove', e => {
       cursorWrap.style.top     = e.clientY + 'px';
       cursorWrap.style.opacity = '1';
       cursorWrap.style.display = 'block';
+      glassCursor.style.display = 'none';
     } else {
       cursorWrap.style.display = 'none';
     }
@@ -795,19 +808,24 @@ document.addEventListener('mousemove', e => {
 
   if (!ins) {
     clearTimeout(pillTimer); pillTimer = null;
-    cursorWrap.style.display = 'none';
-    catCursor.style.display  = 'none';
+    cursorWrap.style.display  = 'none';
+    catCursor.style.display   = 'none';
+    glassCursor.style.display = 'none';
     hoverDir = null;
     return;
   }
 
   if (overUI) {
     clearTimeout(pillTimer); pillTimer = null;
-    cursorWrap.style.display = 'none';
-    catCursor.style.display  = 'none';
+    cursorWrap.style.display  = 'none';
+    catCursor.style.display   = 'none';
+    glassCursor.style.left    = e.clientX + 'px';
+    glassCursor.style.top     = e.clientY + 'px';
+    glassCursor.style.display = 'block';
     hoverDir = null;
     return;
   }
+  glassCursor.style.display = 'none';
 
   // Over focused card with pill destination (hasPage or confidential)
   if (overCard && fp && (fp.hasPage || fp.confidential)) {
@@ -898,8 +916,9 @@ clip.addEventListener('click', e => {
 
 document.addEventListener('mouseleave', () => {
   clearTimeout(pillTimer); pillTimer = null;
-  cursorWrap.style.display = 'none';
-  catCursor.style.display  = 'none';
+  cursorWrap.style.display  = 'none';
+  catCursor.style.display   = 'none';
+  glassCursor.style.display = 'none';
 });
 
 document.addEventListener('keydown', e => {

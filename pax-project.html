@@ -33,7 +33,18 @@ body {
   background: #D9D9D9;
   overflow: hidden;
   font-family: 'ABCDiatype', Arial, sans-serif;
+  cursor: none;
   transition: background-color 0.8s ease;
+}
+body * { cursor: none !important; }
+#glass-cursor {
+  position: fixed; pointer-events: none; z-index: 9990;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: rgba(236,236,236,0.6);
+  border: 1px solid #d1d1d1;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  transform: translate(-50%,-50%);
+  display: none;
 }
 
 /* ── Frame — all 4 strips always fixed ── */
@@ -398,6 +409,7 @@ body.party #party-toggle { animation:hue-cycle 1.5s linear infinite; opacity:1; 
 <body>
 
 <div id="bl"></div>
+<div id="glass-cursor"></div>
 <div id="br"></div>
 
 <nav id="nav">
@@ -1046,6 +1058,17 @@ window.GALLERY_IMAGES = [
 window.STATUS_HINTS = [
   { selector: '#party-toggle', label: 'Party Mode', animate: true }
 ];
+</script>
+<script>
+(function() {
+  const gc = document.getElementById('glass-cursor');
+  document.addEventListener('mousemove', function(e) {
+    gc.style.left = e.clientX + 'px';
+    gc.style.top  = e.clientY + 'px';
+    gc.style.display = 'block';
+  });
+  document.addEventListener('mouseleave', function() { gc.style.display = 'none'; });
+})();
 </script>
 <script src="./status.js"></script>
 
