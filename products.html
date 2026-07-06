@@ -94,12 +94,10 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; opacity: 1
 }
 #canvas.instant { transition: none; }
 
-/* In overview (cat) mode: hide meta by default, show on hover */
+/* In overview (cat) mode: all title cards visible, year hidden */
 #canvas.cat-view .card-rule,
-#canvas.cat-view .card-meta  { opacity: 0; }
+#canvas.cat-view .card-meta  { opacity: 1; }
 #canvas.cat-view .card-meta .m-year { display: none; }
-#canvas.cat-view .card.hovered .card-rule,
-#canvas.cat-view .card.hovered .card-meta { opacity: 1; }
 #canvas.cat-view .card-link  { display: none !important; }
 
 .card {
@@ -379,7 +377,7 @@ body.pv-active .pv-slot, body.pv-active .pv-slot * { cursor: none !important; }
 <div id="cat-cursor">+</div>
 
 <script>
-const COLS=6, ROWS=5, GAP=30, VGAP=8, IMG_RATIO=1.341, META_H=20, CAT_TOP_PAD=22;
+const COLS=6, ROWS=5, GAP=30, VGAP=8, IMG_RATIO=1.341, META_H=20, CAT_TOP_PAD=22, CAT_BOT_PAD=60;
 
 // Full 25-card explicit list — 5 confidential images interspersed, no adjacent duplicates
 const projects = [
@@ -622,7 +620,11 @@ function zoomToGallery(index) {
 }
 
 function zoomToCatalogue() {
-  catScrollY = 0;
+  // Keep focused card vertically centered after scale change
+  const cH = ROWS*cardH + (ROWS-1)*VGAP;
+  const maxScroll = Math.max(0, Math.ceil(cH + CAT_TOP_PAD + CAT_BOT_PAD) - VH);
+  const ideal = VH/2 - imgH/2 - CAT_TOP_PAD - focusRow*(cardH+VGAP);
+  catScrollY = Math.min(0, Math.max(-maxScroll, ideal));
   catMode = true;
   if (catHoverCard) { catHoverCard.classList.remove('hovered'); catHoverCard = null; }
   canvas.classList.add('cat-view');
@@ -691,6 +693,9 @@ function setPvMode(on) {
   cursorWrap.style.display = 'none';
   cursorDot.style.display  = 'none';
   catCursor.style.display  = 'none';
+  if (!on) {
+    zoomToCatalogue();
+  }
   if (on) {
     const slots = document.querySelectorAll('.pv-slot');
     slots.forEach(function(slot) {
@@ -895,7 +900,7 @@ clip.addEventListener('wheel', e => {
     e.preventDefault();
     const cH = ROWS*cardH + (ROWS-1)*VGAP;
     const s  = getCatZoom();
-    const maxScroll = Math.max(0, Math.ceil(cH * s + CAT_TOP_PAD) - VH);
+    const maxScroll = Math.max(0, Math.ceil(cH * s + CAT_TOP_PAD + CAT_BOT_PAD) - VH);
     const delta = e.deltaMode === 0 ? e.deltaY : e.deltaY * 24;
     catScrollY = Math.max(-maxScroll, Math.min(0, catScrollY - delta));
     const cW = COLS*cardW + (COLS-1)*GAP;
