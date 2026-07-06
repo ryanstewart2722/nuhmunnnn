@@ -470,9 +470,7 @@ function buildGrid() {
 
     const link = document.createElement('a');
     link.className = 'card-link';
-    if (p.name === 'Confidential') {
-      link.href = Math.random() < 0.5 ? 'flaus-project.html' : 'pax-project.html';
-    } else {
+    if (p.name !== 'Confidential') {
       link.href = (p.client && p.client.includes('Pax')) ? 'pax-project.html' : 'flaus-project.html';
     }
     link.id = 'cl' + i;
@@ -726,7 +724,7 @@ document.addEventListener('mousemove', e => {
     return;
   }
 
-  // Check if over the focused card (tighter hit zone — 10% inset)
+  // Check if over the focused card (full image hit zone)
   const focusedProject = projects[focusRow * COLS + focusCol];
   const isLink         = focusedProject && focusedProject.name !== 'Confidential';
   const isConfidential = focusedProject && focusedProject.name === 'Confidential';
@@ -734,10 +732,8 @@ document.addEventListener('mousemove', e => {
     const cr = canvas.getBoundingClientRect();
     const cardL = cr.left + focusCol * (cardW + GAP);
     const cardT = cr.top  + focusRow * (cardH + GAP);
-    const mW = cardW * 0.10;
-    const mH = imgH  * 0.10;
-    if (e.clientX >= cardL + mW && e.clientX <= cardL + cardW - mW &&
-        e.clientY >= cardT + mH && e.clientY <= cardT + imgH  - mH) {
+    if (e.clientX >= cardL && e.clientX <= cardL + cardW &&
+        e.clientY >= cardT && e.clientY <= cardT + imgH) {
       cursorWrap.textContent = isConfidential ? 'Confidential' : 'View More';
       cursorWrap.style.left    = e.clientX + 'px';
       cursorWrap.style.top     = e.clientY + 'px';
@@ -791,19 +787,21 @@ clip.addEventListener('click', e => {
     if (idx < projects.length) zoomToGallery(idx);
     return;
   }
-  // Check focused card hit zone first
+  // Check focused card hit zone first (full image area)
   const focusedProject = projects[focusRow * COLS + focusCol];
-  const isLink = focusedProject && focusedProject.name !== 'Confidential';
-  if (isLink) {
+  const isLink         = focusedProject && focusedProject.name !== 'Confidential';
+  const isConfidential = focusedProject && focusedProject.name === 'Confidential';
+  if (isLink || isConfidential) {
     const cr = canvas.getBoundingClientRect();
     const cardL = cr.left + focusCol * (cardW + GAP);
     const cardT = cr.top  + focusRow * (cardH + GAP);
-    const mW = cardW * 0.10;
-    const mH = imgH  * 0.10;
-    if (e.clientX >= cardL + mW && e.clientX <= cardL + cardW - mW &&
-        e.clientY >= cardT + mH && e.clientY <= cardT + imgH  - mH) {
-      const l = document.getElementById('cl' + (focusRow * COLS + focusCol));
-      if (l && l.href) { window.location.href = l.href; return; }
+    if (e.clientX >= cardL && e.clientX <= cardL + cardW &&
+        e.clientY >= cardT && e.clientY <= cardT + imgH) {
+      if (isLink) {
+        const l = document.getElementById('cl' + (focusRow * COLS + focusCol));
+        if (l && l.href) { window.location.href = l.href; }
+      }
+      return;
     }
   }
   // Directional arrow zone → navigate
