@@ -32,6 +32,7 @@ html {
   width: 100%; height: 100%;
   background: #D9D9D9;
   overflow: hidden;
+  cursor: none;
 }
 body {
   position: absolute;
@@ -126,6 +127,8 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; opacity: 1
   left: 0; right: 0;
   height: 1px;
   background: #000;
+  transform-origin: 0 0;
+  transition: transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94);
 }
 
 /* Meta text */
@@ -138,6 +141,8 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; opacity: 1
   line-height: 1; white-space: nowrap;
   padding-top: 5px;
   background: transparent;
+  transform-origin: 0 0;
+  transition: transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94);
 }
 .card-meta .m-name   { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
 .card-meta .m-year   { flex: 0 0 auto; margin-right: 14px; }
@@ -365,7 +370,7 @@ body.pv-active, body.pv-active * { cursor: auto !important; }
 <div id="cat-cursor">+</div>
 
 <script>
-const COLS=5, ROWS=6, GAP=20, IMG_RATIO=1.341, META_H=20, CAT_PAD=40;
+const COLS=6, ROWS=5, GAP=30, VGAP=8, IMG_RATIO=1.341, META_H=20, CAT_TOP_PAD=22;
 
 // Full 25-card explicit list — 5 confidential images interspersed, no adjacent duplicates
 const projects = [
@@ -442,13 +447,15 @@ const catCursor  = document.getElementById('cat-cursor');
 
 let VW, VH, cardW, imgH, cardH;
 let focusCol = 1, focusRow = 2, hoverDir = null;
-let zoomLevel = 1.0;
+let zoomLevel = 1.5;
 let catMode = true;
+let catScrollY = 0;
 
 function measure() {
   VW = clip.clientWidth;
   VH = clip.clientHeight;
-  cardW = Math.floor((VW - (COLS-1)*GAP) / COLS);
+  const catPad = Math.round(15 + 0.017 * VW);
+  cardW = Math.floor((VW - 2*catPad - (COLS-1)*GAP) / COLS);
   imgH  = Math.round(cardW * IMG_RATIO);
   cardH = imgH + 1 + META_H;
 }
@@ -456,14 +463,14 @@ function measure() {
 function buildGrid() {
   canvas.innerHTML = '';
   canvas.style.width  = (COLS*cardW + (COLS-1)*GAP) + 'px';
-  canvas.style.height = (ROWS*cardH + (ROWS-1)*GAP) + 'px';
+  canvas.style.height = (ROWS*cardH + (ROWS-1)*VGAP) + 'px';
 
   for (let i = 0; i < COLS*ROWS; i++) {
     const p   = projects[i];
     const col = i % COLS;
     const row = Math.floor(i / COLS);
     const L   = col*(cardW+GAP);
-    const T   = row*(cardH+GAP);
+    const T   = row*(cardH+VGAP);
 
     const card = document.createElement('div');
     card.className = 'card';
@@ -510,21 +517,18 @@ function updateLink() {
 }
 
 function getCatZoom() {
-  const cW = COLS*cardW + (COLS-1)*GAP;
-  const cH = ROWS*cardH + (ROWS-1)*GAP;
-  return Math.min((VW - 2*CAT_PAD) / cW, (VH - 2*CAT_PAD) / cH);
+  return 1.0;
 }
 
 function getPos() {
   if (catMode) {
     const cW = COLS*cardW + (COLS-1)*GAP;
-    const cH = ROWS*cardH + (ROWS-1)*GAP;
     const s  = getCatZoom();
-    return { tx: Math.round((VW - cW*s) / 2), ty: Math.round((VH - cH*s) / 2), scale: s };
+    return { tx: Math.round((VW - cW*s) / 2), ty: catScrollY + CAT_TOP_PAD, scale: s };
   }
   const xC = focusCol*(cardW+GAP) + cardW/2;
-  const yC = focusRow*(cardH+GAP) + imgH/2;
-  return { tx: Math.round(VW/2 - xC), ty: Math.round(VH/2 - yC), scale: zoomLevel };
+  const yC = focusRow*(cardH+VGAP) + imgH/2;
+  return { tx: Math.round(VW/2 - xC*zoomLevel), ty: Math.round(VH/2 - yC*zoomLevel), scale: zoomLevel };
 }
 
 function applyPos(animated) {
@@ -532,6 +536,9 @@ function applyPos(animated) {
   canvas.classList.toggle('instant', !animated);
   if (!animated) canvas.offsetHeight;
   canvas.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
+  const inv = 1 / scale;
+  canvas.querySelectorAll('.card-rule').forEach(el => { el.style.transform = `scale(${inv})`; });
+  canvas.querySelectorAll('.card-meta').forEach(el => { el.style.transform = `scale(${inv})`; });
 }
 
 function setZoom(level) {
@@ -605,6 +612,7 @@ function zoomToGallery(index) {
 }
 
 function zoomToCatalogue() {
+  catScrollY = 0;
   catMode = true;
   canvas.classList.add('cat-view');
   applyPos(true);
@@ -713,9 +721,9 @@ document.addEventListener('mousemove', e => {
     const cx = (e.clientX - r.left - tx) / scale;
     const cy = (e.clientY - r.top  - ty) / scale;
     const col = Math.floor(cx / (cardW+GAP));
-    const row = Math.floor(cy / (cardH+GAP));
+    const row = Math.floor(cy / (cardH+VGAP));
     const onCard = col >= 0 && col < COLS && row >= 0 && row < ROWS &&
-                   (cx - col*(cardW+GAP)) <= cardW && (cy - row*(cardH+GAP)) <= imgH;
+                   (cx - col*(cardW+GAP)) <= cardW && (cy - row*(cardH+VGAP)) <= imgH;
     if (onCard) {
       catCursor.textContent = '+';
       catCursor.style.transform = 'translate(-50%,-50%) rotate(0deg)';
@@ -797,9 +805,9 @@ clip.addEventListener('click', e => {
     const cx = (e.clientX - r.left - tx) / scale;
     const cy = (e.clientY - r.top  - ty) / scale;
     const col = Math.floor(cx / (cardW+GAP));
-    const row = Math.floor(cy / (cardH+GAP));
+    const row = Math.floor(cy / (cardH+VGAP));
     if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return;
-    if ((cx - col*(cardW+GAP)) > cardW || (cy - row*(cardH+GAP)) > imgH) return;
+    if ((cx - col*(cardW+GAP)) > cardW || (cy - row*(cardH+VGAP)) > imgH) return;
     const idx = row * COLS + col;
     if (idx < projects.length) zoomToGallery(idx);
     return;
@@ -847,8 +855,20 @@ let swipeAccX = 0, swipeAccY = 0;
 const SWIPE_THRESHOLD = 80;
 
 clip.addEventListener('wheel', e => {
-  if (catMode) return;
   if (pvMode) return;
+  if (catMode) {
+    e.preventDefault();
+    const cH = ROWS*cardH + (ROWS-1)*VGAP;
+    const s  = getCatZoom();
+    const maxScroll = Math.max(0, Math.ceil(cH * s + CAT_TOP_PAD) - VH);
+    const delta = e.deltaMode === 0 ? e.deltaY : e.deltaY * 24;
+    catScrollY = Math.max(-maxScroll, Math.min(0, catScrollY - delta));
+    const cW = COLS*cardW + (COLS-1)*GAP;
+    const tx = Math.round((VW - cW*s) / 2);
+    canvas.classList.add('instant');
+    canvas.style.transform = `translate(${tx}px,${catScrollY + CAT_TOP_PAD}px) scale(${s})`;
+    return;
+  }
   e.preventDefault();
 
   swipeAccX += e.deltaX;
