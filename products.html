@@ -156,6 +156,7 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; opacity: 1
 
 /* Cursors */
 body, body * { cursor: none !important; }
+body.pv-active, body.pv-active * { cursor: auto !important; }
 #cursor-wrap {
   position: absolute; pointer-events: none; z-index: 999;
   transform: translate(-50%,-50%); display: none;
@@ -663,6 +664,7 @@ function layoutPv() {}
 
 function setPvMode(on) {
   pvMode = on;
+  document.body.classList.toggle('pv-active', on);
   const overlay = document.getElementById('pv-overlay');
   if (overlay) overlay.classList.toggle('visible', on);
   document.getElementById('vt-product').classList.toggle('active', !on);
