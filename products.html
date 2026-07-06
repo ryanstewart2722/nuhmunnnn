@@ -97,6 +97,7 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; opacity: 1
 /* In overview (cat) mode: hide meta by default, show on hover */
 #canvas.cat-view .card-rule,
 #canvas.cat-view .card-meta  { opacity: 0; }
+#canvas.cat-view .card-meta .m-year { display: none; }
 #canvas.cat-view .card.hovered .card-rule,
 #canvas.cat-view .card.hovered .card-meta { opacity: 1; }
 #canvas.cat-view .card-link  { display: none !important; }
@@ -155,7 +156,7 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; opacity: 1
 }
 #canvas .card-meta {
   opacity: 0;
-  transition: opacity 0.2s ease, transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94), width 0.55s cubic-bezier(0.25,0.46,0.45,0.94);
+  transition: opacity 0.2s ease, transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94);
 }
 #canvas .card.focused .card-rule,
 #canvas .card.focused .card-meta {
@@ -167,6 +168,8 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; opacity: 1
 /* Cursors */
 body, body * { cursor: none !important; }
 body.pv-active, body.pv-active * { cursor: auto !important; }
+body.pv-active .pv-slot, body.pv-active .pv-slot * { cursor: none !important; }
+#view-toggle, #view-toggle * { cursor: pointer !important; }
 #cursor-wrap {
   position: absolute; pointer-events: none; z-index: 999;
   transform: translate(-50%,-50%); display: none;
@@ -181,6 +184,7 @@ body.pv-active, body.pv-active * { cursor: auto !important; }
   white-space: nowrap;
   user-select: none; -webkit-user-select: none;
 }
+#cursor-wrap.confidential { color: rgba(0,0,0,0.45); }
 /* ── "View" cursor for catalogue ── */
 #cat-cursor {
   position: absolute; pointer-events: none; z-index: 9999;
@@ -709,7 +713,7 @@ document.addEventListener('mousemove', e => {
     const el   = document.elementFromPoint(e.clientX, e.clientY);
     const slot = el && el.closest('.pv-slot');
     if (slot) {
-      cursorWrap.textContent = 'View Project';
+      cursorWrap.textContent = 'View Project →';
       cursorWrap.style.left    = e.clientX + 'px';
       cursorWrap.style.top     = e.clientY + 'px';
       cursorWrap.style.opacity = '1';
@@ -723,7 +727,9 @@ document.addEventListener('mousemove', e => {
   if (catMode) {
     const r = clip.getBoundingClientRect();
     const ins = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-    if (!ins) { catCursor.style.display = 'none'; return; }
+    if (!ins) { catCursor.style.display = 'none'; cursorWrap.style.display = 'none'; return; }
+    const elUnderCat = document.elementFromPoint(e.clientX, e.clientY);
+    if (elUnderCat && elUnderCat.closest('#view-toggle')) { catCursor.style.display = 'none'; cursorWrap.style.display = 'none'; return; }
     const { tx, ty, scale } = getPos();
     const cx = (e.clientX - r.left - tx) / scale;
     const cy = (e.clientY - r.top  - ty) / scale;
@@ -738,60 +744,39 @@ document.addEventListener('mousemove', e => {
       catHoverCard = hovCard;
       if (catHoverCard) catHoverCard.classList.add('hovered');
     }
-    if (onCard) {
-      catCursor.textContent = '+';
-      catCursor.style.transform = 'translate(-50%,-50%) rotate(0deg)';
-      catCursor.style.left = e.clientX + 'px';
-      catCursor.style.top  = e.clientY + 'px';
-      catCursor.style.display = 'block';
-    } else {
-      catCursor.style.display = 'none';
-    }
+    catCursor.textContent = '+';
+    catCursor.style.transform = 'translate(-50%,-50%) rotate(0deg)';
+    catCursor.style.left = e.clientX + 'px';
+    catCursor.style.top  = e.clientY + 'px';
+    catCursor.style.display = 'block';
     cursorWrap.style.display = 'none';
     cursorDot.style.display  = 'none';
     return;
   }
 
+  // ── All layout reads first ──────────────────────────────────────────────
   const r   = clip.getBoundingClientRect();
   const ins = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
 
-  // Outside clip — hide custom cursors but keep OS cursor hidden in gallery mode
-  if (!ins) {
-    cursorWrap.style.display = 'none';
-    catCursor.style.display  = 'none';
-    hoverDir = null;
-    return;
-  }
-
-  // Check if over the focused card (full image hit zone)
   const focusedProject = projects[focusRow * COLS + focusCol];
   const isLink         = focusedProject && focusedProject.name !== 'Confidential';
   const isConfidential = focusedProject && focusedProject.name === 'Confidential';
-  if (isLink || isConfidential) {
-    const cr = canvas.getBoundingClientRect();
-    const cardL = cr.left + focusCol * (cardW + GAP) * zoomLevel;
-    const cardT = cr.top  + focusRow * (cardH + VGAP) * zoomLevel;
-    if (e.clientX >= cardL && e.clientX <= cardL + cardW * zoomLevel &&
-        e.clientY >= cardT && e.clientY <= cardT + cardH * zoomLevel) {
-      cursorWrap.textContent = isConfidential ? 'Confidential' : 'View More';
-      cursorWrap.style.left    = e.clientX + 'px';
-      cursorWrap.style.top     = e.clientY + 'px';
-      cursorWrap.style.opacity = '1';
-      cursorWrap.style.display = 'block';
-      catCursor.style.display  = 'none';
-      hoverDir = null;
-      return;
-    }
-  }
+  const cr = canvas.getBoundingClientRect();
+  const cardL = cr.left + focusCol * (cardW + GAP) * zoomLevel;
+  const cardT = cr.top  + focusRow * (cardH + VGAP) * zoomLevel;
+  const overCard = (isLink || isConfidential) &&
+    e.clientX >= cardL && e.clientX <= cardL + cardW * zoomLevel &&
+    e.clientY >= cardT && e.clientY <= cardT + cardH * zoomLevel;
 
-  // Edge-proximity arrows or × in center
+  // UI exclusion: check if cursor is over a native interactive element
+  const elUnder = document.elementFromPoint(e.clientX, e.clientY);
+  const overUI  = !!(elUnder && elUnder.closest('#view-toggle, #nav, #footer'));
 
-  const r2    = clip.getBoundingClientRect();
   const EDGE_H = 200, EDGE_V = 80;
-  const nearL = (e.clientX - r2.left)   < EDGE_H && focusCol > 0;
-  const nearR = (r2.right  - e.clientX) < EDGE_H && focusCol < COLS - 1;
-  const nearT = (e.clientY - r2.top)    < EDGE_V && focusRow > 0;
-  const nearB = (r2.bottom - e.clientY) < EDGE_V && focusRow < ROWS - 1;
+  const nearL = (e.clientX - r.left)   < EDGE_H && focusCol > 0;
+  const nearR = (r.right  - e.clientX) < EDGE_H && focusCol < COLS - 1;
+  const nearT = (e.clientY - r.top)    < EDGE_V && focusRow > 0;
+  const nearB = (r.bottom - e.clientY) < EDGE_V && focusRow < ROWS - 1;
 
   let arrowDir = null;
   if      (nearL && nearT) arrowDir = 'up-left';
@@ -803,6 +788,38 @@ document.addEventListener('mousemove', e => {
   else if (nearT)          arrowDir = 'up';
   else if (nearB)          arrowDir = 'down';
 
+  // ── All DOM writes after reads ───────────────────────────────────────────
+
+  // Outside clip — hide and yield
+  if (!ins) {
+    cursorWrap.style.display = 'none';
+    catCursor.style.display  = 'none';
+    hoverDir = null;
+    return;
+  }
+
+  // Over native UI — hide custom cursor, yield to OS pointer
+  if (overUI) {
+    cursorWrap.style.display = 'none';
+    catCursor.style.display  = 'none';
+    hoverDir = null;
+    return;
+  }
+
+  // Over focused card — show pill cursor
+  if (overCard) {
+    cursorWrap.textContent   = isConfidential ? 'Confidential' : 'View Project →';
+    cursorWrap.classList.toggle('confidential', !!isConfidential);
+    cursorWrap.style.left    = e.clientX + 'px';
+    cursorWrap.style.top     = e.clientY + 'px';
+    cursorWrap.style.opacity = '1';
+    cursorWrap.style.display = 'block';
+    catCursor.style.display  = 'none';
+    hoverDir = null;
+    return;
+  }
+
+  // Edge-proximity arrows or × in center
   hoverDir = arrowDir;
   const ARROW_CHARS = { left: '←', right: '→', up: '↑', down: '↓', 'up-left': '↖', 'up-right': '↗', 'down-right': '↘', 'down-left': '↙' };
   catCursor.textContent = arrowDir ? ARROW_CHARS[arrowDir] : '+';
@@ -959,7 +976,7 @@ function init() {
 }
 window.addEventListener('resize', init);
 init();
-zoomToCatalogue();
+setPvMode(true);
 
 // ── View toggle listeners ──
 document.getElementById('vt-product').addEventListener('click', () => setPvMode(false));
