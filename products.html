@@ -138,6 +138,17 @@ body.party #party-toggle { animation: hue-cycle 1.5s linear infinite; opacity: 1
 .card-meta .m-year   { flex: 0 0 auto; margin-right: 14px; }
 .card-meta .m-client { flex: 0 0 auto; }
 
+/* Gallery: only focused card shows rule + meta */
+#canvas .card-rule,
+#canvas .card-meta {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+#canvas .card:has(.card-link.active) .card-rule,
+#canvas .card:has(.card-link.active) .card-meta {
+  opacity: 1;
+}
+
 /* Cursors */
 body.no-cursor,    body.no-cursor *    { cursor: none !important; }
 body.link-cursor,  body.link-cursor *  { cursor: pointer !important; }
@@ -216,77 +227,6 @@ body.link-cursor,  body.link-cursor *  { cursor: pointer !important; }
 .cat-meta .m-client { flex: 0 0 auto; }
 
 
-/* ── Minimap ── */
-#minimap {
-  position: absolute;
-  bottom: 48px;
-  left: 35px;
-  z-index: 300;
-  cursor: auto;
-  width: 290px;
-  padding: 16px;
-  background: rgba(0,0,0,0.05);
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-  border: 0.5px solid rgba(0,0,0,0.1);
-}
-.mm-rule {
-  height: 1px;
-  background: #000;
-  margin-bottom: 1px;
-}
-.mm-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.mm-title {
-  font-family: 'ABCDiatype', Arial, sans-serif;
-  font-size: 12px;
-  color: #000;
-  line-height: normal;
-  white-space: nowrap;
-}
-.mm-close {
-  font-family: 'ABCDiatype', Arial, sans-serif;
-  font-size: 12px;
-  color: #000;
-  cursor: pointer;
-  display: inline-block;
-  transform: rotate(45deg);
-  line-height: 1;
-  transition: opacity 0.15s ease;
-}
-.mm-close:hover { opacity: 0.45; }
-#mm-window {
-  margin-top: 9px;
-  height: 126px;
-  overflow: hidden;
-  position: relative;
-  cursor: grab;
-  perspective: 380px;
-  user-select: none;
-  -webkit-user-select: none;
-}
-#mm-window.dragging { cursor: grabbing; }
-#mm-inner {
-  position: absolute;
-  top: 0; left: 0;
-  width: 320px;
-  height: 200px;
-  will-change: transform;
-}
-.mm-dot {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  border-radius: 1.5px;
-  background: rgba(0,0,0,0.14);
-  cursor: pointer;
-  transition: background 0.12s ease;
-}
-.mm-dot:hover  { background: rgba(0,0,0,0.28); }
-.mm-dot.active { background: rgba(0,0,0,0.58); }
 
 /* ── View toggle (fixed top-left, aligned to grid margin) ── */
 #view-toggle {
@@ -391,7 +331,7 @@ body.link-cursor,  body.link-cursor *  { cursor: pointer !important; }
   /* #bl and #br stay visible on all screen sizes */
 
   #nav a, #nav-center { cursor: auto; }
-  #clip, #cursor-wrap, #cursor-dot, #minimap { display: none !important; }
+  #clip, #cursor-wrap, #cursor-dot { display: none !important; }
 
   #mobile-layout {
     display: block;
@@ -453,16 +393,6 @@ body.link-cursor,  body.link-cursor *  { cursor: pointer !important; }
   </div>
   <div id="pv-overlay">
     <div id="pv-grid"></div>
-  </div>
-</div>
-<div id="minimap">
-  <div class="mm-rule"></div>
-  <div class="mm-header">
-    <span class="mm-title">Minimap</span>
-    <span class="mm-close" id="mm-close">+</span>
-  </div>
-  <div id="mm-window">
-    <div id="mm-inner"></div>
   </div>
 </div>
 <div id="mobile-layout"></div>
@@ -653,7 +583,7 @@ function navTo(dir) {
   if (dr > 0 && focusRow < ROWS-1) focusRow++;
   if (dc < 0 && focusCol > 0)      focusCol--;
   if (dc > 0 && focusCol < COLS-1) focusCol++;
-  applyPos(true); updateLink(); updateMinimap();
+  applyPos(true); updateLink();
 }
 
 function navOpacity(dir) {
@@ -748,7 +678,6 @@ function setViewMode(mode) {
 
   canvas.style.display          = catMode ? 'none' : '';
   document.getElementById('catalogue').style.display   = catMode ? 'block' : 'none';
-  document.getElementById('minimap').style.display     = catMode ? 'none' : '';
   const vmg = document.getElementById('vm-gallery');
   const vmc = document.getElementById('vm-catalogue');
   if (vmg) vmg.classList.toggle('active', !catMode);
@@ -794,11 +723,9 @@ function zoomToGallery(index) {
     cat.style.opacity    = '';
     cat.style.transition = '';
     canvas.style.opacity = '';
-    document.getElementById('minimap').style.display = '';
     catCursor.style.display  = 'none';
     document.body.style.cursor = 'none';
     updateLink();
-    updateMinimap();
   }, 600);
 }
 
@@ -823,7 +750,6 @@ function zoomToCatalogue() {
     cat.style.opacity      = '';
     cat.style.transition   = '';
     catMode = true;
-    document.getElementById('minimap').style.display = 'none';
     cursorWrap.style.display = 'none';
     document.body.style.cursor = 'none';
   }, 600);
@@ -926,7 +852,7 @@ document.addEventListener('mousemove', e => {
   const ins = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
 
   // Outside clip or over UI chrome — restore normal OS cursor
-  if (!ins || e.target.closest('#minimap')) {
+  if (!ins) {
     cursorWrap.style.display = 'none';
     document.body.classList.remove('no-cursor', 'link-cursor');
     hoverDir = null;
@@ -992,7 +918,6 @@ document.addEventListener('mousemove', e => {
 clip.addEventListener('click', e => {
   if (pvMode) return;
   if (catMode) return;
-  if (e.target.closest && e.target.closest('#minimap')) return;
   // Check focused card hit zone first
   const focusedProject = projects[focusRow * COLS + focusCol];
   const isLink = focusedProject && focusedProject.name !== 'Confidential';
@@ -1025,7 +950,7 @@ document.addEventListener('keydown', e => {
   if (e.key === '+' || e.key === '=') { e.preventDefault(); setViewMode('gallery');   return; }
   if (catMode) return;
   const m = { ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down' };
-  if (m[e.key]) { navTo(m[e.key]); updateMinimap(); }
+  if (m[e.key]) { navTo(m[e.key]); }
   if (e.key === 'Enter') { const l = document.getElementById('cl' + (focusRow*COLS + focusCol)); if (l && l.href) window.location.href = l.href; }
 });
 
@@ -1060,139 +985,6 @@ clip.addEventListener('wheel', e => {
   setTimeout(() => { swipeLocked = false; swipeAccX = 0; swipeAccY = 0; }, 900);
 }, { passive: false });
 
-// ════════════════════════════════════════════
-//  MINIMAP
-// ════════════════════════════════════════════
-const MM_DOT   = 8;
-const MM_COL_P = 78;
-const MM_ROW_P = 48;
-const MM_WIN_W = 258;
-const MM_WIN_H = 126;
-const MM_INN_W = COLS * MM_DOT + (COLS-1) * (MM_COL_P - MM_DOT);
-const MM_INN_H = ROWS * MM_DOT + (ROWS-1) * (MM_ROW_P - MM_DOT);
-
-let mmX = 0, mmY = 0;
-let mmTiltX = 0, mmTiltY = 0;
-let mmTX = 0, mmTY = 0;
-let mmRAF = null, mmMoved = false;
-
-function mmApply() {
-  const inner = document.getElementById('mm-inner');
-  if (inner) inner.style.transform =
-    `translate(${mmX.toFixed(1)}px,${mmY.toFixed(1)}px) ` +
-    `rotateX(${mmTiltX.toFixed(2)}deg) rotateY(${mmTiltY.toFixed(2)}deg)`;
-}
-
-function mmStep() {
-  const LP = 0.068, LT = 0.13;
-  mmX      += (mmTX - mmX)  * LP;
-  mmY      += (mmTY - mmY)  * LP;
-  mmTiltX  += (0 - mmTiltX) * LT;
-  mmTiltY  += (0 - mmTiltY) * LT;
-  mmApply();
-  const settled = Math.abs(mmTX - mmX) < 0.06 && Math.abs(mmTY - mmY) < 0.06
-               && Math.abs(mmTiltX) < 0.02    && Math.abs(mmTiltY) < 0.02;
-  if (settled) {
-    mmX = mmTX; mmY = mmTY; mmTiltX = 0; mmTiltY = 0;
-    mmApply(); mmRAF = null;
-  } else {
-    mmRAF = requestAnimationFrame(mmStep);
-  }
-}
-
-function mmGoto(tx, ty) {
-  mmTX = tx; mmTY = ty;
-  if (!mmRAF) mmRAF = requestAnimationFrame(mmStep);
-}
-
-function buildMinimap() {
-  const win   = document.getElementById('mm-window');
-  const inner = document.getElementById('mm-inner');
-  if (!win || !inner) return;
-
-  inner.innerHTML = '';
-  for (let row = 0; row < ROWS; row++) {
-    for (let col = 0; col < COLS; col++) {
-      const dot = document.createElement('div');
-      dot.className   = 'mm-dot';
-      dot.dataset.row = row;
-      dot.dataset.col = col;
-      const proj = projects[row * COLS + col];
-      if (proj) dot.dataset.status = proj.name;
-      dot.style.left  = col * MM_COL_P + 'px';
-      dot.style.top   = row * MM_ROW_P + 'px';
-      inner.appendChild(dot);
-    }
-  }
-
-  inner.addEventListener('click', e => {
-    if (mmMoved) return;
-    const dot = e.target.closest('.mm-dot');
-    if (!dot) return;
-    e.stopPropagation();
-    focusRow = +dot.dataset.row; focusCol = +dot.dataset.col;
-    applyPos(true); updateLink(); updateMinimap();
-  });
-
-  win.addEventListener('mousedown', e => {
-    if (e.target.closest('#mm-close')) return;
-    if (mmRAF) { cancelAnimationFrame(mmRAF); mmRAF = null; }
-    const sx0 = e.clientX, sy0 = e.clientY;
-    const x0  = mmX,       y0  = mmY;
-    let prevCX = e.clientX, prevCY = e.clientY;
-    mmMoved = false;
-    win.classList.add('dragging');
-
-    const onMove = ev => {
-      const dx = ev.clientX - sx0, dy = ev.clientY - sy0;
-      if (Math.abs(dx) + Math.abs(dy) > 2) mmMoved = true;
-      const vx = ev.clientX - prevCX, vy = ev.clientY - prevCY;
-      prevCX = ev.clientX; prevCY = ev.clientY;
-      mmX = mmTX = x0 + dx;
-      mmY = mmTY = y0 + dy;
-      const MT = 8;
-      mmTiltY = Math.max(-MT, Math.min(MT, mmTiltY * 0.65 + vx * 0.35));
-      mmTiltX = Math.max(-MT, Math.min(MT, mmTiltX * 0.65 + (-vy) * 0.35));
-      mmApply();
-    };
-
-    const onUp = () => {
-      win.classList.remove('dragging');
-      setTimeout(() => { mmMoved = false; }, 0);
-      if (!mmRAF && (Math.abs(mmTiltX) > 0.05 || Math.abs(mmTiltY) > 0.05))
-        mmRAF = requestAnimationFrame(mmStep);
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup',   onUp);
-    };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup',   onUp);
-    e.preventDefault();
-  });
-
-  const closeBtn = document.getElementById('mm-close');
-  if (closeBtn) {
-    closeBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      const hidden = win.style.display === 'none';
-      win.style.display = hidden ? 'block' : 'none';
-      closeBtn.style.transform = hidden ? 'rotate(45deg)' : 'rotate(0deg)';
-    });
-  }
-
-  updateMinimap(false);
-}
-
-function updateMinimap(animate = true) {
-  document.querySelectorAll('.mm-dot').forEach(d =>
-    d.classList.toggle('active', +d.dataset.row === focusRow && +d.dataset.col === focusCol));
-  const tx = -(focusCol * MM_COL_P + MM_DOT / 2 - MM_WIN_W / 2);
-  const ty = -(focusRow * MM_ROW_P + MM_DOT / 2 - MM_WIN_H / 2);
-  if (animate) {
-    mmGoto(tx, ty);
-  } else {
-    mmX = mmTX = tx; mmY = mmTY = ty; mmApply();
-  }
-}
 
 function buildMobileLayout() {
   const container = document.getElementById('mobile-layout');
@@ -1228,17 +1020,15 @@ function buildMobileLayout() {
   });
 }
 
-let minimapBuilt = false;
+let pvBuilt = false;
 function init() {
   const isMobile = window.matchMedia('(max-width: 768px)').matches;
   if (isMobile) { buildMobileLayout(); return; }
   measure(); buildGrid(); applyPos(false);
-  if (!minimapBuilt) {
-    buildMinimap();
+  if (!pvBuilt) {
     buildProjectView();
-    minimapBuilt = true;
+    pvBuilt = true;
   } else {
-    updateMinimap();
     layoutPv();
   }
 }
