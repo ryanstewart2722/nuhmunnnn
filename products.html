@@ -386,6 +386,12 @@ body, body * { cursor: none !important; }
 
 <script>
 const COLS=6, ROWS=5, GAP=30, VGAP=8, IMG_RATIO=1.341, META_H=20, CAT_TOP_PAD=22, CAT_BOT_PAD=60;
+const NATIVE_CURSOR_SELECTOR  = '#view-toggle, #nav a, #party-toggle';
+const PILL_DELAY_MS           = 200;   // hover-intent delay before pill appears
+const ZOOM_IN_PILL_DELAY_MS   = 350;   // longer delay right after zooming in
+const ALPHA_FUZZ_PX           = 10;    // pixel-alpha hit-test margin
+const ALPHA_THRESHOLD         = 10;    // minimum alpha to count as opaque
+const TITLE_ZONE_START_FRAC   = 0.6;   // fraction of img height below which always counts as over
 
 // Full 25-card explicit list — 5 confidential images interspersed, no adjacent duplicates
 const projects = [
@@ -468,6 +474,8 @@ let catMode = true;
 let catScrollY = 0;
 let catHoverCard = null;
 let pillTimer = null;
+let lastMX = -1, lastMY = -1;
+let justZoomedIn = false, zoomInTimer = null;
 
 function measure() {
   VW = clip.clientWidth;
@@ -520,6 +528,54 @@ function buildGrid() {
     canvas.appendChild(card);
   }
   updateLink();
+}
+
+const alphaMasks = {};
+
+function preloadAlphaMasks() {
+  projects.forEach(p => {
+    if (alphaMasks[p.img]) return;
+    const img = new Image();
+    img.onload = function() {
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      try { alphaMasks[p.img] = ctx.getImageData(0, 0, c.width, c.height); } catch(e) {}
+    };
+    img.src = p.img;
+  });
+}
+
+function isOverProduct(mx, my) {
+  const cards = canvas.querySelectorAll('.card');
+  const cardEl = cards[focusRow * COLS + focusCol];
+  if (!cardEl) return false;
+  const cardRect = cardEl.getBoundingClientRect();
+  if (mx < cardRect.left || mx > cardRect.right || my < cardRect.top || my > cardRect.bottom) return false;
+  const imgEl = cardEl.querySelector('.card-img');
+  if (!imgEl) return true;
+  const imgRect = imgEl.getBoundingClientRect();
+  if (my > imgRect.bottom) return true; // title zone below image
+  const fracY = (my - imgRect.top) / imgRect.height;
+  if (fracY >= TITLE_ZONE_START_FRAC) return true; // bottom of image always counts
+  const fp = projects[focusRow * COLS + focusCol];
+  if (!fp) return false;
+  const mask = alphaMasks[fp.img];
+  if (!mask) return true; // not loaded yet, fall back to true
+  const fracX = (mx - imgRect.left) / imgRect.width;
+  const px = Math.round(fracX * mask.width);
+  const py = Math.round(fracY * mask.height);
+  const fw = Math.round((ALPHA_FUZZ_PX / imgRect.width)  * mask.width);
+  const fh = Math.round((ALPHA_FUZZ_PX / imgRect.height) * mask.height);
+  for (let dy = -fh; dy <= fh; dy++) {
+    for (let dx = -fw; dx <= fw; dx++) {
+      const ix = px+dx, iy = py+dy;
+      if (ix < 0 || iy < 0 || ix >= mask.width || iy >= mask.height) continue;
+      if (mask.data[(iy * mask.width + ix) * 4 + 3] >= ALPHA_THRESHOLD) return true;
+    }
+  }
+  return false;
 }
 
 function updateLink() {
@@ -616,6 +672,9 @@ function setViewMode(mode) {
 
 function zoomToGallery(index) {
   clearTimeout(pillTimer); pillTimer = null;
+  clearTimeout(zoomInTimer);
+  justZoomedIn = true;
+  zoomInTimer = setTimeout(() => { justZoomedIn = false; }, ZOOM_IN_PILL_DELAY_MS);
   focusRow = Math.floor(index / COLS);
   focusCol = index % COLS;
   catMode  = false;
@@ -626,10 +685,14 @@ function zoomToGallery(index) {
   requestAnimationFrame(() => {
     catCursor.style.transform = 'translate(-50%,-50%) rotate(45deg)';
   });
+  setTimeout(() => {
+    if (lastMX >= 0) document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: lastMX, clientY: lastMY }));
+  }, 80);
 }
 
 function zoomToCatalogue() {
   clearTimeout(pillTimer); pillTimer = null;
+  clearTimeout(zoomInTimer); justZoomedIn = false;
   // Keep focused card vertically centered after scale change
   const cH = ROWS*cardH + (ROWS-1)*VGAP;
   const maxScroll = Math.max(0, Math.ceil(cH + CAT_TOP_PAD + CAT_BOT_PAD) - VH);
@@ -723,6 +786,8 @@ function setPvMode(on) {
 }
 
 document.addEventListener('mousemove', e => {
+  lastMX = e.clientX; lastMY = e.clientY;
+
   if (pvMode) {
     catCursor.style.display = 'none';
     glassCursor.style.left = e.clientX + 'px';
@@ -748,7 +813,13 @@ document.addEventListener('mousemove', e => {
     const ins = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
     if (!ins) { catCursor.style.display = 'none'; cursorWrap.style.display = 'none'; return; }
     const elUnderCat = document.elementFromPoint(e.clientX, e.clientY);
-    if (elUnderCat && elUnderCat.closest('#view-toggle')) { catCursor.style.display = 'none'; cursorWrap.style.display = 'none'; return; }
+    if (elUnderCat && elUnderCat.closest(NATIVE_CURSOR_SELECTOR)) {
+      catCursor.style.display = 'none'; cursorWrap.style.display = 'none';
+      glassCursor.style.left = e.clientX + 'px'; glassCursor.style.top = e.clientY + 'px';
+      glassCursor.style.display = 'block';
+      return;
+    }
+    glassCursor.style.display = 'none';
     const { tx, ty, scale } = getPos();
     const cx = (e.clientX - r.left - tx) / scale;
     const cy = (e.clientY - r.top  - ty) / scale;
@@ -773,20 +844,13 @@ document.addEventListener('mousemove', e => {
     return;
   }
 
-  // ── All layout reads first ──────────────────────────────────────────────
-  const r   = clip.getBoundingClientRect();
-  const ins = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-
-  const fp      = projects[focusRow * COLS + focusCol];
-  const cr      = canvas.getBoundingClientRect();
-  const cardL   = cr.left + focusCol * (cardW + GAP) * zoomLevel;
-  const cardT   = cr.top  + focusRow * (cardH + VGAP) * zoomLevel;
-  const overCard = fp &&
-    e.clientX >= cardL && e.clientX <= cardL + cardW * zoomLevel &&
-    e.clientY >= cardT && e.clientY <= cardT + cardH * zoomLevel;
-
-  const elUnder = document.elementFromPoint(e.clientX, e.clientY);
-  const overUI  = !!(elUnder && elUnder.closest('#view-toggle, #nav, #footer'));
+  // ── Gallery mode: all reads first ──────────────────────────────────────
+  const r      = clip.getBoundingClientRect();
+  const ins    = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+  const fp     = projects[focusRow * COLS + focusCol];
+  const onProduct = isOverProduct(e.clientX, e.clientY);
+  const elUnder   = document.elementFromPoint(e.clientX, e.clientY);
+  const overUI    = !!(elUnder && elUnder.closest(NATIVE_CURSOR_SELECTOR));
 
   const EDGE_H = 200, EDGE_V = 80;
   const nearL = (e.clientX - r.left)   < EDGE_H && focusCol > 0;
@@ -804,8 +868,7 @@ document.addEventListener('mousemove', e => {
   else if (nearT)          arrowDir = 'up';
   else if (nearB)          arrowDir = 'down';
 
-  // ── All DOM writes after reads ───────────────────────────────────────────
-
+  // ── All DOM writes after reads ──────────────────────────────────────────
   if (!ins) {
     clearTimeout(pillTimer); pillTimer = null;
     cursorWrap.style.display  = 'none';
@@ -827,12 +890,10 @@ document.addEventListener('mousemove', e => {
   }
   glassCursor.style.display = 'none';
 
-  // Over focused card with pill destination (hasPage or confidential)
-  if (overCard && fp && (fp.hasPage || fp.confidential)) {
-    // Always track position
+  // Over product with pill destination
+  if (onProduct && fp && (fp.hasPage || fp.confidential)) {
     cursorWrap.style.left = e.clientX + 'px';
     cursorWrap.style.top  = e.clientY + 'px';
-    // Show × immediately while pill is pending
     if (cursorWrap.style.display !== 'block') {
       catCursor.textContent = '+';
       catCursor.style.transform = 'translate(-50%, -50%) rotate(45deg)';
@@ -841,6 +902,7 @@ document.addEventListener('mousemove', e => {
       catCursor.style.display = 'block';
     }
     if (!pillTimer) {
+      const delay = justZoomedIn ? ZOOM_IN_PILL_DELAY_MS : PILL_DELAY_MS;
       pillTimer = setTimeout(() => {
         pillTimer = null;
         cursorWrap.textContent = fp.confidential ? 'Confidential' : 'View Project →';
@@ -848,14 +910,14 @@ document.addEventListener('mousemove', e => {
         cursorWrap.style.opacity = '1';
         cursorWrap.style.display = 'block';
         catCursor.style.display  = 'none';
-      }, 200);
+      }, delay);
     }
     hoverDir = null;
     return;
   }
 
-  // Over dead-end card (no page, not confidential) — show × immediately
-  if (overCard && fp && !fp.hasPage && !fp.confidential) {
+  // Over dead-end card — show × immediately, cancel pending pill
+  if (onProduct && fp && !fp.hasPage && !fp.confidential) {
     clearTimeout(pillTimer); pillTimer = null;
     cursorWrap.style.display = 'none';
     catCursor.textContent = '+';
@@ -867,7 +929,7 @@ document.addEventListener('mousemove', e => {
     return;
   }
 
-  // Off card — cancel any pending pill, show arrow or ×
+  // Off product — cancel pill, show arrow or ×
   clearTimeout(pillTimer); pillTimer = null;
   cursorWrap.style.display = 'none';
   hoverDir = arrowDir;
@@ -880,6 +942,7 @@ document.addEventListener('mousemove', e => {
 });
 
 clip.addEventListener('click', e => {
+  e.preventDefault();
   if (pvMode) return;
   if (catMode) {
     const r = clip.getBoundingClientRect();
@@ -888,29 +951,24 @@ clip.addEventListener('click', e => {
     const cy = (e.clientY - r.top  - ty) / scale;
     const col = Math.floor(cx / (cardW+GAP));
     const row = Math.floor(cy / (cardH+VGAP));
-    if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return;
-    if ((cx - col*(cardW+GAP)) > cardW || (cy - row*(cardH+VGAP)) > cardH) return;
+    if (col < 0 || col >= COLS || row < 0 || row >= ROWS) { zoomToGallery(focusRow * COLS + focusCol); return; }
     const idx = row * COLS + col;
     if (idx < projects.length) zoomToGallery(idx);
     return;
   }
-  // Check focused card hit zone
+  // Gallery mode: cursor-state-driven click
   const fp2 = projects[focusRow * COLS + focusCol];
-  if (fp2) {
-    const cr2  = canvas.getBoundingClientRect();
-    const cL2  = cr2.left + focusCol * (cardW + GAP) * zoomLevel;
-    const cT2  = cr2.top  + focusRow * (cardH + VGAP) * zoomLevel;
-    const hit  = e.clientX >= cL2 && e.clientX <= cL2 + cardW * zoomLevel &&
-                 e.clientY >= cT2 && e.clientY <= cT2 + cardH * zoomLevel;
-    if (hit) {
-      if (fp2.hasPage && fp2.href) { window.location.href = fp2.href; }
-      // confidential and dead-end cards do nothing on click (stay in place)
-      return;
-    }
+  const pillShowing = cursorWrap.style.display === 'block';
+  if (pillShowing && fp2) {
+    if (fp2.hasPage && fp2.href) { window.goTo ? window.goTo(fp2.href) : (window.location.href = fp2.href); }
+    // confidential: do nothing (pill showed but no nav)
+    return;
   }
-  // Directional arrow zone → navigate
+  // × showing over dead-end card — stay
+  if (isOverProduct(e.clientX, e.clientY) && fp2 && !fp2.hasPage && !fp2.confidential) return;
+  // Arrow zone → navigate
   if (hoverDir !== null) { navTo(hoverDir); return; }
-  // Gap / exit zone → back to catalogue
+  // Anywhere else → back to catalogue
   zoomToCatalogue();
 });
 
@@ -1012,7 +1070,7 @@ let pvBuilt = false;
 function init() {
   const isMobile = window.matchMedia('(max-width: 768px)').matches;
   if (isMobile) { buildMobileLayout(); return; }
-  measure(); buildGrid(); applyPos(false);
+  measure(); buildGrid(); applyPos(false); preloadAlphaMasks();
   if (!pvBuilt) {
     buildProjectView();
     pvBuilt = true;
@@ -1066,5 +1124,6 @@ window.STATUS_HINTS = [
 ];
 </script>
 <script src="./status.js"></script>
+<script src="./page-transition.js"></script>
 </body>
 </html>
