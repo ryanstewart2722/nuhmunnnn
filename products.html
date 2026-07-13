@@ -201,6 +201,7 @@ body, body * { cursor: none !important; }
   user-select: none; -webkit-user-select: none;
   transition: transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
 }
+#cat-cursor.arrow-mode { font-size: 26px; }
 
 /* ── Gallery | Catalogue tab toggle ── */
 
@@ -448,6 +449,18 @@ const pvLayout = [
   [{ i:4, cols:3, ratio:225/342 }, { cols:2 }, { i:5, cols:3, ratio:430/343 }, { cols:4 }],
   [{ cols:3 }, { i:6, cols:3, ratio:430/342 }, { cols:4 }, { i:7, cols:2, ratio:284/225 }],
 ];
+// Degrees for ↑ glyph (points up at 0°) per direction
+const ARROW_DEGS = {
+  'up': 0, 'up-right': 45, 'right': 90, 'down-right': 135,
+  'down': 180, 'down-left': 225, 'left': 270, 'up-left': 315,
+};
+
+function shortestRotationTo(current, target) {
+  let diff = ((target - current) % 360 + 360) % 360;
+  if (diff > 180) diff -= 360;
+  return current + diff;
+}
+
 // 8 directions: rotation for the SVG arrow (which points LEFT at 0°)
 const DIRS = {
   'left':       { rot: 0,   dr: 0,  dc: -1 },
@@ -469,7 +482,7 @@ const catCursor   = document.getElementById('cat-cursor');
 const glassCursor = document.getElementById('glass-cursor');
 
 let VW, VH, cardW, imgH, cardH;
-let focusCol = 1, focusRow = 2, hoverDir = null;
+let focusCol = 1, focusRow = 2, hoverDir = null, arrowDeg = 0;
 let zoomLevel = 1.5;
 let catMode = true;
 let catScrollY = 0;
@@ -934,9 +947,16 @@ document.addEventListener('mousemove', e => {
   clearTimeout(pillTimer); pillTimer = null;
   cursorWrap.style.display = 'none';
   hoverDir = arrowDir;
-  const ARROW_CHARS = { left:'←', right:'→', up:'↑', down:'↓', 'up-left':'↖', 'up-right':'↗', 'down-right':'↘', 'down-left':'↙' };
-  catCursor.textContent = arrowDir ? ARROW_CHARS[arrowDir] : '+';
-  catCursor.style.transform = arrowDir ? 'translate(-50%, -50%)' : 'translate(-50%, -50%) rotate(45deg)';
+  if (arrowDir) {
+    arrowDeg = shortestRotationTo(arrowDeg, ARROW_DEGS[arrowDir]);
+    catCursor.textContent = '↑';
+    catCursor.classList.add('arrow-mode');
+    catCursor.style.transform = `translate(-50%, -50%) rotate(${arrowDeg}deg)`;
+  } else {
+    catCursor.textContent = '+';
+    catCursor.classList.remove('arrow-mode');
+    catCursor.style.transform = 'translate(-50%, -50%) rotate(45deg)';
+  }
   catCursor.style.left    = e.clientX + 'px';
   catCursor.style.top     = e.clientY + 'px';
   catCursor.style.display = 'block';
