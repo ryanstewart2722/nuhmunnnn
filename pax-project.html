@@ -155,15 +155,11 @@ body.party #party-toggle { animation:hue-cycle 1.5s linear infinite; opacity:1; 
   backdrop-filter:blur(24px) saturate(160%);
   -webkit-backdrop-filter:blur(24px) saturate(160%);
   border:0.5px solid rgba(255,255,255,0.7);
+  border-radius:20px;
   overflow:hidden;
   z-index:200;
   cursor:pointer;
-  max-height:63px;
-  transition:max-height 0.55s cubic-bezier(0.77,0,0.175,1);
 }
-#glass-card.open { cursor:default; }
-#glass-card.open #card-header { cursor:pointer; }
-#glass-card:not(.open) #card-body { opacity: 0; pointer-events: none; }
 
 #card-scroll {
   overflow-y:auto;
@@ -529,9 +525,9 @@ body.party #party-toggle { animation:hue-cycle 1.5s linear infinite; opacity:1; 
         <div class="card-section">
           <div class="card-section-head" onclick="toggleSection(this)">
             <span>Credits</span>
-            <span class="rot-x">&#215;</span>
+            <span class="rot-x closed">&#215;</span>
           </div>
-          <div class="s-body">
+          <div class="s-body collapsed">
             <div class="s-body-pad">
             <div class="card-table" id="card-credits">
               <div class="col-a">
@@ -550,9 +546,9 @@ body.party #party-toggle { animation:hue-cycle 1.5s linear infinite; opacity:1; 
         <div class="card-section">
           <div class="card-section-head" onclick="toggleSection(this)">
             <span>Awards</span>
-            <span class="rot-x">&#215;</span>
+            <span class="rot-x closed">&#215;</span>
           </div>
-          <div class="s-body">
+          <div class="s-body collapsed">
             <div class="s-body-pad">
             <div class="card-table" id="card-awards">
               <div class="col-a">
@@ -570,9 +566,9 @@ body.party #party-toggle { animation:hue-cycle 1.5s linear infinite; opacity:1; 
         <div class="card-section" id="card-last-section" style="margin-bottom:0;">
           <div class="card-section-head" onclick="toggleSection(this)">
             <span>You Might Also Like:</span>
-            <span class="rot-x">&#215;</span>
+            <span class="rot-x closed">&#215;</span>
           </div>
-          <div class="s-body">
+          <div class="s-body collapsed">
             <div class="s-body-pad">
             <div class="card-also-img img-slot loaded" id="card-also-img"
                  style="width:200px;height:239px;background-image:url('./images/product-hero.jpg');background-size:cover;background-position:center;cursor:pointer;"
@@ -670,21 +666,17 @@ function layout() {
   const card    = document.getElementById('glass-card');
   const cardW   = Math.round(D.card.w * u);
   
-  openMaxH = clip.offsetHeight - 20 - 20;
   card.style.top   = '20px';
   card.style.right = '20px';
   card.style.width = cardW + 'px';
-  if (isOpen) {
-    card.style.maxHeight = openMaxH + 'px';
-  } else {
-    card.style.maxHeight = px(D.card.hClosed);
-  }
-  document.getElementById('card-scroll').style.maxHeight = openMaxH + 'px';
+  document.getElementById('card-scroll').style.maxHeight = (clip.offsetHeight - 20 - 20) + 'px';
 
   const innerPad = Math.round(25 * u);
   document.getElementById('card-inner').style.cssText +=
     `;padding:${innerPad}px ${innerPad}px 0 ${innerPad}px`;
   document.getElementById('card-spacer').style.height = innerPad + 'px';
+  // Equal top/bottom padding when closed: top=innerPad, rule+header≈17px, bottom=innerPad
+  D.card.hClosed = innerPad * 2 + 1 + Math.round(16 * u);
   const innerW = cardW - innerPad * 2;
   document.getElementById('card-rule').style.width = innerW + 'px';
 
@@ -727,6 +719,7 @@ clip.addEventListener('wheel', e => {
     else if (swipeBackAcc > 300) { swipeBackAcc = 0; history.forward(); }
   } else {
     swipeBackAcc = 0;
+    isPinned = false;
     targetY = clampScroll(targetY + e.deltaY * 1.2);
   }
 }, { passive: false });
@@ -734,6 +727,7 @@ clip.addEventListener('wheel', e => {
 document.addEventListener('wheel', e => {
   e.preventDefault();
   if (Math.abs(e.deltaX) > Math.abs(e.deltaY) * 2) return; // handled by clip
+  isPinned = false;
   targetY = clampScroll(targetY + e.deltaY * 1.2);
 }, { passive: false });
 
@@ -766,11 +760,46 @@ function checkLazy() {
 
 // ── RAF tick ──
 const scrollBlur = document.getElementById('scroll-blur');
+const OPENNESS_MANUAL_LERP = 0.06;
+let openness = 0;        // 0 = closed, 1 = fully open
+let opennessTarget = 0;  // what scroll wants
+let pinnedTarget = -1;   // -1 = not pinned; 0 or 1 = manual pin
+let isPinned = false;
+
+function getScrollOpenness() {
+  const hero = document.getElementById('m-hero');
+  if (!hero) return 0;
+  const heroEnd = hero.offsetTop + hero.offsetHeight;
+  return Math.max(0, Math.min(1, 1 - (currentY - hero.offsetTop) / hero.offsetHeight));
+}
+
+function applyOpenness(o) {
+  const maxH = clip.offsetHeight - 20 - 20;
+  const closedH = D.card.hClosed;
+  const h = closedH + (maxH - closedH) * o;
+  card.style.maxHeight = h + 'px';
+  const bodyEl = document.getElementById('card-body');
+  if (bodyEl) {
+    bodyEl.style.opacity = Math.min(1, o * 4).toFixed(3);
+    bodyEl.style.pointerEvents = o > 0.05 ? 'auto' : 'none';
+  }
+  card.style.cursor = o < 0.05 ? 'pointer' : 'default';
+}
+
 function tick() {
   const diff = targetY - currentY;
   currentY = Math.abs(diff) < 0.04 ? targetY : currentY + diff * LERP;
   page.style.transform = `translateY(${-currentY}px)`;
   if (scrollBlur) scrollBlur.style.opacity = Math.min(Math.abs(diff) * 0.012, 0.85).toFixed(3);
+
+  if (isPinned) {
+    openness += (pinnedTarget - openness) * OPENNESS_MANUAL_LERP;
+    if (Math.abs(pinnedTarget - openness) < 0.002) openness = pinnedTarget;
+  } else {
+    openness = getScrollOpenness();
+  }
+  applyOpenness(openness);
+
   checkLazy();
   requestAnimationFrame(tick);
 }
@@ -781,20 +810,6 @@ function tick() {
 const card       = document.getElementById('glass-card');
 const cardScroll = document.getElementById('card-scroll');
 const toggle     = document.getElementById('card-toggle');
-let isOpen = false;
-let openMaxH = 800;
-
-function toggleCard() {
-  isOpen = !isOpen;
-  card.classList.toggle('open', isOpen);
-  toggle.classList.toggle('closed', !isOpen);
-  if (isOpen) {
-    card.style.maxHeight = openMaxH + 'px';
-  } else {
-    card.style.maxHeight = px(D.card.hClosed);
-    cardScroll.scrollTop = 0;
-  }
-}
 
 function toggleSection(head) {
   const body = head.nextElementSibling;
@@ -804,18 +819,28 @@ function toggleSection(head) {
   icon.classList.toggle('closed', closing);
 }
 
+// Click closed card → pin open; click header/toggle → pin closed (or release)
 card.addEventListener('click', () => {
-  if (!isOpen) toggleCard();
+  if (openness < 0.1) { isPinned = true; pinnedTarget = 1; toggle.classList.remove('closed'); }
 });
 
 const cardHeader = document.getElementById('card-header');
 cardHeader.addEventListener('click', e => {
-  if (isOpen) { e.stopPropagation(); toggleCard(); }
+  if (openness > 0.5) {
+    e.stopPropagation();
+    isPinned = true; pinnedTarget = 0; toggle.classList.add('closed');
+    cardScroll.scrollTop = 0;
+  }
 });
 
 toggle.addEventListener('click', e => {
   e.stopPropagation();
-  toggleCard();
+  if (openness > 0.5) {
+    isPinned = true; pinnedTarget = 0; toggle.classList.add('closed');
+    cardScroll.scrollTop = 0;
+  } else {
+    isPinned = true; pinnedTarget = 1; toggle.classList.remove('closed');
+  }
 });
 
 // ════════════════════════════════════════════════════════
@@ -1071,6 +1096,6 @@ window.STATUS_HINTS = [
 })();
 </script>
 <script src="./status.js"></script>
-
+<script src="./page-transition.js"></script>
 </body>
 </html>

@@ -4,8 +4,15 @@
     {
       "name": "naman-nanda",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["/Users/ryanstewart/Desktop/Claude Code Sites/naman-nanda/server.js"],
+      "runtimeArgs": ["/Users/ryanstewart/Desktop/00_Claude Code Sites/naman-nanda/server.js"],
       "port": 8090,
+      "autoPort": true
+    },
+    {
+      "name": "checklist-sites",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["/Users/ryanstewart/Desktop/Claude Code Sites/checklist-sites/server.js"],
+      "port": 8091,
       "autoPort": true
     }
   ]
